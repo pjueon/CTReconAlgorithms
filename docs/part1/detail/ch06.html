@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch06">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6장 · 필터 역투영(FBP)을 컴퓨터로 계산해 보기 (이산) — CT 재구성 알고리즘1 - 해석적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="연속에서 이산으로">
+  <p class="kicker">6장 · 페이지 1</p>
+  <h1>필터 역투영(FBP)을 컴퓨터로 계산해 보기 (이산)</h1>
+
+  <p class="lead">5장의 FBP 공식은 모든 각도와 모든 검출기 위치에서 투영값을 안다고 보고 얻은 식입니다. 실제 장치가 주는 것은 정해진 각도와 검출기 위치에서 잰 숫자의 배열이고, 재구성한 영상도 화소 격자로 저장됩니다. 이 장에서는 연속 식을 이 배열로 계산하려면 무엇을 정해야 하는지 차례로 살펴봅니다.</p>
+
+  <h2>샘플링하는 세 가지</h2>
+
+  <p>연속 FBP 식에는 연속 변수가 세 개 있습니다. 컴퓨터는 이 변수를 각각 일정한 간격으로 샘플링해 다룹니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>연속 변수</th><th>샘플링한 값</th><th>간격</th><th>간격이 정하는 것</th></tr>
+      <tr><td>검출기 좌표 \(s\)</td><td>\(s_n = \bigl(n - \tfrac{N_s - 1}{2}\bigr)\Delta s\)</td><td>검출기 간격 \(\Delta s\)</td><td>쓸 수 있는 가장 높은 주파수, 필터 커널</td></tr>
+      <tr><td>투영 각도 \(\theta\)</td><td>\(\theta_k = k\pi/N_\theta\)</td><td>각도 간격 \(\Delta\theta = \pi/N_\theta\)</td><td>각도 사이의 빈틈에서 생기는 줄무늬, 각도 합의 가중</td></tr>
+      <tr><td>영상 좌표 \((x, y)\)</td><td>화소 중심의 격자</td><td>화소 간격 \(\Delta x\)</td><td>역투영의 보간, 해상도와 계산량</td></tr>
+    </table>
+  </div>
+
+  <p>앞의 두 줄은 3장 페이지 10의 이산 sinogram과 같은 격자입니다. 각도 번호 \(k = 0, \dots, N_\theta - 1\)과 검출기 번호 \(n = 0, \dots, N_s - 1\)에 대해 측정값을 \(p[k, n] = p(\theta_k, s_n)\)으로 씁니다. 대괄호는 정수 번호로 읽는 이산 값이고, 소괄호는 연속 함수입니다. 세 번째 줄의 \(\Delta x\)는 이 장에서 새로 쓰는 기호로, 재구성 영상에서 이웃한 두 화소 중심 사이의 거리(cm)입니다.</p>
+
+  <h2>이산 FBP의 식</h2>
+
+  <p>연속 FBP의 두 식은 이산 데이터에서 다음 두 식이 됩니다.</p>
+
+  <p style="text-align:center">\[q[k, n] = \Delta s \sum_{m=0}^{N_s - 1} p[k, m]\,h[n - m],\qquad \mu(x, y) \approx \frac{\pi}{N_\theta} \sum_{k=0}^{N_\theta - 1} q_k\bigl(x\cos\theta_k + y\sin\theta_k\bigr)\]</p>
+
+  <ul>
+    <li>\(h[n]\)은 이산 램프 커널(<span class="term" data-term="dkernel">Discrete Ramp Kernel</span>)이라고 부르는 수열로, 연속 식에서 \(|\omega|\)를 곱하던 일을 검출기 번호 위의 가중합으로 바꿉니다.</li>
+    <li>\(q_k(s)\)는 각도 \(k\)의 필터링한 투영 \(q[k, n]\)을 검출기 위치 사이의 \(s\)에서 읽은 값입니다.</li>
+    <li>\(\pi/N_\theta\)는 5장의 \(d\theta\)가 이산 데이터에서 바뀐 것으로, 각도 하나가 \([0, \pi)\)에서 차지하는 폭입니다.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 176" role="img" aria-label="이산 FBP의 순서. 측정값 p[k, n]을 행마다 필터링해 q[k, n]을 얻고, 화소마다 보간해 읽은 뒤, 각도 번호마다 가중치 π/N_θ를 곱해 영상에 더하면 μ(x, y)가 됨. 앞의 네 칸은 각도 번호 k마다 되풀이됨">
+      <defs>
+        <marker id="r9f-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r9f-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+      </defs>
+      <rect x="4" y="14" width="508" height="120" rx="8" fill="none" stroke-width="1" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+      <text x="14" y="30" font-size="11" class="svg-muted">각도 번호 k 마다 되풀이</text>
+      <g fill="none" stroke-width="1.4" class="svg-line">
+        <rect x="14" y="48" width="100" height="64" rx="6"/>
+        <rect x="142" y="48" width="100" height="64" rx="6"/>
+        <rect x="270" y="48" width="100" height="64" rx="6"/>
+        <rect x="398" y="48" width="100" height="64" rx="6"/>
+        <rect x="536" y="48" width="100" height="64" rx="6" style="stroke:var(--accent)"/>
+        <path d="M116 80 H138" marker-end="url(#r9f-mu)"/>
+        <path d="M244 80 H266" marker-end="url(#r9f-mu)"/>
+        <path d="M372 80 H394" marker-end="url(#r9f-mu)"/>
+        <path d="M500 80 H532" marker-end="url(#r9f-ac)" style="stroke:var(--accent)"/>
+      </g>
+      <g font-size="12.5" text-anchor="middle" class="svg-fg" font-weight="700">
+        <text x="64" y="76">p[k, n]</text>
+        <text x="192" y="76">필터링</text>
+        <text x="320" y="76">q[k, n]</text>
+        <text x="448" y="76">보간해 읽기</text>
+        <text x="586" y="76">μ(x, y)</text>
+      </g>
+      <g font-size="10.5" text-anchor="middle" class="svg-muted">
+        <text x="64" y="96">측정한 한 행</text>
+        <text x="192" y="96">행마다 컨볼루션</text>
+        <text x="320" y="96">필터링한 한 행</text>
+        <text x="448" y="96">화소마다 q<tspan font-size="8" dy="2">k</tspan><tspan dy="-2">(s)</tspan></text>
+        <text x="586" y="96">× π/N<tspan font-size="8" dy="2">θ</tspan><tspan dy="-2"> 로 더함</tspan></text>
+        <text x="192" y="154">페이지 3~5</text>
+        <text x="448" y="154">페이지 7</text>
+        <text x="586" y="154">페이지 6, 7</text>
+      </g>
+    </svg>
+    <figcaption>이산 FBP의 순서입니다. 각도 번호 \(k\)의 한 행을 필터링한 뒤 영상에 더하는 일을 모든 \(k\)에 되풀이합니다. 연속 FBP의 순서(5장 페이지 1)와 같고, 달라진 것은 각 칸의 계산 방법입니다.</figcaption>
+  </figure>
+
+  <h2>sinogram의 행마다 필터링</h2>
+
+  <p>3장에서 sinogram의 칸 하나는 \((\theta_k, s_n)\)으로 정해지는 광선 하나였습니다. 위 식의 필터링은 이 배열을 행마다 따로 처리합니다. 행 하나가 각도 하나의 투영이므로, 한 행의 \(q[k, \cdot]\)는 그 행의 \(p[k, \cdot]\)만으로 정해집니다. 아래 위젯은 Shepp-Logan 팬텀의 이산 sinogram \(p\)(왼쪽)와 행마다 필터링한 \(q\)(가운데)를 나란히 보여 줍니다. 슬라이더로 행을 고르면 그 행의 값이 오른쪽에 나옵니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 262" role="img" aria-label="왼쪽은 Shepp-Logan 팬텀의 이산 sinogram p[k, n], 가운데는 행마다 램프 커널로 필터링한 q[k, n]으로 음수는 파랑이며, 둘 다 가로축이 검출기 번호 n이고 세로축이 각도 번호 k. 오른쪽은 선택한 행의 p[n]과 q[n] 값">
+      <image id="r9a-p" x="14" y="34" width="190" height="180" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <image id="r9a-q" x="225" y="34" width="190" height="180" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <rect x="14" y="34" width="190" height="180"/><rect x="225" y="34" width="190" height="180"/>
+        <path d="M446 112 H626"/><path d="M446 166 H626" stroke-dasharray="3 3"/>
+      </g>
+      <rect id="r9a-hp" x="14" y="34" width="190" height="5" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+      <rect id="r9a-hq" x="225" y="34" width="190" height="5" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+      <path id="r9a-cp" fill="none" stroke-width="1.6" style="stroke:var(--accent)"/>
+      <path id="r9a-cq" fill="none" stroke-width="1.6" style="stroke:var(--accent)"/>
+      <g id="r9a-dp" style="fill:var(--accent)"></g>
+      <g id="r9a-dq" style="fill:var(--accent)"></g>
+      <g font-size="11.5" class="svg-fg">
+        <text x="14" y="24" font-weight="700">측정한 sinogram p[k, n]</text>
+        <text x="225" y="24" font-weight="700">필터링한 sinogram q[k, n]</text>
+        <text x="446" y="24" font-weight="700">선택한 행</text>
+        <text x="446" y="46" class="svg-muted" font-size="10.5">p[k, n]</text>
+        <text x="446" y="132" class="svg-muted" font-size="10.5">q[k, n]  (점선은 0)</text>
+      </g>
+      <g font-size="10.5" class="svg-muted">
+        <text x="14" y="230">가로 s (검출기 번호 n)</text>
+        <text x="14" y="244">세로 θ (위→아래 0°→180°)</text>
+        <text x="225" y="230">가로·세로는 왼쪽과 같음</text>
+        <text x="225" y="244">흰색은 양수, 파랑은 음수</text>
+        <text x="446" y="230">가로: 검출기 번호 n</text>
+      </g>
+    </svg>
+    <figcaption>검출기 간격 \(\Delta s = 0.08\) cm, 각도 36개(5° 간격)입니다. 주황 테두리가 고른 행이고, 두 sinogram의 같은 행이 오른쪽 곡선의 \(p\)와 \(q\)입니다. 가운데 그림의 밝기는 \(|q|\)의 99.5% 분위수의 0.6배를 1로 맞췄고, 그보다 큰 값은 1로 잘립니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="r9a-k">각도 번호 \(k\)</label>
+    <input id="r9a-k" type="range" min="0" max="35" step="1" value="6" style="width:12rem">
+    <b id="r9a-kv">6</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r9a-note"></p>
+
+  <ul>
+    <li><b>한 행의 \(q\)는 그 행의 \(p\)로만 정해집니다.</b> 다른 행의 값은 필터링에 쓰이지 않습니다.</li>
+    <li><b>\(p\)는 모두 0 이상이고 \(q\)에는 음수가 생깁니다.</b> 5장 페이지 5에서 본 대로, 물체 바로 바깥을 지나는 광선의 음수가 역투영에서 번짐을 상쇄합니다.</li>
+  </ul>
+
+<script>
+window.r9 = (function () {
+  var PI = Math.PI, D = PI / 180;
+  // Shepp-Logan 타원: [x0, y0, A, B, α(도), ρ] (3장 페이지 4의 표)
+  var SL = [
+    [0, 0, 0.92, 0.69, 90, 2.0], [0, -0.0184, 0.874, 0.6624, 90, -0.98],
+    [0.22, 0, 0.31, 0.11, 72, -0.02], [-0.22, 0, 0.41, 0.16, 108, -0.02],
+    [0, 0.35, 0.25, 0.21, 90, 0.01], [0, 0.1, 0.046, 0.046, 0, 0.01],
+    [0, -0.1, 0.046, 0.046, 0, 0.01], [-0.08, -0.605, 0.046, 0.023, 0, 0.01],
+    [0, -0.605, 0.023, 0.023, 0, 0.01], [0.06, -0.605, 0.046, 0.023, 90, 0.01]
+  ];
+  var HALF = 1.1, RDET = HALF * Math.SQRT2, RD = 0.5;      // 영상 반폭, 검출기 반폭, 원판 반지름
+  function ellMu(x, y) {
+    var v = 0, i, e, c, s, u, w;
+    for (i = 0; i < SL.length; i++) {
+      e = SL[i]; c = Math.cos(e[4] * D); s = Math.sin(e[4] * D);
+      u = (x - e[0]) * c + (y - e[1]) * s; w = -(x - e[0]) * s + (y - e[1]) * c;
+      if (u * u / (e[2] * e[2]) + w * w / (e[3] * e[3]) <= 1) v += e[5];
+    }
+    return v;
+  }
+  function ellP(th, s) {                  // 3장 페이지 5의 닫힌 식을 타원마다 더한다
+    var v = 0, i, e, t, ph, a2;
+    for (i = 0; i < SL.length; i++) {
+      e = SL[i];
+      t = s - e[0] * Math.cos(th) - e[1] * Math.sin(th);
+      ph = th - e[4] * D;
+      a2 = e[2] * e[2] * Math.pow(Math.cos(ph), 2) + e[3] * e[3] * Math.pow(Math.sin(ph), 2);
+      if (t * t < a2) v += 2 * e[5] * e[2] * e[3] / a2 * Math.sqrt(a2 - t * t);
+    }
+    return v;
+  }
+  function diskMu(x, y) { return x * x + y * y <= RD * RD ? 1 : 0; }
+  function diskP(th, s) { return Math.abs(s) < RD ? 2 * Math.sqrt(RD * RD - s * s) : 0; }
+  function diskQ(s) { var a = Math.abs(s); return a < RD ? 1 / PI : (a === RD ? 0 : (1 / PI) * (1 - a / Math.sqrt(a * a - RD * RD))); }
+  var models = { sl: { p: ellP, mu: ellMu }, disk: { p: diskP, mu: diskMu } };
+  function sinc(x) { return Math.abs(x) < 1e-12 ? 1 : Math.sin(PI * x) / (PI * x); }
+  function image(w, h, val) {
+    var cv = document.createElement('canvas'), ctx, im, i, j, g, k;
+    cv.width = w; cv.height = h; ctx = cv.getContext('2d'); im = ctx.createImageData(w, h);
+    for (j = 0; j < h; j++) for (i = 0; i < w; i++) {
+      g = val(i, j); k = 4 * (j * w + i);
+      if (typeof g === 'number') {
+        g = Math.round(255 * Math.max(0, Math.min(1, g)));
+        im.data[k] = im.data[k + 1] = im.data[k + 2] = g;
+      } else { im.data[k] = g[0]; im.data[k + 1] = g[1]; im.data[k + 2] = g[2]; }
+      im.data[k + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+  function fft(re, im, inv) {
+    var n = re.length, i, j, k, m, t, wr, wi, ur, ui, vr, vi, a, bit;
+    for (i = 1, j = 0; i < n; i++) {
+      bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+    }
+    for (m = 2; m <= n; m <<= 1) {
+      a = 2 * PI / m * (inv ? 1 : -1); wr = Math.cos(a); wi = Math.sin(a);
+      for (i = 0; i < n; i += m) {
+        ur = 1; ui = 0;
+        for (k = 0; k < m / 2; k++) {
+          vr = re[i + k + m / 2] * ur - im[i + k + m / 2] * ui;
+          vi = re[i + k + m / 2] * ui + im[i + k + m / 2] * ur;
+          re[i + k + m / 2] = re[i + k] - vr; im[i + k + m / 2] = im[i + k] - vi;
+          re[i + k] += vr; im[i + k] += vi;
+          t = ur * wr - ui * wi; ui = ur * wi + ui * wr; ur = t;
+        }
+      }
+    }
+    if (inv) for (i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+  }
+  // ---- 이산 커널 h[n] (페이지 4). d = 검출기 간격 Δs, W = 1/(2Δs)
+  function hRL(n, d) { return n === 0 ? 1 / (4 * d * d) : (n % 2 ? -1 / (PI * PI * n * n * d * d) : 0); }
+  function hW(m, d) { var W = 1 / (2 * d); return W * W * (2 * sinc(m) - sinc(m / 2) * sinc(m / 2)); }   // 연속 커널 h_W(mΔs)
+  function hKind(kind, n, d) {
+    if (kind === 'shepp') return -2 / (PI * PI * d * d * (4 * n * n - 1));
+    if (kind === 'hamming') return 0.54 * hRL(n, d) + 0.23 * (hRL(n - 1, d) + hRL(n + 1, d));
+    if (kind === 'cosine') return 0.5 * (hW(n - 0.5, d) + hW(n + 0.5, d));
+    return hRL(n, d);
+  }
+  function kernel(kind, nmax, d) {
+    var h = new Float64Array(2 * nmax + 1), n;
+    for (n = -nmax; n <= nmax; n++) h[n + nmax] = hKind(kind, n, d);
+    return h;
+  }
+  function winA(kind, w, W) {
+    if (kind === 'shepp') return sinc(w / (2 * W));
+    if (kind === 'cosine') return Math.cos(PI * w / (2 * W));
+    if (kind === 'hamming') return 0.54 + 0.46 * Math.cos(PI * w / W);
+    return 1;
+  }
+  // ---- 투영 한 행의 필터링 (페이지 3~5)
+  // mode 'direct': q[n] = Δs Σ h[n−m] p[m]   'fft-h': 제로 패딩 + 커널을 DFT 순서로 놓고 DFT   'fft-w': 제로 패딩 + |ω_j| 를 DFT 번호마다 곱함
+  function pow2(n) { var m = 1; while (m < n) m <<= 1; return m; }
+  function filterRow(p, d, kind, mode, M) {
+    var ns = p.length, q = new Float64Array(ns), n, m, a, h, re, im, kr, ki, j, W = 1 / (2 * d), w, g, xr, xi;
+    if (mode === 'direct' || !mode) {
+      h = kernel(kind, ns - 1, d);
+      for (n = 0; n < ns; n++) { a = 0; for (m = 0; m < ns; m++) a += p[m] * h[n - m + ns - 1]; q[n] = d * a; }
+      return q;
+    }
+    M = M || pow2(2 * ns - 1);
+    re = new Float64Array(M); im = new Float64Array(M);
+    for (n = 0; n < ns; n++) re[n % M] += p[n];        // M < ns 이면 끝이 앞으로 되감김(원형)
+    fft(re, im, false);
+    if (mode === 'fft-h') {
+      kr = new Float64Array(M); ki = new Float64Array(M);
+      for (n = -(ns - 1); n <= ns - 1; n++) kr[((n % M) + M) % M] += hKind(kind, n, d);
+      fft(kr, ki, false);
+      for (j = 0; j < M; j++) { xr = d * (re[j] * kr[j] - im[j] * ki[j]); xi = d * (re[j] * ki[j] + im[j] * kr[j]); re[j] = xr; im[j] = xi; }
+    } else {
+      for (j = 0; j < M; j++) {
+        w = Math.min(j, M - j) / (M * d);              // DFT 순서: j > M/2 는 음의 주파수
+        g = w <= W + 1e-12 ? w * winA(kind, w, W) : 0;
+        re[j] *= g; im[j] *= g;
+      }
+    }
+    fft(re, im, true);
+    for (n = 0; n < ns; n++) q[n] = re[n];
+    return q;
+  }
+  function sino(model, K, d, ns) {                     // P[k][n] = p(θ_k, s_n), θ_k = kπ/K
+    var P = [], c0 = (ns - 1) / 2, k, n, row, th;
+    for (k = 0; k < K; k++) {
+      th = k * PI / K; row = new Float64Array(ns);
+      for (n = 0; n < ns; n++) row[n] = model.p(th, (n - c0) * d);
+      P.push(row);
+    }
+    return P;
+  }
+  function backproject(Q, d, n, interp, half) {        // Pixel-driven 방식. 첫 행이 y 가 큰 쪽
+    var K = Q.length, ns = Q[0].length, c0 = (ns - 1) / 2, out = new Float64Array(n * n), px = 2 * half / n, w = PI / K,
+        k, i, j, x, y, t, i0, f, c, s, q;
+    for (k = 0; k < K; k++) {
+      c = Math.cos(k * PI / K); s = Math.sin(k * PI / K); q = Q[k];
+      for (j = 0; j < n; j++) {
+        y = half - (j + 0.5) * px;
+        for (i = 0; i < n; i++) {
+          x = -half + (i + 0.5) * px;
+          t = (x * c + y * s) / d + c0;
+          if (interp === 'nearest') { i0 = Math.round(t); if (i0 >= 0 && i0 < ns) out[j * n + i] += w * q[i0]; }
+          else { i0 = Math.floor(t); f = t - i0; if (i0 >= 0 && i0 + 1 < ns) out[j * n + i] += w * ((1 - f) * q[i0] + f * q[i0 + 1]); }
+        }
+      }
+    }
+    return out;
+  }
+  function fbp(o) {                                    // o: model, K, d, ns, kind, mode, M, interp, n, half
+    var m = models[o.model || 'sl'], half = o.half || HALF, ns = o.ns || Math.round(2 * RDET / o.d), P = sino(m, o.K, o.d, ns), Q = [], k;
+    for (k = 0; k < o.K; k++) Q.push(filterRow(P[k], o.d, o.kind || 'ramlak', o.mode || 'direct', o.M));
+    return { P: P, Q: Q, ns: ns, n: o.n, px: 2 * half / o.n, half: half, img: backproject(Q, o.d, o.n, o.interp || 'linear', half) };
+  }
+  function at(r, x, y) { return r.img[Math.floor((r.half - y) / r.px) * r.n + Math.floor((x + r.half) / r.px)]; }
+  function outRms(r) {                                 // 두개골 바깥(반지름 1.05 이내)의 rms. 참값은 0
+    var s = 0, c = 0, i, j, x, y;
+    for (j = 0; j < r.n; j++) for (i = 0; i < r.n; i++) {
+      x = -r.half + (i + 0.5) * r.px; y = r.half - (j + 0.5) * r.px;
+      if (x * x / (0.74 * 0.74) + y * y / (0.97 * 0.97) > 1 && x * x + y * y < 1.05 * 1.05) { s += r.img[j * r.n + i] * r.img[j * r.n + i]; c++; }
+    }
+    return Math.sqrt(s / c);
+  }
+  function mass(r) { var s = 0, i; for (i = 0; i < r.img.length; i++) s += r.img[i]; return s * r.px * r.px; }
+  function pointValue(q, K, d, x, y) {                 // 모든 각도에서 같은 행 q 를 쓰는 물체(원판)의 한 점 (x, y) 값
+    var ns = q.length, c0 = (ns - 1) / 2, s = 0, k, th, t, i, f;
+    for (k = 0; k < K; k++) {
+      th = k * PI / K; t = (x * Math.cos(th) + y * Math.sin(th)) / d + c0; i = Math.floor(t); f = t - i;
+      if (i >= 0 && i + 1 < ns) s += PI / K * ((1 - f) * q[i] + f * q[i + 1]);
+    }
+    return s;
+  }
+  // ---- 위젯 도우미
+  var BTN = 'font-size:.86rem;padding:.25rem .8rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer';
+  function styleButtons(root) { var b = root.querySelectorAll('button[data-ui]'), i; for (i = 0; i < b.length; i++) b[i].style.cssText = BTN; }
+  function paint(btn, on) {
+    btn.style.background = on ? 'var(--accent-bg)' : 'var(--card)';
+    btn.style.borderColor = on ? 'var(--accent)' : 'var(--rule)';
+    btn.style.fontWeight = on ? '700' : '400';
+  }
+  function onShow(el, fn) {                            // 이 페이지가 처음 열릴 때 한 번 실행한다
+    var sec = el.closest('.screen');
+    if (sec.classList.contains('is-active')) fn();
+    else new MutationObserver(function (_, ob) { if (sec.classList.contains('is-active')) { ob.disconnect(); fn(); } }).observe(sec, { attributes: true, attributeFilter: ['class'] });
+  }
+  function fx(v, dec) { return v.toFixed(dec).replace('-', '−'); }   // 음수는 유니코드 마이너스로
+  return { fx: fx, styleButtons: styleButtons, paint: paint, onShow: onShow, pointValue: pointValue, SL: SL, HALF: HALF, RDET: RDET, RD: RD, models: models, ellMu: ellMu, ellP: ellP, diskP: diskP, diskQ: diskQ, diskMu: diskMu,
+           sinc: sinc, image: image, fft: fft, hKind: hKind, kernel: kernel, winA: winA, filterRow: filterRow, sino: sino,
+           backproject: backproject, fbp: fbp, at: at, outRms: outRms, mass: mass, pow2: pow2 };
+})();
+</script>
+<script>
+(function () {
+  var r9 = window.r9, K = 36, DL = 0.08, data = null;
+  var sel = document.getElementById('r9a-k'), kv = document.getElementById('r9a-kv'), note = document.getElementById('r9a-note');
+  var imgP = document.getElementById('r9a-p'), imgQ = document.getElementById('r9a-q'), hp = document.getElementById('r9a-hp'), hq = document.getElementById('r9a-hq');
+  var cp = document.getElementById('r9a-cp'), cq = document.getElementById('r9a-cq'), dp = document.getElementById('r9a-dp'), dq = document.getElementById('r9a-dq');
+  function build() {
+    var ns = Math.round(2 * r9.RDET / DL), P = r9.sino(r9.models.sl, K, DL, ns), Q = [], k, n, pm = 0, qa = [];
+    for (k = 0; k < K; k++) {
+      Q.push(r9.filterRow(P[k], DL, 'ramlak', 'direct'));
+      for (n = 0; n < ns; n++) { if (P[k][n] > pm) pm = P[k][n]; qa.push(Math.abs(Q[k][n])); }
+    }
+    qa.sort(function (a, b) { return a - b; });
+    data = { ns: ns, P: P, Q: Q, pm: pm, qh: 0.6 * qa[Math.floor(0.995 * (qa.length - 1))] };
+  }
+  function render() {
+    if (!data) build();
+    var k = +sel.value, ns = data.ns, i, x, v, dpath = '', qpath = '', ci = '', cj = '', ry = 34 + k / K * 180, pr = data.P[k], qr = data.Q[k];
+    imgP.setAttribute('href', r9.image(ns, K, function (c, r) { return data.P[r][c] / data.pm; }));
+    imgQ.setAttribute('href', r9.image(ns, K, function (c, r) {
+      v = data.Q[r][c] / data.qh;
+      if (v >= 0) { v = Math.min(1, v); return [255 * v, 255 * v, 255 * v]; }
+      v = Math.min(1, -v); return [40 * v, 120 * v, 255 * v];
+    }));
+    hp.setAttribute('y', ry); hq.setAttribute('y', ry);
+    hp.setAttribute('height', 180 / K); hq.setAttribute('height', 180 / K);
+    for (i = 0; i < ns; i++) {
+      x = 446 + (i + 0.5) / ns * 180;
+      v = 112 - pr[i] / data.pm * 56;
+      dpath += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + v.toFixed(1);
+      ci += '<circle cx="' + x.toFixed(1) + '" cy="' + v.toFixed(1) + '" r="1.8"/>';
+      v = 166 - Math.max(-1.2, Math.min(1.2, qr[i] / data.qh)) * 30;
+      qpath += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + v.toFixed(1);
+      cj += '<circle cx="' + x.toFixed(1) + '" cy="' + v.toFixed(1) + '" r="1.8"/>';
+    }
+    cp.setAttribute('d', dpath); cq.setAttribute('d', qpath); dp.innerHTML = ci; dq.innerHTML = cj;
+    kv.textContent = String(k);
+    note.textContent = '각도 번호 k = ' + k + ' (θ = ' + (k * 180 / K) + '°) · 검출기 ' + ns + '개 · 이 행의 p 의 최댓값 ' + r9.fx(Math.max.apply(null, pr), 3) + ', q 의 최솟값 ' + r9.fx(Math.min.apply(null, qr), 3);
+  }
+  sel.addEventListener('input', render);
+  r9.onShow(sel, render);
+})();
+</script>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>검출기 간격이 정하는 주파수의 한계를 봅니다(페이지 2).</li>
+      <li>램프 필터를 계산하는 두 방법, 곧 주파수에서 곱하는 방법과 공간 영역의 커널 \(h[n]\)을 쓰는 방법, 그리고 FFT로 계산할 때의 제로 패딩을 봅니다(페이지 3~5. 제로 패딩 길이 조건의 유도인 페이지 5는 심화).</li>
+      <li>각도 수의 선택과 역투영의 보간을 봅니다(페이지 6~7).</li>
+      <li>전체 알고리즘과 계산량을 정리하고, Shepp-Logan 팬텀으로 결과를 확인합니다(페이지 8~9).</li>
+      <li>이산화에서 생기는 아티팩트, 값의 스케일, 영상 격자의 크기를 봅니다(페이지 10~12).</li>
+      <li>요약, 퀴즈, 직접 해보기(페이지 13)</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지(5, 12)는 처음 읽을 때 건너뛰어도 됩니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="검출기 간격과 나이퀴스트 한계">
+  <p class="kicker">6장 · 페이지 2</p>
+  <h2>검출기 간격과 나이퀴스트 한계</h2>
+
+  <p>투영을 검출기 간격 \(\Delta s\)마다 하나씩만 읽으면 어떤 무늬까지 담을 수 있을까요? 5장 페이지 8(심화)에서 차단 주파수 \(W\)는 나이퀴스트 주파수 이하여야 한다고 했습니다. 이 페이지는 그 한계가 \(\Delta s\)에서 어떻게 정해지는지 확인하고, \(W\)를 \(\Delta s\)로 쓰는 식을 정합니다.</p>
+
+  <h3>샘플에 담기는 무늬</h3>
+
+  <p>투영은 여러 주파수의 코사인 무늬가 더해진 것으로 볼 수 있습니다(2장 페이지 2). 무늬 하나만 골라 간격 \(\Delta s\)마다 읽어 보겠습니다. 아래 위젯에서 슬라이더로 무늬의 주파수 \(f\)(1 cm 당 반복 횟수를 \(1/\Delta s\) 단위로 잰 값)를 바꾸면, 회색 곡선이 그 무늬이고 파란 점이 간격 \(\Delta s\)마다 읽은 샘플입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 214" role="img" aria-label="코사인 무늬(회색 곡선)와 검출기 간격마다 읽은 샘플(파란 점). 무늬의 주파수가 나이퀴스트 주파수를 넘으면 같은 샘플을 지나는 더 낮은 주파수의 무늬(주황 점선)가 생김">
+      <path d="M24 100 H616" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path id="r9b-cur" fill="none" stroke-width="1.4" style="stroke:var(--muted)"/>
+      <path id="r9b-ali" fill="none" stroke-width="2" stroke-dasharray="6 4" style="stroke:var(--warn)"/>
+      <g id="r9b-stem" fill="none" stroke-width="1.4" style="stroke:var(--accent)"></g>
+      <g id="r9b-dot" style="fill:var(--accent)"></g>
+      <path d="M30 186 V192 H86 V186" fill="none" stroke-width="1" style="stroke:var(--fg)"/>
+      <text x="58" y="206" font-size="11" text-anchor="middle" class="svg-fg">Δs</text>
+      <g font-size="11.5" class="svg-fg">
+        <text x="24" y="20" font-weight="700" id="r9b-t1"></text>
+        <text x="24" y="38" class="svg-muted" id="r9b-t2"></text>
+      </g>
+    </svg>
+    <figcaption>가로축은 검출기 좌표이고 눈금 하나가 검출기 간격 \(\Delta s\)입니다. 주황 점선은 주파수가 나이퀴스트 주파수를 넘을 때만 나타나며, 파란 점을 모두 지나는 가장 낮은 주파수의 무늬입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="r9b-f">무늬의 주파수 \(f\)</label>
+    <input id="r9b-f" type="range" min="0.05" max="1.45" step="0.05" value="0.7" style="width:14rem">
+    <b id="r9b-fv">0.70</b><span>/Δs</span>
+  </div>
+
+  <p>\(f = 0.5/\Delta s\), 곧 주기가 \(2\Delta s\)인 무늬까지는 샘플이 마루와 골에 번갈아 놓여 무늬를 그대로 담습니다. 이 주파수가 나이퀴스트 주파수(<span class="term" data-term="nyquist">Nyquist Frequency</span>) \(1/(2\Delta s)\)입니다. 이보다 높은 무늬는 같은 샘플을 지나는 더 낮은 주파수의 무늬와 구별되지 않습니다. 이렇게 높은 주파수 성분이 낮은 주파수로 바뀌어 섞이는 현상이 에일리어싱(<span class="term" data-term="aliasing">Aliasing</span>)입니다. 샘플만 남은 뒤에는 두 무늬를 가를 방법이 없어서, 에일리어싱은 되돌릴 수 없습니다.</p>
+
+  <h3>차단 주파수 \(W\)의 상한</h3>
+
+  <p>5장의 Ram-Lak 필터(<span class="term" data-term="ramlak">Ram-Lak Filter</span>)는 \(|\omega|\)를 \(|\omega| \le W\)에서만 쓰고 그 밖은 0으로 자릅니다. \(W\)를 나이퀴스트 주파수보다 크게 잡아도 소용이 없는 이유는, 그 주파수 성분이 샘플에 따로 담겨 있지 않기 때문입니다. 샘플에 담긴 가장 높은 주파수가 \(1/(2\Delta s)\)이므로, \(W\)의 상한은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[W \le \frac{1}{2\Delta s}\]</p>
+
+  <p>이 장에서 Ram-Lak 필터는 상한 그대로 \(W = 1/(2\Delta s)\)로 둡니다. 윈도우 필터(5장 페이지 9)도 같은 \(W\)에서 시작해 높은 주파수 쪽을 서서히 줄입니다. 검출기 간격에 따른 \(W\)는 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>검출기 간격 \(\Delta s\) (cm)</th><th>\(W = 1/(2\Delta s)\) (cm\(^{-1}\))</th><th>담을 수 있는 가장 짧은 주기 \(2\Delta s\) (cm)</th></tr>
+      <tr><td>0.08</td><td>6.25</td><td>0.16</td></tr>
+      <tr><td>0.04</td><td>12.5</td><td>0.08</td></tr>
+      <tr><td>0.02</td><td>25</td><td>0.04</td></tr>
+      <tr><td>0.01</td><td>50</td><td>0.02</td></tr>
+    </table>
+  </div>
+
+  <p>검출기 간격을 절반으로 줄이면 \(W\)는 2배가 됩니다. 곧 검출기 간격이 FBP가 쓸 수 있는 가장 높은 주파수를 정합니다.</p>
+
+  <h3>에일리어싱의 영향</h3>
+
+  <p>투영에서 높은 주파수 성분은 물체의 날카로운 경계에서 나옵니다(5장 페이지 5). 이 성분이 \(W\)를 넘으면 샘플링할 때 낮은 주파수로 섞여, 재구성 영상에서는 경계 근처의 물결과 얼룩으로 나타납니다. 윈도우 필터는 \(W\) 근처로 접힌 성분도 함께 줄이지만, 접혀 들어온 성분은 원래의 낮은 주파수 성분과 구별되지 않아 완전히 없애지 못합니다. 남은 몫은 검출기 간격을 좁혀야 줄어듭니다.</p>
+
+  <div class="box note">
+    <p class="box-t">검출기 칸의 폭</p>
+    <p>실제 검출기 칸은 폭이 있어서 읽는 값이 칸 안의 평균에 가깝습니다. 평균은 샘플링 전에 높은 주파수를 줄이므로 에일리어싱을 어느 정도 덜지만, 같은 평균이 해상도도 낮춥니다. 나이퀴스트 주파수 자체는 칸 중심 사이의 거리 \(\Delta s\)로 정해집니다. 이 책은 3장 페이지 10처럼 검출기 값을 칸 중심의 투영값 \(p(\theta_k, s_n)\)으로 봅니다.</p>
+  </div>
+
+<script>
+(function () {
+  var sl = document.getElementById('r9b-f'), fv = document.getElementById('r9b-fv'), cur = document.getElementById('r9b-cur'), ali = document.getElementById('r9b-ali'),
+      stem = document.getElementById('r9b-stem'), dot = document.getElementById('r9b-dot'), t1 = document.getElementById('r9b-t1'), t2 = document.getElementById('r9b-t2');
+  var X0 = 30, DX = 56, NSM = 11, Y0 = 100, A = 52;
+  function path(f) {
+    var d = '', i, s, M = 440;
+    for (i = 0; i <= M; i++) { s = i / M * (NSM - 1); d += (i ? 'L' : 'M') + (X0 + s * DX).toFixed(1) + ' ' + (Y0 - A * Math.cos(2 * Math.PI * f * s)).toFixed(1); }
+    return d;
+  }
+  function render() {
+    var f = Math.round(+sl.value * 100) / 100, fa = Math.abs(f - Math.round(f)), i, x, y, st = '', dt = '';
+    fa = Math.round(fa * 100) / 100;
+    cur.setAttribute('d', path(f));
+    ali.setAttribute('d', f > 0.5 ? path(fa) : '');
+    for (i = 0; i < NSM; i++) {
+      x = X0 + i * DX; y = Y0 - A * Math.cos(2 * Math.PI * f * i);
+      st += '<path d="M' + x + ' ' + Y0 + ' V' + y.toFixed(1) + '"/>';
+      dt += '<circle cx="' + x + '" cy="' + y.toFixed(1) + '" r="3.8"/>';
+    }
+    stem.innerHTML = st; dot.innerHTML = dt;
+    fv.textContent = f.toFixed(2);
+    if (f <= 0.5) {
+      t1.textContent = '무늬의 주파수 ' + f.toFixed(2) + '/Δs  (나이퀴스트 주파수 0.50/Δs 이하)';
+      t2.textContent = '샘플이 무늬를 그대로 담습니다.';
+    } else {
+      t1.textContent = '무늬의 주파수 ' + f.toFixed(2) + '/Δs  (나이퀴스트 주파수 0.50/Δs 초과)';
+      t2.textContent = fa === 0 ? '샘플이 모두 같은 값이어서 주파수 0 으로 보입니다.' : '샘플만 보면 ' + fa.toFixed(2) + '/Δs 의 무늬와 구별되지 않습니다.';
+    }
+  }
+  sl.addEventListener('input', render);
+  render();
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="램프 필터의 주파수 영역 구현">
+  <p class="kicker">6장 · 페이지 3</p>
+  <h2>램프 필터의 주파수 영역 구현</h2>
+
+  <p>5장의 필터링은 투영의 푸리에 변환에 \(|\omega|\)를 곱한 뒤 역변환하는 계산이었습니다. 가장 직접적인 구현은 이 순서를 FFT(<span class="term" data-term="fft">Fast Fourier Transform</span>)로 그대로 옮기는 것입니다. 이 페이지는 그 방법의 계산 순서와 흔한 실수 하나를 보고, 결과를 원판으로 확인합니다.</p>
+
+  <div class="box note">
+    <p class="box-t">먼저 알아 둘 것</p>
+    <p>이 장에서 기본으로 쓰는 방법은 페이지 4의 커널 \(h[n]\)입니다. 이 페이지의 주파수 곱 방식은 가장 직관적이지만 제로 패딩 길이에 따라 값이 조금 치우친다는 점을 보이는 비교용이므로, 치우침의 원인(페이지 5, 심화)은 처음에는 몰라도 됩니다.</p>
+    <p>다만 기본 방법인 커널 \(h[n]\)을 배열에 놓고 FFT로 필터링할 때는 배열 길이 \(M\)이 \(M \ge 2N_s - 1\)이어야 합니다(주파수 곱 방식도 같은 조건을 채운 채 비교합니다). DFT끼리의 곱은 배열이 끝없이 되풀이된다고 보고 계산하는 <span class="term" data-term="circconv">원형 컨볼루션</span>이어서, \(M\)이 이보다 짧으면 커널이 배열 끝을 넘어 반대쪽 끝의 투영값과 섞입니다. 이 섞임은 아래의 치우침과 다른 현상입니다. 조건의 이유는 심화 페이지에서 유도하고, 뒤의 페이지에서는 결과만 씁니다.</p>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">기호: DFT 번호는 \(j\)</p>
+    <p>2장에서는 DFT 번호를 \(k\)로 썼지만, 이 장에서 \(k\)는 각도 번호입니다. 두 번호가 한 식에 함께 나오므로 DFT 번호는 \(j\), 제로 패딩을 포함한 배열의 길이는 \(M\)으로 씁니다.</p>
+  </div>
+
+  <h3>DFT 번호와 주파수</h3>
+
+  <p>각도 \(k\)의 투영 \(p[k, 0], \dots, p[k, N_s - 1]\) 뒤에 0을 붙여 길이 \(M\)으로 만들고(\(M \ge N_s\)) DFT한 값을 \(P_j\)라고 하겠습니다. 2장 페이지 5에서 정리한 대로 \(j\)번째 값의 주파수 간격은 \(1/(M\Delta s)\)이고, \(j\)가 \(M/2\)보다 크면 음의 주파수입니다.</p>
+
+  <p style="text-align:center">\[\begin{aligned}\omega_j &= \frac{j}{M\Delta s}\ \ (0 \le j \le M/2),\\ \omega_j &= \frac{j - M}{M\Delta s}\ \ (M/2 &lt; j &lt; M),\\ |\omega_j| &= \frac{\min(j,\ M - j)}{M\Delta s}\end{aligned}\]</p>
+
+  <p>\(|\omega_j|\)는 \(j = 0\)에서 0이고 \(j = M/2\)에서 가장 큰 \(1/(2\Delta s)\), 곧 나이퀴스트 주파수가 됩니다. 이 값을 그대로 곱하면 차단 주파수가 \(W = 1/(2\Delta s)\)인 Ram-Lak 필터가 됩니다. 필터링한 투영은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[q[k, n] = \text{역 DFT}\bigl(P_j\,|\omega_j|\bigr)\ \text{의 앞 } N_s\text{ 개}\quad (n = 0, \dots, N_s - 1)\]</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 214" role="img" aria-label="길이 16인 DFT에서 번호 j마다 곱하는 램프 값 |ω_j|의 막대 그림. j = 0에서 0이고 j = 8에서 가장 크며 j = 9부터 15는 음의 주파수여서 다시 작아짐"><path d="M56 150 H632" fill="none" stroke-width="1" style="stroke:var(--muted)"/><rect x="64" y="150" width="22" height="0" style="fill:var(--accent)" fill-opacity=".55"/><rect x="99" y="136" width="22" height="14" style="fill:var(--accent)" fill-opacity=".55"/><rect x="134" y="122" width="22" height="28" style="fill:var(--accent)" fill-opacity=".55"/><rect x="169" y="108" width="22" height="42" style="fill:var(--accent)" fill-opacity=".55"/><rect x="204" y="94" width="22" height="56" style="fill:var(--accent)" fill-opacity=".55"/><rect x="239" y="80" width="22" height="70" style="fill:var(--accent)" fill-opacity=".55"/><rect x="274" y="66" width="22" height="84" style="fill:var(--accent)" fill-opacity=".55"/><rect x="309" y="52" width="22" height="98" style="fill:var(--accent)" fill-opacity=".55"/><rect x="344" y="38" width="22" height="112" style="fill:var(--accent)" fill-opacity=".55"/><rect x="379" y="52" width="22" height="98" style="fill:var(--warn)" fill-opacity=".55"/><rect x="414" y="66" width="22" height="84" style="fill:var(--warn)" fill-opacity=".55"/><rect x="449" y="80" width="22" height="70" style="fill:var(--warn)" fill-opacity=".55"/><rect x="484" y="94" width="22" height="56" style="fill:var(--warn)" fill-opacity=".55"/><rect x="519" y="108" width="22" height="42" style="fill:var(--warn)" fill-opacity=".55"/><rect x="554" y="122" width="22" height="28" style="fill:var(--warn)" fill-opacity=".55"/><rect x="589" y="136" width="22" height="14" style="fill:var(--warn)" fill-opacity=".55"/><g font-size="11" class="svg-muted" text-anchor="middle"><text x="75" y="168">0</text><text x="110" y="168">1</text><text x="145" y="168">2</text><text x="180" y="168">3</text><text x="215" y="168">4</text><text x="250" y="168">5</text><text x="285" y="168">6</text><text x="320" y="168">7</text><text x="355" y="168">8</text><text x="390" y="168">9</text><text x="425" y="168">10</text><text x="460" y="168">11</text><text x="495" y="168">12</text><text x="530" y="168">13</text><text x="565" y="168">14</text><text x="600" y="168">15</text><text x="75" y="188">0</text><text x="110" y="188">1</text><text x="145" y="188">2</text><text x="180" y="188">3</text><text x="215" y="188">4</text><text x="250" y="188">5</text><text x="285" y="188">6</text><text x="320" y="188">7</text><text x="355" y="188">8</text><text x="390" y="188">−7</text><text x="425" y="188">−6</text><text x="460" y="188">−5</text><text x="495" y="188">−4</text><text x="530" y="188">−3</text><text x="565" y="188">−2</text><text x="600" y="188">−1</text></g><g font-size="11" class="svg-fg"><text x="4" y="168">j</text><text x="4" y="188">ω<tspan font-size="70%" dy="0.25em">j</tspan><tspan dy="-0.175em"></tspan></text><text x="355" y="30" text-anchor="middle">1/(2Δs) (나이퀴스트)</text><text x="449" y="84" style="fill:var(--warn)">음의 주파수</text></g><text x="64" y="208" font-size="10.5" class="svg-muted">ω<tspan font-size="70%" dy="0.25em">j</tspan><tspan dy="-0.175em"> 는 1/(MΔs) 단위의 값</tspan></text></svg>
+    <figcaption>\(M = 16\), \(\Delta s = 1\)일 때 DFT 번호 \(j\)마다 곱하는 값 \(|\omega_j|\)입니다. 아래 숫자는 \(\omega_j\)를 \(1/(M\Delta s)\) 단위로 쓴 값이며, \(j = 9, \dots, 15\)는 음의 주파수 \(-7, \dots, -1\)이어서 막대가 다시 낮아집니다.</figcaption>
+  </figure>
+
+  <p>이 식에는 검출기 간격 \(\Delta s\)를 곱하는 인자가 없습니다. DFT에는 \(\Delta s\)가 없고(2장 페이지 5), 연속 식의 주파수 간격 \(1/(M\Delta s)\)이 그 \(\Delta s\)를 상쇄하기 때문입니다. 윈도우 필터는 \(|\omega_j|\)에 5장 페이지 9의 윈도우 함수 \(A(\omega_j)\)를 더 곱해 같은 방식으로 구현합니다.</p>
+
+  <h3>음의 주파수를 빠뜨리는 실수</h3>
+
+  <p>모든 \(j\)에 \(\omega_j = j/(M\Delta s)\)를 쓰면 \(j > M/2\)에서 필터 값이 \(1/(2\Delta s)\)를 넘어 \(1/\Delta s\)까지 커지고, 필터가 \(j\)에 대해 좌우 대칭이 아니게 됩니다. 실수 신호에 대칭이 아닌 필터를 적용했으므로 역 DFT의 결과는 복소수가 됩니다. 아래에서 쓸 원판에 이 실수를 적용하면 \(M = 512\)에서 안쪽의 \(q\)가 \(0.318\) 대신 \(42\) 정도로 나오고, \(M\)이 커질수록 더 커집니다.</p>
+
+  <h3>원판으로 확인</h3>
+
+  <p>5장 페이지 5에서 쓴 원판(반지름 \(0.5\) cm, 값 1)으로 확인합니다. 검출기 간격 \(\Delta s = 0.01\) cm, 검출기 \(N_s = 200\)개(\(|s| \le 0.995\) cm), 각도 \(N_\theta = 180\)개입니다. 연속 FBP에서는 원판 안쪽의 \(q\)가 \(1/\pi \approx 0.3183\)이고 재구성 값이 안쪽에서 1, 바깥에서 0입니다. 제로 패딩 길이 \(M\)을 바꿔 가며 위 방법으로 구한 재구성 값은 다음과 같습니다. \(M = 512\) 이상이면 위의 조건 \(M \ge 2N_s - 1 = 399\)를 채우므로, 이 표의 오차는 원형 컨볼루션 때문이 아닙니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>필터링 방법</th><th>제로 패딩 길이 \(M\)</th><th>원판 중심 \((0, 0)\) (참값 1)</th><th>점 \((0.8, 0)\) (참값 0)</th></tr>
+      <tr><td rowspan="5">주파수에서 \(|\omega_j|\) 곱하기</td><td>512</td><td>0.9841</td><td>−0.0173</td></tr>
+      <tr><td>1024</td><td>0.9959</td><td>−0.0050</td></tr>
+      <tr><td>2048</td><td>0.9989</td><td>−0.0021</td></tr>
+      <tr><td>4096</td><td>0.9996</td><td>−0.0013</td></tr>
+      <tr><td>16384</td><td>0.9998</td><td>−0.0011</td></tr>
+      <tr><td>비교: 커널 \(h[n]\)</td><td>512 이상</td><td>0.9998</td><td>−0.0011</td></tr>
+    </table>
+  </div>
+
+  <ul>
+    <li><b>영상 전체가 조금 낮게 나옵니다.</b> 원판 안쪽은 1보다 작고 바깥은 0보다 작습니다. 두 곳의 차이는 거의 같아서, 모양은 맞고 값 전체가 아래로 치우친 것입니다.</li>
+    <li><b>제로 패딩을 늘리면 치우침이 줄지만 천천히 줄어듭니다.</b> 길이를 2배로 하면 치우침이 약 \(1/4\)로 줄어듭니다.</li>
+    <li><b>치우침은 제로 패딩 길이만 충분하면 사라지는 오류가 아닙니다.</b> 길이가 같아도 커널 \(h[n]\)을 쓰는 방법에서는 이 치우침이 없으므로, 필터를 만드는 방식에서 생기는 차이입니다.</li>
+  </ul>
+
+  <p>이 방법은 틀린 방법이 아니고, 제로 패딩을 충분히 길게 하면 치우침이 작아집니다. 다만 치우침이 제로 패딩 길이에 달려 있다는 것을 알고 길이를 정해야 합니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="공간 영역의 커널 h[n]">
+  <p class="kicker">6장 · 페이지 4</p>
+  <h2>공간 영역의 커널 \(h[n]\)</h2>
+
+  <p>같은 필터링은 검출기 좌표 위의 가중합으로도 쓸 수 있습니다. 5장 페이지 7(심화)에서 \(|\omega| \le W\)로 자른 램프 필터의 커널 \(h_W(s)\)와 투영의 컨볼루션이 주파수 곱과 같다는 것을 보았습니다. 5장 페이지 7을 건너뛰었어도 이 결과를 이 페이지에서 그대로 쓸 수 있습니다. 이 페이지는 그 커널을 검출기 번호 위의 수열 \(h[n]\)으로 바꾸고, 윈도우 필터 네 가지의 \(h[n]\)도 구합니다.</p>
+
+  <h3>커널을 샘플링한 수열</h3>
+
+  <p>검출기 값은 간격 \(\Delta s\)마다 있으므로, 컨볼루션에 필요한 커널 값은 거리가 \(\Delta s\)의 정수배인 곳에서의 값뿐입니다. 연속 커널 \(h_W(s) = 2W^{2}\,\mathrm{sinc}(2Ws) - W^{2}\,\mathrm{sinc}^{2}(Ws)\)에 \(W = 1/(2\Delta s)\)와 \(s = n\Delta s\)를 넣은 값을 \(h[n]\)이라고 하겠습니다. \(h_W\)가 \(|\omega| \le W\)의 성분만 가지고 \(W\)가 나이퀴스트 주파수이므로, 이 샘플링으로 잃는 성분은 없습니다(2장 페이지 4).</p>
+
+  <p style="text-align:center">\[h[n] = \begin{cases} \dfrac{1}{4(\Delta s)^{2}} & (n = 0) \\[6pt] 0 & (n \text{은 } 0\text{이 아닌 짝수}) \\[6pt] -\dfrac{1}{\pi^{2}n^{2}(\Delta s)^{2}} & (n \text{은 홀수}) \end{cases}\]</p>
+
+  <p>\(h[n]\)의 단위는 \(\mathrm{cm}^{-2}\)이고, 이 수열을 이산 램프 커널이라고 부릅니다. 윈도우 필터가 아닌 Ram-Lak 필터의 커널이며, 아래 그림의 점선은 같은 필터의 연속 커널입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 262" role="img" aria-label="Ram-Lak 커널 h[n]의 막대 그림. n = 0에서 1, 짝수 n에서 0, 홀수 n에서 음수이며 n이 커질수록 0에 가까워짐. 점선은 같은 필터의 연속 커널로, 짝수 n의 자리에서 0을 지남">
+<path d="M14 150 H626" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+<path d="M21.2 143.3 L23.0 144.1 L24.8 145.0 L26.6 146.1 L28.4 147.3 L30.2 148.6 L32.0 150.0 L33.8 151.4 L35.6 152.8 L37.4 154.1 L39.2 155.3 L41.0 156.5 L42.8 157.5 L44.6 158.4 L46.4 159.0 L48.2 159.5 L50.0 159.7 L51.8 159.7 L53.6 159.5 L55.4 159.1 L57.2 158.4 L59.0 157.6 L60.8 156.5 L62.6 155.3 L64.4 153.9 L66.2 152.4 L68.0 150.9 L69.8 149.3 L71.6 147.8 L73.4 146.3 L75.2 144.8 L77.0 143.5 L78.8 142.3 L80.6 141.4 L82.4 140.6 L84.2 140.0 L86.0 139.8 L87.8 139.7 L89.6 140.0 L91.4 140.5 L93.2 141.2 L95.0 142.2 L96.8 143.5 L98.6 144.9 L100.4 146.5 L102.2 148.2 L104.0 150.0 L105.8 151.8 L107.6 153.7 L109.4 155.5 L111.2 157.2 L113.0 158.8 L114.8 160.2 L116.6 161.4 L118.4 162.4 L120.2 163.1 L122.0 163.5 L123.8 163.6 L125.6 163.3 L127.4 162.8 L129.2 161.9 L131.0 160.8 L132.8 159.4 L134.6 157.8 L136.4 155.9 L138.2 153.9 L140.0 151.8 L141.8 149.6 L143.6 147.4 L145.4 145.2 L147.2 143.2 L149.0 141.3 L150.8 139.5 L152.6 138.1 L154.4 136.9 L156.2 136.0 L158.0 135.5 L159.8 135.4 L161.6 135.7 L163.4 136.3 L165.2 137.3 L167.0 138.7 L168.8 140.4 L170.6 142.5 L172.4 144.8 L174.2 147.3 L176.0 150.0 L177.8 152.8 L179.6 155.6 L181.4 158.4 L183.2 161.1 L185.0 163.7 L186.8 166.0 L188.6 168.0 L190.4 169.7 L192.2 171.0 L194.0 171.8 L195.8 172.2 L197.6 172.1 L199.4 171.5 L201.2 170.4 L203.0 168.8 L204.8 166.8 L206.6 164.3 L208.4 161.5 L210.2 158.4 L212.0 155.0 L213.8 151.4 L215.6 147.7 L217.4 144.0 L219.2 140.4 L221.0 137.0 L222.8 133.9 L224.6 131.1 L226.4 128.7 L228.2 126.8 L230.0 125.6 L231.8 124.9 L233.6 124.9 L235.4 125.7 L237.2 127.1 L239.0 129.3 L240.8 132.2 L242.6 135.7 L244.4 139.9 L246.2 144.7 L248.0 150.0 L249.8 155.7 L251.6 161.7 L253.4 167.9 L255.2 174.2 L257.0 180.4 L258.8 186.5 L260.6 192.3 L262.4 197.6 L264.2 202.4 L266.0 206.6 L267.8 210.0 L269.6 212.5 L271.4 214.0 L273.2 214.5 L275.0 214.0 L276.8 212.3 L278.6 209.5 L280.4 205.6 L282.2 200.6 L284.0 194.6 L285.8 187.6 L287.6 179.6 L289.4 170.9 L291.2 161.6 L293.0 151.6 L294.8 141.3 L296.6 130.7 L298.4 120.1 L300.2 109.5 L302.0 99.1 L303.8 89.2 L305.6 79.8 L307.4 71.1 L309.2 63.2 L311.0 56.4 L312.8 50.6 L314.6 46.0 L316.4 42.7 L318.2 40.7 L320.0 40.0 L321.8 40.7 L323.6 42.7 L325.4 46.0 L327.2 50.6 L329.0 56.4 L330.8 63.2 L332.6 71.1 L334.4 79.8 L336.2 89.2 L338.0 99.1 L339.8 109.5 L341.6 120.1 L343.4 130.7 L345.2 141.3 L347.0 151.6 L348.8 161.6 L350.6 170.9 L352.4 179.6 L354.2 187.6 L356.0 194.6 L357.8 200.6 L359.6 205.6 L361.4 209.5 L363.2 212.3 L365.0 214.0 L366.8 214.5 L368.6 214.0 L370.4 212.5 L372.2 210.0 L374.0 206.6 L375.8 202.4 L377.6 197.6 L379.4 192.3 L381.2 186.5 L383.0 180.4 L384.8 174.2 L386.6 167.9 L388.4 161.7 L390.2 155.7 L392.0 150.0 L393.8 144.7 L395.6 139.9 L397.4 135.7 L399.2 132.2 L401.0 129.3 L402.8 127.1 L404.6 125.7 L406.4 124.9 L408.2 124.9 L410.0 125.6 L411.8 126.8 L413.6 128.7 L415.4 131.1 L417.2 133.9 L419.0 137.0 L420.8 140.4 L422.6 144.0 L424.4 147.7 L426.2 151.4 L428.0 155.0 L429.8 158.4 L431.6 161.5 L433.4 164.3 L435.2 166.8 L437.0 168.8 L438.8 170.4 L440.6 171.5 L442.4 172.1 L444.2 172.2 L446.0 171.8 L447.8 171.0 L449.6 169.7 L451.4 168.0 L453.2 166.0 L455.0 163.7 L456.8 161.1 L458.6 158.4 L460.4 155.6 L462.2 152.8 L464.0 150.0 L465.8 147.3 L467.6 144.8 L469.4 142.5 L471.2 140.4 L473.0 138.7 L474.8 137.3 L476.6 136.3 L478.4 135.7 L480.2 135.4 L482.0 135.5 L483.8 136.0 L485.6 136.9 L487.4 138.1 L489.2 139.5 L491.0 141.3 L492.8 143.2 L494.6 145.2 L496.4 147.4 L498.2 149.6 L500.0 151.8 L501.8 153.9 L503.6 155.9 L505.4 157.8 L507.2 159.4 L509.0 160.8 L510.8 161.9 L512.6 162.8 L514.4 163.3 L516.2 163.6 L518.0 163.5 L519.8 163.1 L521.6 162.4 L523.4 161.4 L525.2 160.2 L527.0 158.8 L528.8 157.2 L530.6 155.5 L532.4 153.7 L534.2 151.8 L536.0 150.0 L537.8 148.2 L539.6 146.5 L541.4 144.9 L543.2 143.5 L545.0 142.2 L546.8 141.2 L548.6 140.5 L550.4 140.0 L552.2 139.7 L554.0 139.8 L555.8 140.0 L557.6 140.6 L559.4 141.4 L561.2 142.3 L563.0 143.5 L564.8 144.8 L566.6 146.3 L568.4 147.8 L570.2 149.3 L572.0 150.9 L573.8 152.4 L575.6 153.9 L577.4 155.3 L579.2 156.5 L581.0 157.6 L582.8 158.4 L584.6 159.1 L586.4 159.5 L588.2 159.7 L590.0 159.7 L591.8 159.5 L593.6 159.0 L595.4 158.4 L597.2 157.5 L599.0 156.5 L600.8 155.3 L602.6 154.1 L604.4 152.8 L606.2 151.4 L608.0 150.0 L609.8 148.6 L611.6 147.3 L613.4 146.1 L615.2 145.0 L617.0 144.1 L618.8 143.3" fill="none" stroke-width="1.4" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+<path d="M68 150 V150.9 M140 150 V151.8 M212 150 V155.0 M284 150 V194.6 M320 150 V40.0 M356 150 V194.6 M428 150 V155.0 M500 150 V151.8 M572 150 V150.9" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+<g style="fill:var(--accent)"><circle cx="32" cy="150.0" r="3.8"/><circle cx="68" cy="150.9" r="3.8"/><circle cx="104" cy="150.0" r="3.8"/><circle cx="140" cy="151.8" r="3.8"/><circle cx="176" cy="150.0" r="3.8"/><circle cx="212" cy="155.0" r="3.8"/><circle cx="248" cy="150.0" r="3.8"/><circle cx="284" cy="194.6" r="3.8"/><circle cx="320" cy="40.0" r="3.8"/><circle cx="356" cy="194.6" r="3.8"/><circle cx="392" cy="150.0" r="3.8"/><circle cx="428" cy="155.0" r="3.8"/><circle cx="464" cy="150.0" r="3.8"/><circle cx="500" cy="151.8" r="3.8"/><circle cx="536" cy="150.0" r="3.8"/><circle cx="572" cy="150.9" r="3.8"/><circle cx="608" cy="150.0" r="3.8"/></g>
+<g font-size="10.5" class="svg-muted" text-anchor="middle"><text x="32" y="245">-8</text><text x="68" y="245">-7</text><text x="104" y="245">-6</text><text x="140" y="245">-5</text><text x="176" y="245">-4</text><text x="212" y="245">-3</text><text x="248" y="245">-2</text><text x="284" y="245">-1</text><text x="320" y="245">0</text><text x="356" y="245">1</text><text x="392" y="245">2</text><text x="428" y="245">3</text><text x="464" y="245">4</text><text x="500" y="245">5</text><text x="536" y="245">6</text><text x="572" y="245">7</text><text x="608" y="245">8</text><text x="320" y="260">n (검출기 간격 Δs 단위의 거리)</text></g>
+<g font-size="11" class="svg-fg">
+<text x="332" y="50">h[0] = 1/(4(Δs)²)</text>
+<text x="384" y="226">h[±1] = −4/π² × h[0] ≈ −0.41 × h[0]</text>
+<text x="440" y="196">h[±3] ≈ −0.045 × h[0]</text>
+</g>
+<g font-size="11" class="svg-muted"><text x="14" y="20">파랑: h[n]  ·  점선: 차단 주파수 W = 1/(2Δs)인 램프 필터의 연속 커널</text></g>
+</svg>
+    <figcaption>세로축은 \(h[0] = 1/(4(\Delta s)^{2})\)을 1로 잡았고, 가로축 \(n\)은 검출기 간격 단위의 거리입니다. 점선은 연속 커널이며, \(h[n]\)은 이 곡선을 정수 \(n\)에서 읽은 값입니다. 곡선은 짝수 \(n\)의 자리에서 정확히 0을 지납니다.</figcaption>
+  </figure>
+
+  <ul>
+    <li><b>가운데와 바로 옆.</b> \(h[0]\)은 양수이고 \(h[\pm 1]\)은 그 약 \(0.41\)배인 음수입니다. 한 위치의 값에서 이웃 값을 빼는 모양이어서, 값이 급하게 바뀌는 경계가 강조됩니다.</li>
+    <li><b>먼 곳의 값.</b> 홀수 \(n\)에서만 음수이고 크기는 \(1/n^{2}\)으로 줄지만, 멀리까지 0이 되지 않습니다.</li>
+    <li><b>커널의 합.</b> 모든 정수 \(n\)에 대해 \(\Delta s\sum h[n]\)을 더하면 정확히 0입니다(홀수 \(n\)의 \(\sum 1/n^{2}\)이 \(\pi^{2}/8\)인 것을 이용). 5장 페이지 5의 \(\int q\,ds = 0\)에 해당하는 성질입니다. 계산에서는 \(|n| \le N_s - 1\)의 유한한 값만 쓰므로 필터링한 투영의 합 \(\Delta s\sum_n q[k, n]\)은 0이 되지 않습니다.</li>
+  </ul>
+
+  <details class="fold">
+    <summary>\(h[n]\)의 값을 얻는 과정</summary>
+    <div class="fold-body">
+      <p>\(\mathrm{sinc}(u) = \sin(\pi u)/(\pi u)\)이고 \(\mathrm{sinc}(0) = 1\)입니다. \(W = 1/(2\Delta s)\), \(s = n\Delta s\)를 넣으면 \(2Ws = n\), \(Ws = n/2\)입니다.</p>
+      <ol>
+        <li>\(n = 0\)이면 \(h[0] = 2W^{2} - W^{2} = W^{2} = 1/(4(\Delta s)^{2})\)입니다.</li>
+        <li>\(n \ne 0\)이면 \(\sin(\pi n) = 0\)이므로 첫째 항은 0입니다.</li>
+        <li>둘째 항의 \(\sin(\pi n/2)\)는 짝수 \(n\)에서 0이고 홀수 \(n\)에서 \(\pm 1\)이므로 \(\mathrm{sinc}^{2}(n/2) = 4/(\pi^{2}n^{2})\)입니다. 따라서 홀수 \(n\)에서 \(h[n] = -W^{2} \times 4/(\pi^{2}n^{2}) = -1/(\pi^{2}n^{2}(\Delta s)^{2})\)입니다.</li>
+      </ol>
+    </div>
+  </details>
+
+  <h3>이산 컨볼루션</h3>
+
+  <p>연속 컨볼루션 \(q(s) = \int p(s')\,h_W(s - s')\,ds'\)에서 적분을 간격 \(\Delta s\)의 합으로 바꾸면 각도 \(k\)의 필터링한 투영은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[q[k, n] = \Delta s \sum_{m=0}^{N_s - 1} p[k, m]\,h[n - m]\]</p>
+
+  <ul>
+    <li>\(\Delta s\)는 \(ds'\)가 바뀐 것입니다. 이 인자를 빼먹으면 \(q\)가 \(1/\Delta s\)배가 됩니다.</li>
+    <li>\(n - m\)은 \(-(N_s - 1)\)부터 \(N_s - 1\)까지 움직이므로 이 범위의 \(h\)를 모두 씁니다. 측정 범위 밖의 투영값은 0으로 보기 때문에, 이 범위의 밖에 있는 커널 값은 필요하지 않습니다.</li>
+    <li>커널을 몇 개 값으로 짧게 자르면 안 됩니다. \(\Delta s = 0.01\) cm에서 \(|n| \le 3\)으로 자르면 \(\Delta s\sum h\)가 0이 아니라 \(2.48\ \mathrm{cm}^{-1}\)이 되어, 멀리 있는 음수 값이 하던 일이 빠집니다. 같은 원판(아래 검산)을 이 커널로 재구성하면 원판 중심이 1이 아니라 약 \(7.8\)이 됩니다.</li>
+  </ul>
+
+  <div class="box note">
+    <p class="box-t">아주 작은 예</p>
+    <p>계산이 어떻게 생겼는지 보기 위해 \(\Delta s = 1\), \(N_s = 4\), \(p = [0,\ 1,\ 1,\ 0]\)인 투영을 필터링합니다. 필요한 커널 값은 \(h[0] = 1/4 = 0.25\), \(h[\pm 1] = -1/\pi^{2} \approx -0.1013\), \(h[\pm 2] = 0\)입니다. \(p[m]\)이 0이 아닌 칸은 \(m = 1, 2\)뿐이므로 \(q[n] = h[n-1] + h[n-2]\)입니다.</p>
+    <ul>
+      <li>\(q[0] = h[-1] + h[-2] = -0.1013\)</li>
+      <li>\(q[1] = h[0] + h[-1] = 0.25 - 0.1013 = 0.1487\)</li>
+      <li>\(q[2] = h[1] + h[0] = 0.1487\)</li>
+      <li>\(q[3] = h[2] + h[1] = -0.1013\)</li>
+    </ul>
+    <p>값이 있는 가운데는 양수로 키워지고, 값이 없는 양옆은 음수가 됩니다. 5장 페이지 5에서 본 "물체 바로 바깥의 음수"가 이산 계산에서 이렇게 나옵니다. (\(h[\pm 3]\)은 곱해지는 \(p[0]\), \(p[3]\)이 0이라 결과에 영향이 없습니다.)</p>
+  </div>
+
+  <p>원판(반지름 \(0.5\) cm, 값 1, \(\Delta s = 0.01\) cm, \(N_s = 200\))의 정확한 투영을 샘플링해 이 식으로 계산하면 원판 중심의 \(q\)는 \(0.31826\)로, 연속 값 \(1/\pi \approx 0.31831\)과 같습니다. 각도 180개로 역투영하면 원판 중심이 \(0.9998\), 점 \((0.8, 0)\)이 \(-0.0011\)입니다(페이지 3의 표에서 비교한 값).</p>
+
+  <h3>윈도우 필터의 이산 커널</h3>
+
+  <p>5장 페이지 9의 윈도우 필터 \(H(\omega) = |\omega|A(\omega)\ (|\omega| \le W)\)도 같은 방법으로 커널을 구합니다. \(W = 1/(2\Delta s)\)이면 \(\omega\Delta s\)로 쓴 윈도우 함수는 다음과 같고, \(h[n]\)은 \(h[n] = \int_{-W}^{W} |\omega|A(\omega)\,e^{i2\pi\omega n\Delta s}\,d\omega\)를 계산한 닫힌 식입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>필터</th><th>윈도우 함수 \(A(\omega)\)</th><th>이산 커널 \(h[n]\)</th></tr>
+      <tr><td>Ram-Lak</td><td>\(1\)</td><td>위의 \(h[n]\) (아래에서는 \(h_{\mathrm{RL}}[n]\))</td></tr>
+      <tr><td>Shepp-Logan</td><td>\(\mathrm{sinc}(\Delta s\omega)\)</td><td>\(-\dfrac{2}{\pi^{2}(\Delta s)^{2}\,(4n^{2} - 1)}\)</td></tr>
+      <tr><td>cosine</td><td>\(\cos(\pi\Delta s\omega)\)</td><td>\(\tfrac12\bigl(h_{\mathrm{RL}}(n - \tfrac12) + h_{\mathrm{RL}}(n + \tfrac12)\bigr)\)</td></tr>
+      <tr><td>Hamming</td><td>\(0.54 + 0.46\cos(2\pi\Delta s\omega)\)</td><td>\(0.54\,h_{\mathrm{RL}}[n] + 0.23\,\bigl(h_{\mathrm{RL}}[n - 1] + h_{\mathrm{RL}}[n + 1]\bigr)\)</td></tr>
+    </table>
+  </div>
+
+  <ul>
+    <li>cosine 행의 \(h_{\mathrm{RL}}(m)\)은 정수가 아닌 \(m\)에서도 쓰는 연속 커널 \(h_W(m\Delta s) = \dfrac{1}{4(\Delta s)^{2}}\bigl(2\,\mathrm{sinc}(m) - \mathrm{sinc}^{2}(m/2)\bigr)\)입니다.</li>
+    <li>네 커널 모두 \(\Delta s\sum h[n]\)이 0입니다. 램프 필터가 직류를 없애는 성질(5장 페이지 5)은 윈도우 함수를 곱해도 그대로입니다.</li>
+  </ul>
+
+  <p>\((\Delta s)^{2}\)을 곱해 단위를 없앤 값은 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>필터</th><th>\(h[0](\Delta s)^{2}\)</th><th>\(h[\pm 1](\Delta s)^{2}\)</th><th>\(h[\pm 2](\Delta s)^{2}\)</th><th>\(h[\pm 3](\Delta s)^{2}\)</th></tr>
+      <tr><td>Ram-Lak</td><td>0.2500</td><td>−0.1013</td><td>0</td><td>−0.0113</td></tr>
+      <tr><td>Shepp-Logan</td><td>0.2026</td><td>−0.0675</td><td>−0.0135</td><td>−0.0058</td></tr>
+      <tr><td>cosine</td><td>0.1157</td><td>−0.0065</td><td>−0.0365</td><td>0.0030</td></tr>
+      <tr><td>Hamming</td><td>0.0884</td><td>0.0028</td><td>−0.0259</td><td>−0.0061</td></tr>
+    </table>
+  </div>
+
+  <p>\(h[0]\)이 작을수록 가운데 봉우리가 낮고 넓은 필터입니다. \(4(\Delta s)^{2}h[0]\)은 1, 0.81, 0.46, 0.35로, 5장 페이지 9에서 연속 커널로 구한 \(h(0)/W^{2}\)와 같습니다.</p>
+
+  <details class="fold">
+    <summary>윈도우 필터 커널의 닫힌 식을 얻는 과정</summary>
+    <div class="fold-body">
+      <p><b>Hamming과 cosine.</b> \(\cos(2\pi\Delta s\omega)\,e^{i2\pi\omega n\Delta s} = \tfrac12\bigl(e^{i2\pi\omega(n+1)\Delta s} + e^{i2\pi\omega(n-1)\Delta s}\bigr)\)이므로, 주파수에서 \(\cos(2\pi\Delta s\omega)\)를 곱하면 커널은 한 칸씩 옮긴 두 커널의 평균이 됩니다. Hamming의 \(A = 0.54 + 0.46\cos(2\pi\Delta s\omega)\)에서 상수 항은 \(0.54\,h_{\mathrm{RL}}[n]\)이 되고, 코사인 항은 \(0.46 \times \tfrac12 = 0.23\)씩 이웃 칸의 값이 됩니다. cosine의 \(\cos(\pi\Delta s\omega)\)는 같은 방법으로 반 칸씩 옮긴 평균이므로 \(n \pm \tfrac12\)에서의 연속 커널이 필요합니다.</p>
+      <p><b>Shepp-Logan.</b> \(W = 1/(2\Delta s)\)이면 \(|\omega|\,\mathrm{sinc}(\Delta s\omega) = |\sin(\pi\Delta s\omega)|/(\pi\Delta s)\)입니다. \(u = \pi\Delta s\omega\)로 바꾸면 다음과 같습니다.</p>
+      <p style="text-align:center">\[h[n] = \frac{2}{\pi\Delta s}\int_0^{W}\sin(\pi\Delta s\omega)\cos(2\pi\omega n\Delta s)\,d\omega = \frac{2}{\pi^{2}(\Delta s)^{2}}\int_0^{\pi/2}\sin u\,\cos(2nu)\,du\]</p>
+      <p>\(\sin u\cos(2nu) = \tfrac12\bigl[\sin((2n+1)u) - \sin((2n-1)u)\bigr]\)를 적분하고 \(u = \pi/2\)에서 \(\cos\bigl((2n \pm 1)\pi/2\bigr) = 0\)임을 쓰면 적분값은 \(\dfrac{1}{1 - 4n^{2}}\)이어서 \(h[n] = -\dfrac{2}{\pi^{2}(\Delta s)^{2}(4n^{2} - 1)}\)입니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 -->
+<section class="screen" data-title="DFT 컨볼루션과 제로 패딩">
+  <p class="kicker">6장 · 페이지 5 · 심화</p>
+  <h2>DFT 컨볼루션과 제로 패딩</h2>
+
+  <p>페이지 4의 가중합은 검출기 위치 하나마다 곱셈이 \(N_s\)번이어서 각도 하나에 \(N_s^{2}\)번이 듭니다. 투영과 커널을 DFT로 옮겨 곱하면 훨씬 빠릅니다(2장 페이지 5). 그 계산의 순서는 페이지 8에 네 단계로 정리해 두었습니다. 이 페이지는 그 순서에서 배열 길이가 왜 \(M \ge 2N_s - 1\)이어야 하는지 따져 보고, 페이지 3의 표에서 본 치우침의 원인을 밝힙니다. 처음 읽을 때는 건너뛰어도 되며, 건너뛴다면 이 페이지 마지막 문단의 결론만 기억해 두면 됩니다.</p>
+
+  <h3>FFT로 필터링하는 순서</h3>
+
+  <p>페이지 8의 네 단계를 다시 적으면 다음과 같습니다. 2장 페이지 5에서 정리한 FFT 컨볼루션의 네 단계를 이 필터링에 적용한 것이며, 여기서는 각 단계에 길이 조건의 이유를 덧붙입니다.</p>
+
+  <ol>
+    <li><b>길이를 정합니다.</b> 투영은 \(N_s\)개이고, 가중합에 쓰는 커널 값은 \(n - m = -(N_s - 1), \dots, N_s - 1\)의 \(2N_s - 1\)개입니다. 배열 길이 \(M\)은 이 값이 서로 겹치지 않도록 \(M \ge 2N_s - 1\)로 잡고, FFT가 빠른 2의 거듭제곱으로 올립니다. 2장의 \(N \ge L + M - 1\)은 컨볼루션 결과 전체를 얻는 조건이고, 여기서는 결과 중 \(n = 0, \dots, N_s - 1\)만 쓰므로 \(2N_s - 1\)로 충분합니다.</li>
+    <li><b>제로 패딩을 합니다.</b> 투영 \(p[k, \cdot]\) 끝에 0을 붙여 길이 \(M\)으로 만듭니다. 커널은 \(h[0]\)을 맨 앞에 두고, 음수 번호의 값 \(h[-n]\)은 배열 끝에서부터 \(n\)번째 자리에 놓습니다(DFT 순서).</li>
+    <li><b>DFT하고 곱합니다.</b> 투영의 DFT \(P_j\)와 커널의 DFT \(H_j\)를 \(j\)마다 곱하고, 역 DFT한 뒤 \(\Delta s\)를 곱합니다.</li>
+    <li><b>앞의 \(N_s\)개만 남깁니다.</b> 이것이 \(q[k, 0], \dots, q[k, N_s - 1]\)입니다.</li>
+  </ol>
+
+  <p>커널의 DFT \(H_j\)는 각도와 관계없으므로 한 번만 계산해 모든 각도에 씁니다. 예를 들어 \(N_s = 200\)이면 \(2N_s - 1 = 399\)이므로 \(M = 512\)를 씁니다.</p>
+
+  <h3>배열 길이가 모자란 경우</h3>
+
+  <p>DFT끼리의 곱은 배열이 끝없이 되풀이된다고 보고 한 원형 컨볼루션(<span class="term" data-term="circconv">Circular Convolution</span>)입니다. \(M\)이 \(2N_s - 1\)보다 작으면 커널이 배열 끝을 넘어 반대쪽 끝의 투영값과 섞입니다. 투영의 양 끝이 물체 바깥이어서 0이라도 이 문제는 남는데, 커널이 \(1/n^{2}\)으로만 줄어 멀리까지 0이 되지 않기 때문입니다. 제로 패딩(<span class="term" data-term="zeropad">Zero Padding</span>)은 이런 섞임이 일어나지 않을 만큼 배열을 늘리는 일입니다.</p>
+
+  <h3>필터를 만드는 두 방식</h3>
+
+  <p>페이지 3의 방식은 \(H_j = |\omega_j|\)를 주파수에서 바로 만들고, 위 순서의 방식은 커널 \(h[n]\)을 배열에 놓고 DFT해서 \(H_j\)를 만듭니다. 아래 위젯은 페이지 3의 원판(\(\Delta s = 0.01\) cm, \(N_s = 200\))에서 두 방식과 직접 합(페이지 4의 식을 그대로 계산한 기준)을 비교합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 246" role="img" aria-label="왼쪽은 원판 투영 한 행을 필터링한 q 곡선과 연속 식의 q(회색 점선), 오른쪽은 직접 합과의 차이 곡선">
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <rect x="14" y="34" width="300" height="180"/><rect x="336" y="34" width="290" height="180"/>
+        <path d="M14 169 H314" stroke-dasharray="3 3"/><path d="M336 124 H626" stroke-dasharray="3 3"/>
+      </g>
+      <path id="r9c-ex" fill="none" stroke-width="1.4" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+      <path id="r9c-q" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <path id="r9c-d" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="14" y="24" font-weight="700">q(s)  (세로 −0.12 ~ 0.36)</text>
+        <text x="336" y="24" font-weight="700" id="r9c-dt">선택한 방식 − 직접 합</text>
+      </g>
+      <g font-size="10.5" class="svg-muted">
+        <text x="14" y="230">s = −1</text><text x="314" y="230" text-anchor="end">s = 1 (cm)</text>
+        <text x="336" y="230">s = −1</text><text x="626" y="230" text-anchor="end">s = 1 (cm)</text>
+        <text x="20" y="165">0</text><text x="342" y="120">0</text>
+        <text x="20" y="130" id="r9c-ql">점선: 연속 식의 q</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽은 원판의 한 행(\(\theta\)는 무엇이든 같음)을 필터링한 \(q\)이고, 회색 점선은 연속 식의 \(q\)입니다. 오른쪽은 선택한 방식의 \(q\)에서 직접 합의 \(q\)를 뺀 값이며, 세로 범위는 선택에 따라 자동으로 정해집니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="r9c-ui">
+    <span>방식</span>
+    <button type="button" data-ui data-mode="direct">직접 합</button>
+    <button type="button" data-ui data-mode="fft-h">커널 \(h[n]\)을 DFT</button>
+    <button type="button" data-ui data-mode="fft-w">주파수에서 \(|\omega_j|\) 곱하기</button>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.5rem" id="r9c-ui2">
+    <span>제로 패딩 길이 \(M\)</span>
+    <button type="button" data-ui data-m="256">256</button>
+    <button type="button" data-ui data-m="512">512</button>
+    <button type="button" data-ui data-m="1024">1024</button>
+    <button type="button" data-ui data-m="4096">4096</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r9c-note"></p>
+
+  <ul>
+    <li><b>\(M = 256\)에서 커널 DFT 방식.</b> \(256 &lt; 2N_s - 1 = 399\)이므로 원형 컨볼루션의 섞임이 생겨 오른쪽 차이 곡선에 가장자리로 갈수록 커지는 오차(끝에서 약 \(-0.017\))가 나타납니다.</li>
+    <li><b>\(M \ge 512\)에서 커널 DFT 방식.</b> 직접 합과 \(10^{-12}\) 이하로 같아서 차이 곡선이 0입니다.</li>
+    <li><b>주파수 방식.</b> 차이 곡선이 거의 일정한 음수입니다. 모든 검출기 위치에서 \(q\)가 같은 크기만큼 낮고, 길이를 늘릴수록 작아집니다.</li>
+  </ul>
+
+  <h3>필터링한 투영의 합이 0이 되지 않는 이유</h3>
+
+  <p>5장 페이지 5에서 연속 \(q\)는 \(\int q\,ds = 0\)이라고 했습니다. 이산 계산에서는 이 합이 0이 되지 않아도 오류가 아닙니다. 적분은 모든 \(s\)에 대한 것인데, 검출기는 \(|s| \le 0.995\) cm만 덮기 때문입니다. 원판의 \(q\)는 바깥에서 음수이므로(5장 페이지 5), 검출기 안의 합은 바깥 꼬리의 적분 \(-\tfrac{2}{\pi}\bigl(a - \sqrt{a^{2} - R^{2}}\bigr)\)의 부호만 바꾼 값과 거의 같습니다(\(a = 0.995\), \(R = 0.5\)).</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>값</th><th>\(\Delta s\sum_n q[n]\) (cm\(^{-1}\))</th></tr>
+      <tr><td>검출기 바깥 꼬리의 적분 (연속 식)</td><td>−0.0858</td></tr>
+      <tr><td>직접 합, 커널 DFT 방식(\(M \ge 512\))</td><td>0.0853</td></tr>
+      <tr><td>주파수 방식 \(M = 512\)</td><td>0.0750</td></tr>
+      <tr><td>주파수 방식 \(M = 1024\)</td><td>0.0828</td></tr>
+      <tr><td>주파수 방식 \(M = 4096\)</td><td>0.0852</td></tr>
+    </table>
+  </div>
+
+  <p>주파수 방식은 배열 전체의 합이 \(|\omega_0| = 0\) 때문에 정확히 0이 되도록 필터를 만들기 때문에, 합이 바깥 꼬리만큼 양수여야 하는 검출기 안의 \(q\)를 낮춥니다. 곧 "합이 0이어야 한다"는 연속 성질을 유한한 배열에 억지로 적용한 결과가 위의 치우침입니다. 합이 0이 아닌 것은 오류의 증거가 아니고, 0이 되도록 맞추려는 것이 오류의 원인입니다.</p>
+
+  <details class="fold">
+    <summary>주파수 방식의 치우침 크기를 어림하는 과정</summary>
+    <div class="fold-body">
+      <ol>
+        <li>주파수 간격 \(1/(M\Delta s)\)마다 곱하는 필터는 공간에서 커널을 주기 \(M\)으로 되풀이한 것과 같습니다(2장 페이지 5의 DTFT를 주파수에서 샘플링하면 공간에서 주기가 생깁니다). 이 필터의 커널은 \(h_{\mathrm{per}}[n] = \sum_{m} h[n + mM]\)이고, \(|\omega_j|\)를 역 DFT한 값을 \(\Delta s\)로 나눈 것이 이 값과 같음을 \(M = 256\), \(\Delta s = 0.01\) cm에서 상대 오차 \(10^{-4}\) 이하로 수치 확인했습니다.</li>
+        <li>\(h_{\mathrm{per}}\)과 \(h\)의 차이는 \(m \ne 0\)인 항의 합입니다. \(M\)이 짝수이고 \(n\)이 홀수이면 \(n + mM\)도 홀수여서 \(h[n + mM] = -1/(\pi^{2}(n + mM)^{2}(\Delta s)^{2})\)입니다. \(|n| \ll M\)이면 이 값은 \(-1/(\pi^{2}m^{2}M^{2}(\Delta s)^{2})\)에 가깝고, \(m \ne 0\)을 모두 더하면 \(-\dfrac{2}{\pi^{2}M^{2}(\Delta s)^{2}} \cdot \dfrac{\pi^{2}}{6} = -\dfrac{1}{3M^{2}(\Delta s)^{2}}\)입니다. \(n\)이 짝수이면 0입니다.</li>
+        <li>\(n - m\)이 홀수인 투영값은 대략 절반이므로, 모든 검출기 위치에서 \(q\)에 더해지는 값은 \(\Delta s \times \bigl(-\tfrac{1}{3M^{2}(\Delta s)^{2}}\bigr) \times \tfrac12\sum p = -\dfrac{\int p\,ds}{6\,(M\Delta s)^{2}}\)입니다.</li>
+        <li>역투영은 \(q\)를 \(N_\theta\)개의 각도에서 \(\pi/N_\theta\)씩 더하므로 영상 전체에 \(\pi\)배가 더해지고, \(\int p\,ds\)는 모든 각도에서 같은 값 \(\iint\mu\,dx\,dy\)입니다(3장 페이지 8). 따라서 영상의 값은 일정하게 다음만큼 낮아집니다.</li>
+      </ol>
+      <p style="text-align:center">\[\Delta\mu \approx -\frac{\pi \iint \mu\,dx\,dy}{6\,(M\Delta s)^{2}}\]</p>
+      <p>원판의 \(\iint\mu\,dx\,dy = \pi \times 0.5^{2} \approx 0.785\)를 넣은 값은 다음과 같고, 원판 중심에서 두 방식의 재구성 값의 차이와 맞습니다.</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>\(M\)</th><th>256</th><th>512</th><th>1024</th><th>2048</th><th>4096</th></tr>
+          <tr><td>식의 값</td><td>−0.0627</td><td>−0.0157</td><td>−0.0039</td><td>−0.0010</td><td>−0.0002</td></tr>
+          <tr><td>원판 중심의 차이 (주파수 방식 − 커널 DFT 방식)</td><td>−0.0640</td><td>−0.0158</td><td>−0.0039</td><td>−0.0010</td><td>−0.0002</td></tr>
+        </table>
+      </div>
+      <p>식의 값은 \(1/M^{2}\)에 비례하므로 길이를 2배로 하면 치우침이 \(1/4\)이 됩니다(페이지 3의 관찰).</p>
+    </div>
+  </details>
+
+  <p>정리하면, 커널 \(h[n]\)을 배열에 놓고 DFT하는 방식에 \(M \ge 2N_s - 1\)을 쓰면 직접 합과 같은 결과를 얻습니다. 주파수에서 \(|\omega_j|\)를 곱하는 방식을 쓰려면 위 식으로 치우침을 어림하고 \(M\)을 정해야 합니다.</p>
+
+<script>
+(function () {
+  var r9 = window.r9, d = 0.01, ns = 200, K = 180, mode = 'fft-h', M = 1024, cache = {}, p = null, qd = null;
+  var ui = document.getElementById('r9c-ui'), ui2 = document.getElementById('r9c-ui2'), note = document.getElementById('r9c-note');
+  var cq = document.getElementById('r9c-q'), cd = document.getElementById('r9c-d'), cex = document.getElementById('r9c-ex'), dt = document.getElementById('r9c-dt');
+  r9.styleButtons(ui); r9.styleButtons(ui2);
+  var mb = ui.querySelectorAll('button'), Mb = ui2.querySelectorAll('button');
+  function init() {
+    var j, c0 = (ns - 1) / 2;
+    p = new Float64Array(ns);
+    for (j = 0; j < ns; j++) p[j] = r9.diskP(0, (j - c0) * d);
+    qd = r9.filterRow(p, d, 'ramlak', 'direct');
+    var s = '', i;
+    for (i = 0; i <= 400; i++) { var sv = -1 + 2 * i / 400, yv = r9.diskQ(sv); yv = Math.max(-0.12, yv); s += (i ? 'L' : 'M') + (14 + (sv + 1) / 2 * 300).toFixed(1) + ' ' + (214 - (yv + 0.12) / 0.48 * 180).toFixed(1); }
+    cex.setAttribute('d', s);
+  }
+  function getQ() {
+    if (mode === 'direct') return qd;
+    var key = mode + M;
+    if (!cache[key]) cache[key] = r9.filterRow(p, d, 'ramlak', mode, M);
+    return cache[key];
+  }
+  function render() {
+    if (!p) init();
+    var q = getQ(), i, x, s = '', t = '', df = [], mx = 0, sum = 0, c0 = (ns - 1) / 2, sc;
+    for (i = 0; i < ns; i++) { df.push(q[i] - qd[i]); mx = Math.max(mx, Math.abs(df[i])); sum += q[i]; }
+    sc = mx < 1e-9 ? 0.03 : mx * 1.25;
+    for (i = 0; i < ns; i++) {
+      x = 14 + (i + 0.5) / ns * 300;
+      s += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + (214 - (Math.max(-0.12, Math.min(0.36, q[i])) + 0.12) / 0.48 * 180).toFixed(1);
+      t += (i ? 'L' : 'M') + (336 + (i + 0.5) / ns * 290).toFixed(1) + ' ' + (124 - df[i] / sc * 90).toFixed(1);
+    }
+    cq.setAttribute('d', s); cd.setAttribute('d', t);
+    dt.textContent = '선택한 방식 − 직접 합  (세로 ±' + sc.toFixed(4) + ')';
+    var b;
+    for (b = 0; b < mb.length; b++) r9.paint(mb[b], mb[b].getAttribute('data-mode') === mode);
+    for (b = 0; b < Mb.length; b++) { r9.paint(Mb[b], mode !== 'direct' && +Mb[b].getAttribute('data-m') === M); Mb[b].disabled = mode === 'direct'; Mb[b].style.opacity = mode === 'direct' ? '.45' : '1'; }
+    note.textContent = '원판 중심 μ(0, 0) = ' + r9.fx(r9.pointValue(q, K, d, 0, 0), 4) + ' (참값 1) · 점 (0.8, 0)의 μ = ' + r9.fx(r9.pointValue(q, K, d, 0.8, 0), 4) + ' (참값 0) · Δs·Σq = ' + r9.fx(d * sum, 4) + ' · 최대 |차이| = ' + mx.toExponential(1);
+  }
+  ui.addEventListener('click', function (e) { var t = e.target.closest('button[data-mode]'); if (t) { mode = t.getAttribute('data-mode'); render(); } });
+  ui2.addEventListener('click', function (e) { var t = e.target.closest('button[data-m]'); if (t && mode !== 'direct') { M = +t.getAttribute('data-m'); render(); } });
+  r9.onShow(ui, render);
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 6 -->
+<section class="screen" data-title="각도 샘플링: 몇 개나 찍어야 할까요?">
+  <p class="kicker">6장 · 페이지 6</p>
+  <h2>각도는 몇 개나 찍어야 할까요? 각도 샘플링과 줄무늬</h2>
+
+  <p>각도 방향의 간격 \(\Delta\theta = \pi/N_\theta\)도 영상에 흔적을 남깁니다. 5장 페이지 11에서 본 것은 각도의 범위가 모자란 경우였고, 이 페이지는 범위가 \([0, \pi)\) 전체를 덮지만 간격이 넓은 경우입니다. 각도가 몇 개 있어야 하는지 어림하고, 부족할 때 영상이 어떻게 되는지 확인합니다.</p>
+
+  <h3>각도 사이의 빈틈</h3>
+
+  <p>작은 물체 하나를 역투영하면 각도마다 그 점을 지나는 직선 하나가 칠해집니다(4장 페이지 5). 이 직선은 점에서 방사형으로 뻗고, 이웃한 두 직선은 \(\Delta\theta\)만큼 벌어져 있습니다. 점에서 거리 \(r\)만큼 떨어진 곳에서 이웃한 두 직선 사이의 거리는 \(r\,\Delta\theta\)입니다. 직선 하나의 폭은 검출기 간격 \(\Delta s\) 정도이므로, 사이의 거리가 \(\Delta s\)보다 크면 직선이 따로 보이고 줄무늬가 됩니다.</p>
+
+  <p>물체가 회전 중심에서 반지름 \(R\) 안에 있으면 \(r\)이 \(R\)까지 갑니다. 가장 바깥에서도 줄이 따로 보이지 않을 조건은 \(R\,\Delta\theta \le \Delta s\)입니다.</p>
+
+  <p style="text-align:center">\[N_\theta \ \ge\ \frac{\pi R}{\Delta s}\ =\ \frac{\pi}{2}\cdot\frac{2R}{\Delta s}\]</p>
+
+  <p>검출기가 지름 \(2R\)을 딱 덮으면 \(2R/\Delta s = N_s\)이므로 \(N_\theta \gtrsim \tfrac{\pi}{2}N_s\)가 됩니다. 이 식은 주파수 평면에서 세워도 같습니다. 4장 페이지 8에서 반지름 \(|\omega|\)에 있는 이웃한 직선 사이의 간격은 \(\pi|\omega|/N_\theta\)였고, 가장 바깥인 \(|\omega| = W = 1/(2\Delta s)\)에서 이 간격이 \(1/(2R)\)(지름 \(2R\)인 물체의 푸리에 변환이 눈에 띄게 바뀌는 최소 간격, 2장 페이지 5)보다 좁아야 한다는 조건에서도 \(N_\theta \ge \pi R/\Delta s\)가 나옵니다. 지름 \(2R\)인 물체의 푸리에 변환은 \(1/(2R)\) 간격으로 샘플링하면 충분히 담기기 때문입니다(2장 페이지 5의 DFT 주파수 간격 \(1/(N\Delta s)\)에서 \(N\Delta s = 2R\)). 4장 페이지 4에서 \(\pi N_s/(2N_\theta)\)로 쓴 값을 1 이하로 만드는 조건과도 같습니다.</p>
+
+  <h3>Shepp-Logan 팬텀으로 확인</h3>
+
+  <p>팬텀의 가장 긴 반축은 \(0.92\)이므로 \(R = 0.92\)로 두겠습니다. 검출기 간격 \(\Delta s = 0.02\) cm이면 위 식의 값은 \(\pi \times 0.92/0.02 \approx 145\)입니다. 아래 위젯은 각도 수를 바꿔 가며 재구성합니다. 줄무늬를 링잉과 구분하려고 윈도우 필터(Hamming)를 씁니다. 가운데 그림은 밝기 범위를 \(-0.1\)~\(0.3\)으로 좁혀 두개골 바깥의 줄을 크게 보이게 한 것입니다. 오른쪽 곡선은 두개골 바깥(반지름 \(1.05\) cm 안쪽)에서 재구성 값을 제곱해 평균한 뒤 제곱근을 취한 값(제곱평균제곱근, rms)입니다. 참값이 0이므로 rms는 오차의 평균적인 크기입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 262" role="img" aria-label="왼쪽은 선택한 각도 수로 재구성한 Shepp-Logan 영상, 가운데는 같은 영상을 밝기 범위 −0.1에서 0.3으로 확대해 본 것, 오른쪽은 각도 수에 따른 두개골 바깥의 rms 곡선으로 각도 수 약 145에서 값이 더 줄지 않음">
+      <image id="r9d-a" x="14" y="34" width="176" height="176" preserveAspectRatio="none"/>
+      <image id="r9d-b" x="206" y="34" width="176" height="176" preserveAspectRatio="none"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <rect x="14" y="34" width="176" height="176"/><rect x="206" y="34" width="176" height="176"/><rect x="420" y="34" width="206" height="176"/>
+        <path id="r9d-ax"/>
+      </g>
+      <path id="r9d-cur" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <path id="r9d-gl" fill="none" stroke-width="1.4" stroke-dasharray="4 3" style="stroke:var(--warn)"/>
+      <circle id="r9d-pt" r="5" style="fill:var(--warn)"/>
+      <g id="r9d-tk" font-size="10" class="svg-muted" text-anchor="middle"></g>
+      <g font-size="11.5" class="svg-fg">
+        <text x="14" y="24" font-weight="700">밝기 0 ~ 2</text>
+        <text x="206" y="24" font-weight="700">밝기 −0.1 ~ 0.3</text>
+        <text x="420" y="24" font-weight="700">바깥 rms 대 각도 수</text>
+      </g>
+      <g font-size="10.5" class="svg-muted">
+        <text x="420" y="244">가로: 각도 수 (로그 눈금)  ·  세로: rms 0 ~ 0.42</text>
+        <text x="14" y="228" id="r9d-lab"></text>
+        <text x="624" y="62" text-anchor="end" style="fill:var(--warn)">주황 점선: πR/Δs ≈ 145</text>
+      </g>
+    </svg>
+    <figcaption>검출기 간격 \(\Delta s = 0.02\) cm(검출기 156개), 윈도우 필터 Hamming입니다. 주황 점은 지금 고른 각도 수입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="r9d-ui">
+    <span>각도 수 \(N_\theta\)</span>
+    <button type="button" data-ui data-k="10">10</button>
+    <button type="button" data-ui data-k="20">20</button>
+    <button type="button" data-ui data-k="40">40</button>
+    <button type="button" data-ui data-k="80">80</button>
+    <button type="button" data-ui data-k="160">160</button>
+    <button type="button" data-ui data-k="320">320</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r9d-note"></p>
+
+  <ul>
+    <li><b>각도가 적으면 두개골 바깥으로 줄이 뻗습니다.</b> 각도 10개와 20개에서 바깥 rms는 0.4005, 0.1876이고, 40개에서 0.0469, 80개에서 0.0222로 내려갑니다.</li>
+    <li><b>어림값 근처에서 더 줄지 않습니다.</b> 160개(0.0184)와 320개(0.0183)의 차이는 거의 없고, 남은 값은 검출기 간격이 정하는 오차입니다. 어림식은 충분조건에 가까워서, 이 팬텀에서는 어림값의 절반 정도인 80개에서도 이미 값이 크게 줄었습니다.</li>
+    <li><b>검출기 간격을 줄이면 필요한 각도가 늘어납니다.</b> \(N_\theta \propto 1/\Delta s\)이기 때문입니다. 각도 수를 그대로 두고 검출기 간격만 좁히면, 더 높은 주파수까지 쓰는 만큼 주파수 평면의 바깥쪽 틈이 넓어져 줄무늬가 오히려 강해질 수 있습니다. 검출기 간격과 각도 수는 함께 정합니다.</li>
+  </ul>
+
+  <h3>각도 간격의 정의</h3>
+
+  <p>각도는 \([0, \pi)\)를 \(N_\theta\)등분한 \(\theta_k = k\pi/N_\theta\)이고, 마지막 각도는 \(\pi - \Delta\theta\)입니다. \(\theta = \pi\)는 \(\theta = 0\)과 같은 직선의 집합(3장 페이지 9의 대칭)이어서 따로 측정하지 않습니다. 선원이 \(360^{\circ}\)를 도는 장치에서 평행빔 데이터를 얻는다면 같은 직선을 두 번 측정하므로, 한 번만 쓰거나 평균해서 \([0, \pi)\)의 데이터로 만듭니다.</p>
+
+<script>
+(function () {
+  var r9 = window.r9, DL = 0.02, N = 128, KS = [10, 20, 40, 80, 160, 320], cache = {}, K = 40;
+  var ui = document.getElementById('r9d-ui'), note = document.getElementById('r9d-note'), imA = document.getElementById('r9d-a'), imB = document.getElementById('r9d-b');
+  var cur = document.getElementById('r9d-cur'), gl = document.getElementById('r9d-gl'), pt = document.getElementById('r9d-pt'), tk = document.getElementById('r9d-tk'), lab = document.getElementById('r9d-lab');
+  r9.styleButtons(ui);
+  var btns = ui.querySelectorAll('button');
+  function X(k) { return 420 + 10 + (Math.log(k / 10) / Math.log(32)) * 186; }
+  function Y(v) { return 210 - Math.min(0.42, v) / 0.42 * 170; }
+  function get(k) {
+    if (!cache[k]) { var r = r9.fbp({ model: 'sl', K: k, d: DL, kind: 'hamming', n: N }); cache[k] = { r: r, rms: r9.outRms(r) }; }
+    return cache[k];
+  }
+  function render() {
+    var c = get(K), r = c.r, i, d = '', t = '';
+    imA.setAttribute('href', r9.image(N, N, function (a, b) { return r.img[b * N + a] / 2; }));
+    imB.setAttribute('href', r9.image(N, N, function (a, b) { return (r.img[b * N + a] + 0.1) / 0.4; }));
+    for (i = 0; i < KS.length; i++) {
+      d += (i ? 'L' : 'M') + X(KS[i]).toFixed(1) + ' ' + Y(get(KS[i]).rms).toFixed(1);
+      t += '<text x="' + X(KS[i]).toFixed(1) + '" y="224">' + KS[i] + '</text>';
+    }
+    tk.innerHTML = t;
+    cur.setAttribute('d', d);
+    gl.setAttribute('d', 'M' + X(145).toFixed(1) + ' 44 V210');
+    pt.setAttribute('cx', X(K).toFixed(1)); pt.setAttribute('cy', Y(c.rms).toFixed(1));
+    for (i = 0; i < btns.length; i++) r9.paint(btns[i], +btns[i].getAttribute('data-k') === K);
+    lab.textContent = '각도 ' + K + '개';
+    note.textContent = '각도 ' + K + '개 (각도 간격 ' + +(180 / K).toFixed(2) + '°) · 두개골 바깥의 rms ' + c.rms.toFixed(4) + ' · 뇌 조직의 점 (0, −0.3): 원본 1.02, 결과 ' + r9.at(r, 0, -0.3).toFixed(3);
+  }
+  ui.addEventListener('click', function (e) { var t = e.target.closest('button[data-k]'); if (t) { K = +t.getAttribute('data-k'); render(); } });
+  r9.onShow(ui, render);
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 7 -->
+<section class="screen" data-title="역투영의 이산화">
+  <p class="kicker">6장 · 페이지 7</p>
+  <h2>역투영의 이산화</h2>
+
+  <p>필터링한 투영 \(q[k, n]\)도 검출기 위치 \(s_n\)에서만 값이 있습니다. 이 배열로 역투영 \(\mu(x, y) = \int_0^\pi q(\theta,\ x\cos\theta + y\sin\theta)\,d\theta\)를 계산하려면 세 가지를 정해야 합니다. 영상의 어느 점에서 계산할지, 검출기 위치 사이의 \(s\)에서 \(q\)를 어떻게 읽을지, 각도 적분을 어떤 합으로 바꿀지입니다.</p>
+
+  <h3>Pixel-driven(화소 기준) 방식의 역투영</h3>
+
+  <p>영상도 화소의 격자이므로 화소 중심 \((x, y)\)마다 계산합니다. 각도 \(\theta_k\)에서 그 점을 지나는 광선의 검출기 좌표는 \(s = x\cos\theta_k + y\sin\theta_k\)입니다(4장 페이지 6). 이 \(s\)는 대개 두 검출기 위치 사이에 떨어집니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 270" role="img" aria-label="왼쪽은 영상 평면에서 화소 중심 하나와 그 점을 지나는 광선, 그리고 각도 θ 방향의 검출기 축. 광선이 검출기 축과 만나는 위치 s는 두 검출기 위치 사이에 있음. 오른쪽은 검출기 번호를 가로축으로 한 필터링한 투영값으로, 두 이웃 값을 잇는 선분 위에서 보간한 값을 읽음">
+  <defs>
+    <marker id="d5c-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+  </defs>
+  <text x="14" y="22" font-size="12" font-weight="700" class="svg-fg">(a) 화소 중심을 지나는 광선</text>
+  <text x="344" y="22" font-size="12" font-weight="700" class="svg-fg">(b) 이웃한 두 검출기 값의 선형 보간</text>
+  <g fill="none" stroke-width="1" style="stroke:var(--muted)" opacity=".6">
+    <path d="M150 250 V40"/><path d="M20 170 H300"/>
+  </g>
+  <path d="M28.8 240.0 L290.3 89.0" fill="none" stroke-width="1.6" style="stroke:var(--accent)" marker-end="url(#d5c-ar)"/>
+  <g style="fill:var(--accent)">
+    <circle cx="46.1" cy="230.0" r="2.6"/><circle cx="66.9" cy="218.0" r="2.6"/><circle cx="87.6" cy="206.0" r="2.6"/>
+    <circle cx="108.4" cy="194.0" r="2.6"/><circle cx="129.2" cy="182.0" r="2.6"/><circle cx="150.0" cy="170.0" r="2.6"/>
+    <circle cx="170.8" cy="158.0" r="2.6"/><circle cx="191.6" cy="146.0" r="2.6"/>
+    <circle cx="212.4" cy="134.0" r="4.2"/><circle cx="233.1" cy="122.0" r="4.2"/>
+    <circle cx="253.9" cy="110.0" r="2.6"/><circle cx="274.7" cy="98.0" r="2.6"/>
+  </g>
+  <path d="M250.3 169.8 L170.3 31.3" fill="none" stroke-width="1.6" stroke-dasharray="5 4" style="stroke:var(--warn)"/>
+  <rect x="202" y="92" width="16" height="16" fill="none" stroke-width="1.2" style="stroke:var(--fg)"/>
+  <circle cx="210" cy="100" r="3.6" style="fill:var(--fg)"/>
+  <circle cx="225.3" cy="126.5" r="4" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+  <g font-size="11">
+    <text x="186" y="80" text-anchor="end" class="svg-fg">화소 중심 (x, y)</text>
+    <text x="168" y="44" text-anchor="end" style="fill:var(--warn)">그 점을 지나는 광선</text>
+    <text x="240" y="148" style="fill:var(--warn)">위치 s</text>
+    <text x="270" y="78" style="fill:var(--accent)">θ 방향</text>
+    <text x="160" y="186" class="svg-muted">원점</text>
+  </g>
+  <g font-size="10.5" class="svg-muted">
+    <text x="14" y="262">파란 점: 검출기 위치 s<tspan font-size="70%" dy="0.25em">n</tspan><tspan dy="-0.175em"> (검출기 간격 Δs)</tspan></text>
+  </g>
+
+  <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M356 200 H626"/></g>
+  <path d="M380 200 V117.5 M440 200 V80 M500 200 V132.5 M560 200 V155" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+  <g style="fill:var(--accent)">
+    <circle cx="380" cy="117.5" r="3.8"/><circle cx="440" cy="80" r="3.8"/><circle cx="500" cy="132.5" r="3.8"/><circle cx="560" cy="155" r="3.8"/>
+  </g>
+  <path d="M440 80 L500 132.5" fill="none" stroke-width="1.6" stroke-dasharray="4 3" style="stroke:var(--warn)"/>
+  <path d="M477.4 200 V112.7" fill="none" stroke-width="1" stroke-dasharray="2 3" style="stroke:var(--warn)"/>
+  <circle cx="477.4" cy="112.7" r="5" style="fill:var(--warn)"/>
+  <path d="M440 220 V226 H477.4 V220" fill="none" stroke-width="1" style="stroke:var(--fg)"/>
+  <g font-size="11" text-anchor="middle">
+    <text x="380" y="212" class="svg-muted">i − 1</text><text x="440" y="212" class="svg-fg">i</text>
+    <text x="500" y="212" class="svg-muted">i + 1</text><text x="560" y="212" class="svg-muted">i + 2</text>
+    <text x="458.7" y="240" class="svg-fg">f</text>
+    <text x="432" y="80" style="fill:var(--accent)" text-anchor="end">q[k, i]</text>
+    <text x="508" y="140" style="fill:var(--accent)" text-anchor="start">q[k, i+1]</text>
+    <text x="490" y="262" class="svg-muted">가로축: 검출기 번호 τ = s/Δs + (N<tspan font-size="70%" dy="0.25em">s</tspan><tspan dy="-0.175em"> − 1)/2</tspan></text>
+  </g>
+  <text x="452" y="62" font-size="11" style="fill:var(--warn)">(1 − f) q[k, i] + f q[k, i+1]</text>
+</svg>
+    <figcaption>(a) 화소 중심(검은 점)을 지나는 광선(주황 점선)은 검출기 축(파랑)과 \(s = x\cos\theta + y\sin\theta\)에서 만납니다. 이 위치는 두 검출기 위치(큰 파란 점) 사이에 있습니다. (b) 가로축을 검출기 번호로 바꾸어 그 두 위치의 값 \(q[k, i]\), \(q[k, i+1]\)을 잇는 선분 위에서 값을 읽습니다.</figcaption>
+  </figure>
+
+  <p>\(s\)를 검출기 번호로 바꾸려면 페이지 1의 \(s_n\) 식을 \(n\)에 대해 풀면 됩니다. 그 값을 \(\tau\)라 하고, 정수 부분을 \(i\), 나머지를 \(f\)라고 합니다.</p>
+
+  <p style="text-align:center">\[\tau = \frac{s}{\Delta s} + \frac{N_s - 1}{2},\qquad i = (\tau\text{의 정수 부분}),\qquad f = \tau - i\quad (0 \le f &lt; 1)\]</p>
+
+  <p style="text-align:center">\[q_k(s) = (1 - f)\,q[k, i] + f\,q[k, i + 1]\]</p>
+
+  <p>\(q_k(s)\)는 각도 \(k\)의 필터링한 투영을 위치 \(s\)에서 읽은 값입니다. 가까운 쪽 검출기 값에 더 큰 비중을 두어 두 값을 섞으며, \(f = 0\)이면 \(q[k, i]\) 그대로이고 \(f = 0.5\)이면 두 값의 평균입니다. 이 방법을 선형 보간(<span class="term" data-term="interp">Linear Interpolation</span>)이라고 합니다. 이처럼 영상의 화소를 하나씩 돌며 각 화소가 필요한 값을 검출기 쪽에서 읽어 오는 방식이 <span class="term" data-term="pixeldriven">Pixel-driven</span>(화소 기준) 방식입니다.</p>
+
+  <p>예를 들어 \(\Delta s = 0.1\) cm, \(N_s = 8\), 각도 \(\theta_k = 60^{\circ}\)에서 화소 \((x, y) = (-0.3, 0.2)\)이면 \(s = -0.3\cos 60^{\circ} + 0.2\sin 60^{\circ} \approx 0.0232\) cm이고 \(\tau = 0.232 + 3.5 = 3.732\)입니다. 따라서 \(i = 3\), \(f = 0.732\)이고 읽는 값은 \(0.268\,q[k, 3] + 0.732\,q[k, 4]\)입니다.</p>
+
+  <h3>범위 밖의 처리</h3>
+
+  <p>\(i\)가 \(0\)~\(N_s - 2\)를 벗어나면 그 광선은 검출기 밖으로 나간 것이므로 그 각도에서는 값을 더하지 않습니다. 영상의 모든 화소가 모든 각도에서 검출기 안에 들어오려면 검출기가 영상 전체를 덮어야 하고, 영상이 반지름 \(R_{\mathrm{FOV}}\)인 원에 들어오면 \(N_s\Delta s \ge 2R_{\mathrm{FOV}}\)입니다(3장 페이지 10). 덮지 못하는 화소는 일부 각도의 값을 받지 못해 값이 틀리고, 이 문제는 5장 페이지 11의 절단과 같은 것입니다.</p>
+
+  <h3>보간 방법의 영향</h3>
+
+  <p>보간은 검출기 위치 사이의 값을 새로 만드는 일이므로 영상에 흔적을 남깁니다. 가장 가까운 검출기 값을 그대로 쓰는 최근접 보간은 계산이 단순하지만 \(s\)가 조금만 바뀌어도 값이 계단으로 바뀌어 영상이 거칠어집니다. 선형 보간은 이웃 두 값을 섞어 값이 연속으로 바뀝니다. 대신 두 방법은 모두 높은 주파수를 줄이며, 주파수 \(\omega\)에서 줄어드는 비율은 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(\Delta s\omega\) (최고 주파수 \(W\)는 0.5)</th><th>0.1</th><th>0.25 (\(W\)의 절반)</th><th>0.5 (\(W\))</th></tr>
+      <tr><td>최근접 보간: \(\mathrm{sinc}(\Delta s\omega)\)</td><td>0.984</td><td>0.900</td><td>0.637</td></tr>
+      <tr><td>선형 보간: \(\mathrm{sinc}^{2}(\Delta s\omega)\)</td><td>0.968</td><td>0.811</td><td>0.405</td></tr>
+    </table>
+  </div>
+
+  <p>선형 보간은 이웃 두 값을 삼각형 모양의 가중치로 섞는 컨볼루션이어서 이 비율이 \(\mathrm{sinc}^{2}(\Delta s\omega)\)가 되고(2장 페이지 3의 컨볼루션 정리), 최근접 보간은 폭 \(\Delta s\)인 사각형 가중치여서 \(\mathrm{sinc}(\Delta s\omega)\)가 됩니다. 선형 보간은 가장 높은 주파수 \(W\)를 약 \(0.41\)배로 줄이므로 해상도가 조금 낮아지지만, 최근접 보간보다 줄무늬와 계단이 훨씬 적습니다. 같은 Shepp-Logan 데이터(각도 180개, Ram-Lak 필터)에서 두개골 바깥의 rms는 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>검출기 간격 \(\Delta s\) (cm)</th><th>선형 보간</th><th>최근접 보간</th></tr>
+      <tr><td>0.04</td><td>0.0867</td><td>0.1266</td></tr>
+      <tr><td>0.02</td><td>0.0558</td><td>0.0943</td></tr>
+    </table>
+  </div>
+
+  <p>이 책은 단순하면서 값이 연속으로 바뀌는 선형 보간을 씁니다. 더 높은 차수의 보간은 줄어드는 비율이 더 평평하지만 한 번 읽을 때 이웃 값을 더 많이 써서 계산이 늘어납니다.</p>
+
+  <h3>Ray-driven(광선 기준) 방식과의 비교</h3>
+
+  <p>Pixel-driven(화소 기준) 방식과 반대로, 광선(검출기 값)을 하나씩 돌며 그 광선이 지나는 화소에 값을 칠하는 방식을 Ray-driven 방식이라고 합니다. 역투영에서 두 방식을 비교하면 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>Pixel-driven 방식</th><th>Ray-driven 방식</th></tr>
+      <tr><td>반복의 단위</td><td>영상의 화소</td><td>검출기 값 하나(광선)</td></tr>
+      <tr><td>화소가 받는 횟수</td><td>각도마다 정확히 한 번</td><td>광선과 화소의 위치에 따라 여러 번이거나 한 번도 안 받음</td></tr>
+      <tr><td>영상에 남는 흔적</td><td>보간으로 인한 약간의 흐림</td><td>단순하게 구현하면 화소마다 받는 양이 달라 격자 모양 무늬가 생김</td></tr>
+    </table>
+  </div>
+
+  <p>그래서 이 책은 역투영에 Pixel-driven 방식을 씁니다. 모든 화소가 서로 독립으로 계산되므로 화소를 나눠 병렬로 계산하기에도 좋습니다.</p>
+
+  <h3>각도 합의 가중</h3>
+
+  <p>각도 적분은 각도 \(\theta_k\)마다의 값에 각도 간격 \(\Delta\theta = \pi/N_\theta\)를 곱해 더하는 합으로 바꿉니다. 넓이를 폭 \(\Delta\theta\)인 직사각형으로 나눠 더하는 것과 같습니다.</p>
+
+  <p style="text-align:center">\[\mu(x, y) \approx \frac{\pi}{N_\theta} \sum_{k=0}^{N_\theta - 1} q_k\bigl(x\cos\theta_k + y\sin\theta_k\bigr)\]</p>
+
+  <p>\(\pi/N_\theta\)는 각도 하나가 \([0, \pi)\)에서 차지하는 폭입니다. 이 인자를 빼면 같은 물체를 각도 수만 두 배로 늘려 재도 영상 값이 두 배가 됩니다. 원판 안쪽의 점에서는 모든 각도에서 \(q = 1/\pi\)이므로 합은 \(N_\theta/\pi\)이고, \(\pi/N_\theta\)를 곱하면 1이 됩니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 8 -->
+<section class="screen" data-title="처음부터 끝까지: 의사코드와 계산량">
+  <p class="kicker">6장 · 페이지 8</p>
+  <h2>평행빔 FBP, 처음부터 끝까지 한 번에 보기: 의사코드와 계산량</h2>
+
+  <p>페이지 3~7에서 정한 것을 이으면 평행빔 FBP를 컴퓨터로 계산하는 알고리즘이 됩니다. 순서도로 전체 구조를 먼저 보고, 의사코드로 쓴 뒤, 계산량을 어림합니다.</p>
+
+  <h3>순서도</h3>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 326" role="img" aria-label="이산 평행빔 FBP의 순서도. 처음에 커널 h[n]과 제로 패딩 길이 M과 H를 한 번 준비하고 영상을 0으로 시작한다. 각도 번호 k마다 영 채운 투영의 DFT, 커널 DFT와의 곱과 역 DFT, 화소마다 검출기 좌표 계산, 보간한 값에 π/N_θ를 곱해 더하기를 하고 다음 k로 넘어간다. 모든 각도가 끝나면 영상을 출력한다">
+      <defs>
+        <marker id="r9g-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r9g-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+      </defs>
+      <rect x="8" y="88" width="624" height="164" rx="8" fill="none" stroke-width="1" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+      <text x="18" y="106" font-size="11" class="svg-muted">각도 번호 k = 0 … N<tspan font-size="70%" dy="0.25em">θ</tspan><tspan dy="-0.175em">−1 마다 되풀이</tspan></text>
+      <g fill="none" stroke-width="1.4" class="svg-line">
+        <rect x="14" y="12" width="236" height="52" rx="6"/>
+        <rect x="286" y="12" width="104" height="52" rx="6"/>
+        <rect x="22" y="122" width="138" height="62" rx="6"/>
+        <rect x="186" y="122" width="132" height="62" rx="6"/>
+        <rect x="344" y="122" width="128" height="62" rx="6"/>
+        <rect x="498" y="122" width="126" height="62" rx="6" style="stroke:var(--accent)"/>
+        <rect x="236" y="276" width="168" height="40" rx="6" style="stroke:var(--accent)"/>
+        <path d="M252 38 H282" marker-end="url(#r9g-mu)"/>
+        <path d="M338 66 V86" marker-end="url(#r9g-mu)"/>
+        <path d="M162 153 H182" marker-end="url(#r9g-mu)"/>
+        <path d="M320 153 H340" marker-end="url(#r9g-mu)"/>
+        <path d="M474 153 H494" marker-end="url(#r9g-mu)"/>
+        <path d="M561 186 V222 H58 V188" marker-end="url(#r9g-mu)" stroke-dasharray="4 3"/>
+        <path d="M320 254 V272" marker-end="url(#r9g-ac)" style="stroke:var(--accent)"/>
+      </g>
+      <g font-size="11.5" text-anchor="middle" class="svg-fg" font-weight="700">
+        <text x="132" y="34">커널 준비 (한 번)</text>
+        <text x="338" y="43">μ ← 0</text>
+        <text x="91" y="150">P ← DFT</text>
+        <text x="252" y="150">q ← Δs·IDFT</text>
+        <text x="408" y="150">s, τ, i, f</text>
+        <text x="561" y="150">μ 에 더하기</text>
+        <text x="320" y="301">출력 μ(x, y)</text>
+      </g>
+      <g font-size="10.5" text-anchor="middle" class="svg-muted">
+        <text x="132" y="52">h[n], M, H ← DFT(h)</text>
+        <text x="91" y="168">영 채운 p[k, ·]</text>
+        <text x="252" y="168">P[j]H[j] 의 역 DFT</text>
+        <text x="408" y="168">화소마다 계산</text>
+        <text x="561" y="168">(π/N<tspan font-size="70%" dy="0.25em">θ</tspan><tspan dy="-0.175em">)·보간한 값</tspan></text>
+        <text x="91" y="200">6행</text><text x="252" y="200">7행</text><text x="408" y="200">8~11행</text><text x="561" y="200">12~13행</text>
+        <text x="326" y="238">다음 k 로</text>
+        <text x="392" y="268" text-anchor="start">k = N<tspan font-size="70%" dy="0.25em">θ</tspan><tspan dy="-0.175em">−1 까지 끝나면</tspan></text>
+      </g>
+    </svg>
+    <figcaption>점선 상자 안은 각도 번호 \(k\)마다 되풀이하는 일입니다. 위쪽 두 칸은 처음에 한 번만 하며, 줄 번호는 아래 의사코드의 줄입니다.</figcaption>
+  </figure>
+
+  <h3>의사코드</h3>
+
+<pre><span class="cap">이산 평행빔 FBP의 의사코드</span><code>입력  p[k, n],  검출기 간격 Δs,  영상 화소 중심 (x, y) 들
+출력  μ(x, y)
+
+ 1  h[n] ← 이산 램프 커널   (|n| ≤ N_s−1)
+ 2  M ← 2N_s−1 이상인 2의 거듭제곱;  H ← DFT(영 채운 h)
+ 3  μ ← 0
+ 4  각도 번호 k = 0 … N_θ−1 마다 되풀이한다:
+ 5      θ ← kπ/N_θ
+ 6      P ← DFT(영 채운 p[k, ·], 길이 M)
+ 7      q ← Δs·(역 DFT(P[j]H[j]) 의 앞 N_s 개)
+ 8      영상의 각 화소 중심 (x, y) 에 대해:
+ 9          s ← x cosθ + y sinθ
+10          τ ← s/Δs + (N_s − 1)/2
+11          i ← τ 의 정수 부분,   f ← τ − i
+12          i 가 0 … N_s−2 에 들면:
+13              μ(x, y) += (π/N_θ)·((1−f)·q[i] + f·q[i+1])
+</code></pre>
+
+  <ol class="notes">
+    <li><span class="ln">1~2행</span> 커널과 배열 길이입니다. 커널은 각도와 관계없으므로 \(H\)를 한 번만 계산해 모든 각도에 씁니다. \(M\)을 정하는 방법과 커널을 배열에 놓는 방법은 아래 상자에 정리했습니다.</li>
+    <li><span class="ln">3~5행</span> 영상을 0으로 시작해 각도마다 더해 갑니다. 각도 하나를 처리한 뒤에는 그 행 \(p[k, \cdot]\)를 버려도 되므로 sinogram 전체를 메모리에 둘 필요가 없습니다.</li>
+    <li><span class="ln">6~7행</span> 첫째 단계인 필터링입니다. sinogram의 행 하나만 쓰는 1차원 계산이며, 7행의 \(\Delta s\)는 적분의 \(ds'\)입니다(페이지 4). FFT 대신 \(q[n] \leftarrow \Delta s\sum_m p[k, m]\,h[n - m]\)로 직접 합해도 같은 값이 나옵니다.</li>
+    <li><span class="ln">8~11행</span> 둘째 단계의 앞부분입니다. 화소마다 그 점을 지나는 광선의 검출기 좌표 \(s\)를 구하고, 검출기 번호 \(\tau\)와 이웃한 두 검출기의 위치 \(i\), 비중 \(f\)를 계산합니다(페이지 7).</li>
+    <li><span class="ln">12~13행</span> 둘째 단계의 뒷부분입니다. \(i\)와 \(i + 1\)이 모두 검출기 안에 있으면 선형 보간한 값에 각도 가중 \(\pi/N_\theta\)를 곱해 더합니다. 검출기 밖이면 그 각도에서는 더하지 않습니다.</li>
+  </ol>
+
+  <div class="box note">
+    <p class="box-t">FFT로 필터링하는 네 단계 (2, 6, 7행)</p>
+    <ol>
+      <li><b>길이를 정합니다.</b> 배열 길이 \(M\)은 원형 컨볼루션의 섞임을 막는 조건 \(M \ge 2N_s - 1\)(페이지 3)을 채우도록 잡고, FFT가 빠른 2의 거듭제곱으로 올립니다.</li>
+      <li><b>제로 패딩을 합니다.</b> 투영 \(p[k, \cdot]\) 끝에 0을 붙여 길이 \(M\)으로 만듭니다. 커널은 \(h[0]\)을 맨 앞에 두고, 음수 번호의 값 \(h[-n]\)은 배열 끝에서부터 \(n\)번째 자리에 놓으며, 나머지는 0으로 채웁니다.</li>
+      <li><b>DFT하고 곱합니다.</b> 투영의 DFT \(P_j\)와 커널의 DFT \(H_j\)를 \(j\)마다 곱하고, 역 DFT한 뒤 \(\Delta s\)를 곱합니다.</li>
+      <li><b>앞의 \(N_s\)개만 남깁니다.</b> 이것이 \(q[k, 0], \dots, q[k, N_s - 1]\)입니다.</li>
+    </ol>
+    <p>\(M\)이 왜 \(2N_s - 1\) 이상이어야 하는지와, 주파수에서 \(|\omega_j|\)를 바로 곱하는 방식이 영상을 조금 낮추는 이유는 페이지 5(심화)에서 다룹니다.</p>
+  </div>
+
+  <p>5장 페이지 4의 연속 의사코드와 순서는 같습니다. 달라진 것은 세 가지입니다. 푸리에 변환에 \(|\omega|\)를 곱하던 단계가 커널과의 컨볼루션(제로 패딩 DFT)이 되었고, 역투영의 \(q(x\cos\theta + y\sin\theta)\) 읽기가 보간이 되었고, \(d\theta\)가 \(\pi/N_\theta\)가 되었습니다.</p>
+
+  <h3>계산량</h3>
+
+  <p>각도 \(N_\theta = 720\)개, 검출기 \(N_s = 736\)개(3장 페이지 10의 예와 같은 크기), 영상 \(N_x \times N_x = 512 \times 512\)로 어림합니다. FFT 길이는 \(2N_s - 1 = 1471\) 이상인 \(M = 2048\)입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>단계</th><th>횟수를 세는 식</th><th>값</th></tr>
+      <tr><td>필터링: 직접 합</td><td>\(N_\theta N_s^{2}\)</td><td>\(3.9 \times 10^{8}\)</td></tr>
+      <tr><td>필터링: FFT (정방향과 역방향 각 한 번)</td><td>\(N_\theta \cdot 2M\log_2 M\)</td><td>\(3.2 \times 10^{7}\)</td></tr>
+      <tr><td>역투영: 화소마다 보간</td><td>\(N_\theta N_x^{2}\)</td><td>\(1.9 \times 10^{8}\)</td></tr>
+    </table>
+  </div>
+
+  <ul>
+    <li><b>FFT 필터링은 직접 합보다 약 12배 적습니다.</b> 연산 하나의 비용은 서로 다르므로 이 표는 자릿수를 비교하는 용도입니다.</li>
+    <li><b>FFT를 쓰면 역투영이 가장 큰 비용이 됩니다.</b> 각도 수, 검출기 수, 영상 한 변이 모두 \(N\) 정도이면 필터링은 \(N^{2}\log N\)에, 역투영은 \(N^{3}\)에 비례합니다(4장 페이지 4).</li>
+    <li><b>각도마다, 화소마다 서로 독립입니다.</b> 한 각도의 필터링은 다른 각도를 기다리지 않고, 한 화소의 계산은 다른 화소의 결과를 쓰지 않으므로 병렬로 나눠 계산할 수 있습니다.</li>
+  </ul>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 9 -->
+<section class="screen" data-title="Shepp-Logan 팬텀의 재구성">
+  <p class="kicker">6장 · 페이지 9</p>
+  <h2>Shepp-Logan 팬텀의 재구성</h2>
+
+  <p>페이지 8의 알고리즘을 Shepp-Logan 팬텀에 적용해 선택마다 영상이 어떻게 달라지는지 봅니다. 아래 위젯은 팬텀의 정확한 투영(3장 페이지 5)을 검출기 위치 \(s_n\)에서 샘플링해 이산 sinogram \(p[k, n]\)을 만들고, 페이지 8의 순서 그대로 재구성합니다. 필터는 페이지 4의 \(h[n]\), 보간은 페이지 7, 각도 가중은 \(\pi/N_\theta\)입니다. 영상 격자는 \(160 \times 160\)(\(\Delta x = 0.01375\) cm)이고 검출기는 영상 전체를 덮습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 262" role="img" aria-label="왼쪽부터 Shepp-Logan 팬텀 원본, 이산 FBP로 재구성한 영상, 그리고 y = 0 인 가로줄을 따라 원본과 재구성 값을 비교한 곡선">
+      <image id="r9e-org" x="14" y="34" width="176" height="176" preserveAspectRatio="none"/>
+      <image id="r9e-res" x="222" y="34" width="176" height="176" preserveAspectRatio="none"/>
+      <path id="r9e-po" fill="none" stroke-width="1.4" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <path id="r9e-pr" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <rect x="14" y="34" width="176" height="176"/><rect x="222" y="34" width="176" height="176"/><rect x="430" y="34" width="196" height="176"/>
+        <path id="r9e-ry" d="M222 122 H398" style="stroke:var(--warn)" stroke-dasharray="3 3"/>
+      </g>
+      <g font-size="11.5" class="svg-fg">
+        <text x="14" y="24" font-weight="700">원본</text>
+        <text x="222" y="24" font-weight="700">재구성</text>
+        <text x="430" y="24" font-weight="700">가로줄 y = 0 의 값</text>
+      </g>
+      <g font-size="10.5" class="svg-muted">
+        <text x="14" y="228">가로: x = −1.1 ~ 1.1 cm (세 칸 모두)</text>
+        <text x="430" y="228" id="r9e-rng"></text>
+      </g>
+    </svg>
+    <figcaption>원본과 결과는 같은 밝기 범위로 그렸고 범위는 아래 선택 상자에서 바꿉니다. 결과 영상의 주황 점선이 오른쪽 곡선을 읽은 가로줄입니다. 오른쪽의 회색 점선은 원본, 파란 곡선은 재구성 값이며, 세로 범위는 밝기 범위를 위아래로 조금 넓힌 것이어서 그 밖의 값은 잘립니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="r9e-u1">
+    <span>각도 수 \(N_\theta\)</span>
+    <button type="button" data-ui data-k="18">18</button>
+    <button type="button" data-ui data-k="60">60</button>
+    <button type="button" data-ui data-k="180">180</button>
+    <span style="margin-left:.6rem">검출기 간격 \(\Delta s\)</span>
+    <button type="button" data-ui data-dl="0.08">0.08 cm</button>
+    <button type="button" data-ui data-dl="0.04">0.04 cm</button>
+    <button type="button" data-ui data-dl="0.02">0.02 cm</button>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.5rem" id="r9e-u2">
+    <span>필터</span>
+    <button type="button" data-ui data-kind="ramlak">Ram-Lak</button>
+    <button type="button" data-ui data-kind="shepp">Shepp-Logan</button>
+    <button type="button" data-ui data-kind="cosine">cosine</button>
+    <button type="button" data-ui data-kind="hamming">Hamming</button>
+    <span style="margin-left:.6rem">보간</span>
+    <button type="button" data-ui data-ip="linear">선형</button>
+    <button type="button" data-ui data-ip="nearest">최근접</button>
+  </div>
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.5rem">
+    <label for="r9e-win">밝기 범위</label>
+    <select id="r9e-win" style="font-size:.86rem">
+      <option value="full">전체 (0 ~ 2)</option>
+      <option value="brain">뇌 조직 (0.98 ~ 1.05)</option>
+      <option value="out">바깥 줄무늬 (−0.1 ~ 0.3)</option>
+    </select>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r9e-note"></p>
+
+  <h3>위젯에서 확인할 것</h3>
+
+  <p>아래 값은 이 위젯과 같은 계산으로 구한 두개골 바깥(반지름 \(1.05\) cm 안쪽)의 rms(페이지 6)이고 참값은 0입니다. 위젯의 메모에도 같은 값이 나옵니다.</p>
+
+  <ul>
+    <li><b>필터.</b> 검출기 간격 \(0.04\) cm, 각도 180개, 선형 보간에서 Ram-Lak, Shepp-Logan, cosine, Hamming의 값은 0.0867, 0.0683, 0.0413, 0.0357입니다. 윈도우 함수가 부드러울수록 두개골 바깥의 값이 줄어듭니다. 링잉과, \(W\) 근처로 접힌 에일리어싱 성분이 함께 줄어드는 것입니다. 대신 오른쪽 곡선에서 경계 부분의 기울기가 완만해져 경계가 퍼집니다.</li>
+    <li><b>보간.</b> Ram-Lak, 각도 180개에서 선형 보간 대신 최근접 보간을 쓰면 \(0.04\) cm에서 0.0867이 0.1266로, \(0.02\) cm에서 0.0558가 0.0943로 늘어납니다.</li>
+    <li><b>각도 수.</b> Ram-Lak, \(0.04\) cm에서 각도 18개, 60개, 180개의 값은 0.2450, 0.0868, 0.0867입니다. 18개에서는 바깥으로 뻗는 줄이 사방에 보입니다. 60개와 180개의 값은 거의 같아서, 이 간격에서는 60개로 충분하며 페이지 6의 어림값(약 72개)보다 조금 적습니다.</li>
+    <li><b>검출기 간격.</b> Ram-Lak, 각도 180개에서 \(\Delta s\)가 \(0.08\), \(0.04\), \(0.02\) cm이면 0.1118, 0.0867, 0.0558입니다. 간격을 좁히면 경계가 또렷해지고 바깥의 물결도 줄어듭니다. 윈도우 필터로 줄지 않고 남는 몫은 검출기 간격을 좁혀야 줄어듭니다.</li>
+    <li><b>값이 \(\mu\)로 맞습니다.</b> 뇌 조직의 점 \((0, -0.3)\)은 원본이 \(1.02\)이고 모든 선택에서 \(1.01\)~\(1.04\) 사이입니다. 페이지 3의 치우침과 달리 이 위젯의 필터는 커널 \(h[n]\)을 쓰기 때문에 밝기가 틀어지지 않습니다.</li>
+  </ul>
+
+<script>
+(function () {
+  var r9 = window.r9, N = 160, half = r9.HALF, px = 2 * half / N, row = Math.floor(half / px), cache = {};
+  var st = { k: 180, dl: 0.04, kind: 'ramlak', ip: 'linear' };
+  var u1 = document.getElementById('r9e-u1'), u2 = document.getElementById('r9e-u2'), win = document.getElementById('r9e-win'), note = document.getElementById('r9e-note');
+  var org = document.getElementById('r9e-org'), res = document.getElementById('r9e-res'), po = document.getElementById('r9e-po'), pr = document.getElementById('r9e-pr'), rng = document.getElementById('r9e-rng');
+  r9.styleButtons(u1); r9.styleButtons(u2);
+  var all = document.querySelectorAll('#r9e-u1 button, #r9e-u2 button');
+  function calc() {
+    var key = st.k + '/' + st.dl + '/' + st.kind + '/' + st.ip;
+    if (!cache[key]) { var r = r9.fbp({ model: 'sl', K: st.k, d: st.dl, kind: st.kind, interp: st.ip, n: N }); cache[key] = { r: r, rms: r9.outRms(r) }; }
+    return cache[key];
+  }
+  function on(b) {
+    return (b.hasAttribute('data-k') && +b.getAttribute('data-k') === st.k) || (b.hasAttribute('data-dl') && +b.getAttribute('data-dl') === st.dl) ||
+           (b.hasAttribute('data-kind') && b.getAttribute('data-kind') === st.kind) || (b.hasAttribute('data-ip') && b.getAttribute('data-ip') === st.ip);
+  }
+  function render() {
+    var c = calc(), r = c.r, a = r.img, w = win.value === 'full' ? [0, 2] : (win.value === 'brain' ? [0.98, 1.05] : [-0.1, 0.3]), i, lo, hi, yr = half - (row + 0.5) * px, x, d1 = '', d2 = '', Y;
+    for (i = 0; i < all.length; i++) r9.paint(all[i], on(all[i]));
+    org.setAttribute('href', r9.image(N, N, function (i2, j2) { return (r9.ellMu(-half + (i2 + 0.5) * px, half - (j2 + 0.5) * px) - w[0]) / (w[1] - w[0]); }));
+    res.setAttribute('href', r9.image(N, N, function (i2, j2) { return (a[j2 * N + i2] - w[0]) / (w[1] - w[0]); }));
+    lo = w[0] - 0.4 * (w[1] - w[0]); hi = w[1] + 0.4 * (w[1] - w[0]);
+    Y = function (v) { return Math.max(35, Math.min(209, 210 - (v - lo) / (hi - lo) * 176)).toFixed(1); };
+    for (i = 0; i < N; i++) {
+      x = -half + (i + 0.5) * px;
+      d1 += (i ? 'L' : 'M') + (430 + (i + 0.5) * 196 / N).toFixed(1) + ' ' + Y(r9.ellMu(x, yr));
+      d2 += (i ? 'L' : 'M') + (430 + (i + 0.5) * 196 / N).toFixed(1) + ' ' + Y(a[row * N + i]);
+    }
+    po.setAttribute('d', d1); pr.setAttribute('d', d2);
+    rng.textContent = '세로 범위 ' + +lo.toFixed(3) + ' ~ ' + +hi.toFixed(3);
+    note.textContent = '각도 ' + st.k + '개 · 검출기 ' + r.ns + '개, Δs = ' + st.dl + ' cm, W = ' + +(1 / (2 * st.dl)).toFixed(2) + ' cm⁻¹ · 뇌 조직의 점 (0, −0.3): 원본 1.02, 결과 ' + r9.fx(r9.at(r, 0, -0.3), 3) +
+      ' · 바깥의 점 (0, 1.05): 원본 0, 결과 ' + r9.fx(r9.at(r, 0, 1.05), 3) + ' · 바깥 rms ' + c.rms.toFixed(4);
+  }
+  function click(e) {
+    var t = e.target.closest('button'); if (!t) return;
+    if (t.hasAttribute('data-k')) st.k = +t.getAttribute('data-k');
+    if (t.hasAttribute('data-dl')) st.dl = +t.getAttribute('data-dl');
+    if (t.hasAttribute('data-kind')) st.kind = t.getAttribute('data-kind');
+    if (t.hasAttribute('data-ip')) st.ip = t.getAttribute('data-ip');
+    render();
+  }
+  u1.addEventListener('click', click); u2.addEventListener('click', click); win.addEventListener('change', render);
+  r9.onShow(u1, render);
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 10 -->
+<section class="screen" data-title="무늬의 원인: 이산 아티팩트의 종류">
+  <p class="kicker">6장 · 페이지 10</p>
+  <h2>영상의 무늬는 어디서 올까요? 이산 아티팩트의 종류</h2>
+
+  <p>재구성 영상에서 원래 물체에 없는 무늬를 아티팩트(<span class="term" data-term="artifact">Artifact</span>)라고 합니다. 이 장의 이산화에서 생기는 아티팩트는 원인마다 모양이 다르고, 모양을 보면 어느 선택을 고쳐야 하는지 알 수 있습니다. 이 페이지는 지금까지 본 것을 증상별로 모아 정리합니다.</p>
+
+  <h3>증상, 원인, 대처</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>증상</th><th>원인</th><th>확인하는 방법</th><th>대처</th></tr>
+      <tr><td>두개골 바깥으로 뻗는 가는 줄 (줄무늬)</td><td>각도 간격이 넓음, \(N_\theta &lt; \pi R/\Delta s\)</td><td>각도 수를 늘리면 줄어듦</td><td>각도 수를 늘림(페이지 6)</td></tr>
+      <tr><td>경계 안팎의 물결 (링잉)</td><td>\(|\omega|\)를 \(W\)에서 갑자기 0으로 자름(깁스 현상)</td><td>윈도우 필터를 바꾸면 줄어듦(에일리어싱도 일부 함께 줄어듦)</td><td>윈도우 함수를 곱함(페이지 4, 5장 페이지 9)</td></tr>
+      <tr><td>경계 근처의 얼룩 (에일리어싱)</td><td>\(W\)를 넘는 성분이 샘플링에서 섞임</td><td>윈도우가 일부 줄여도 남고, 검출기 간격을 좁히면 줄어듦</td><td>검출기 간격을 좁힘(페이지 2)</td></tr>
+      <tr><td>계단 모양의 거친 결 (보간)</td><td>최근접 보간</td><td>선형 보간으로 바꾸면 줄어듦</td><td>선형 보간(페이지 7)</td></tr>
+      <tr><td>영상 전체가 일정하게 낮거나 높음 (밝기 치우침)</td><td>주파수에서 \(|\omega_j|\)를 곱하는 필터와 짧은 제로 패딩</td><td>제로 패딩을 늘리면 줄고, 커널 DFT 방식에는 없음</td><td>커널 \(h[n]\)을 DFT하는 방식(페이지 8. 원인은 페이지 5, 심화)</td></tr>
+      <tr><td>배열 가장자리 쪽의 번짐 (원형 컨볼루션)</td><td>\(M &lt; 2N_s - 1\)</td><td>\(M\)을 늘리면 사라짐</td><td>\(M \ge 2N_s - 1\)(페이지 3, 8. 유도는 페이지 5, 심화)</td></tr>
+    </table>
+  </div>
+
+  <p>이 밖에 영상 격자가 너무 성기면 생기는 무늬와, 검출기가 물체를 다 덮지 못해 생기는 밝은 테두리(5장 페이지 11)가 있습니다. 후자는 이산화가 아니라 데이터의 문제입니다.</p>
+
+  <h3>같은 데이터에서 증상 확인</h3>
+
+  <p>아래 위젯은 증상을 하나 고르면 그 증상이 나타나는 설정(왼쪽)과 고친 설정(오른쪽)의 재구성 영상을 같은 밝기 범위로 보여 줍니다. 영상 격자는 \(128 \times 128\)이고 팬텀은 Shepp-Logan입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 252" role="img" aria-label="왼쪽은 아티팩트가 나타나는 설정의 재구성 영상, 오른쪽은 고친 설정의 재구성 영상. 둘의 밝기 범위는 같음">
+      <image id="r9f-a" x="60" y="34" width="200" height="200" preserveAspectRatio="none"/>
+      <image id="r9f-b" x="380" y="34" width="200" height="200" preserveAspectRatio="none"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><rect x="60" y="34" width="200" height="200"/><rect x="380" y="34" width="200" height="200"/></g>
+      <g font-size="11.5" class="svg-fg" font-weight="700">
+        <text x="60" y="24" id="r9f-ta">증상이 나타나는 설정</text>
+        <text x="380" y="24" id="r9f-tb">고친 설정</text>
+      </g>
+    </svg>
+    <figcaption>두 영상의 밝기 범위는 같고, 증상마다 범위가 다릅니다(아래 메모). 영상의 가로·세로 범위는 \(-1.1\)~\(1.1\) cm입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="r9f-ui">
+    <button type="button" data-ui data-r="stripe">줄무늬</button>
+    <button type="button" data-ui data-r="ring">링잉</button>
+    <button type="button" data-ui data-r="alias">에일리어싱</button>
+    <button type="button" data-ui data-r="interp">보간</button>
+    <button type="button" data-ui data-r="wrap">원형 컨볼루션</button>
+    <button type="button" data-ui data-r="bias">밝기 치우침</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r9f-note"></p>
+
+  <h3>링잉과 에일리어싱의 관계</h3>
+
+  <p>링잉과 에일리어싱은 둘 다 경계 근처의 물결로 보여서 영상만으로는 구분하기 어렵습니다. 윈도우 필터는 링잉을 줄이고, \(W\) 근처로 접혀 들어온 에일리어싱 성분도 윈도우 함수가 함께 깎아서 줄입니다. 다만 접혀 들어온 성분은 원래의 낮은 주파수 성분과 구별되지 않아 완전히 없애지 못하고, 남은 몫은 검출기 간격을 좁혀야 줄어듭니다. 각도 360개에서 두개골 바깥의 rms는 다음과 같습니다(영상 격자 \(128 \times 128\)).</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>검출기 간격 \(\Delta s\) (cm)</th><th>Ram-Lak</th><th>Shepp-Logan</th><th>cosine</th><th>Hamming</th></tr>
+      <tr><td>0.08</td><td>0.112</td><td>0.096</td><td>0.097</td><td>0.112</td></tr>
+      <tr><td>0.04</td><td>0.088</td><td>0.069</td><td>0.041</td><td>0.036</td></tr>
+      <tr><td>0.02</td><td>0.054</td><td>0.042</td><td>0.024</td><td>0.018</td></tr>
+    </table>
+  </div>
+
+  <ul>
+    <li><b>필터를 바꾸면 값이 줄어듭니다.</b> \(\Delta s = 0.04\) cm에서 Ram-Lak 0.088이 Hamming 0.036이 됩니다. 이 감소에는 링잉과 에일리어싱 성분의 감소가 함께 들어 있어서, 한쪽의 몫으로만 돌릴 수 없습니다.</li>
+    <li><b>검출기 간격을 절반으로 줄이면 어느 필터에서도 값이 줄어듭니다.</b> 간격을 좁히면 \(W\)가 커져 경계가 또렷해지고, 접혀 들어오는 성분도 줄어듭니다.</li>
+    <li><b>\(\Delta s = 0.08\) cm에서는 필터의 차이가 작습니다.</b> 값이 0.096~0.112로 비슷하고, Hamming에 남은 값에는 에일리어싱 말고도 해상도가 낮아져 경계가 흐려진 몫이 들어 있습니다.</li>
+  </ul>
+
+  <p>두 현상을 따로 보려면 같은 \(W\)를 유지한 채 샘플링만 촘촘히 해서 비교해야 합니다. 그러면 에일리어싱만 줄고 링잉은 그대로입니다. 이 책의 위젯은 \(W = 1/(2\Delta s)\)를 간격과 함께 바꾸므로 이 비교를 하지 않습니다.</p>
+
+<script>
+(function () {
+  var r9 = window.r9, N = 128, cache = {}, cur = 'stripe';
+  var R = {
+    stripe: { w: [-0.1, 0.3], a: { K: 18, d: 0.02, kind: 'hamming' }, b: { K: 180, d: 0.02, kind: 'hamming' },
+      ta: '각도 18개', tb: '각도 180개', msg: '검출기 간격 0.02 cm, Hamming 필터. 밝기 범위 −0.1 ~ 0.3. 각도가 적으면 두개골 바깥으로 줄이 뻗고, 늘리면 사라집니다.' },
+    ring: { w: [-0.1, 0.3], a: { K: 180, d: 0.04, kind: 'ramlak' }, b: { K: 180, d: 0.04, kind: 'hamming' },
+      ta: 'Ram-Lak', tb: 'Hamming', msg: '검출기 간격 0.04 cm, 각도 180개. 밝기 범위 −0.1 ~ 0.3. Ram-Lak에서는 두개골 바깥에 물결이 있고 Hamming에서는 줄지만(에일리어싱 성분도 일부 함께 줄어듭니다), 경계는 조금 퍼집니다.' },
+    alias: { w: [-0.1, 0.3], a: { K: 360, d: 0.08, kind: 'hamming' }, b: { K: 360, d: 0.02, kind: 'hamming' },
+      ta: '검출기 간격 0.08 cm', tb: '검출기 간격 0.02 cm', msg: '각도 360개, Hamming 필터. 밝기 범위 −0.1 ~ 0.3. 윈도우 필터를 썼는데도 간격이 넓은 쪽에는 경계 근처의 얼룩과 흐려짐이 남습니다.' },
+    interp: { w: [-0.1, 0.3], a: { K: 180, d: 0.02, kind: 'ramlak', interp: 'nearest' }, b: { K: 180, d: 0.02, kind: 'ramlak', interp: 'linear' },
+      ta: '최근접 보간', tb: '선형 보간', msg: '검출기 간격 0.02 cm, 각도 180개, Ram-Lak 필터. 밝기 범위 −0.1 ~ 0.3. 최근접 보간은 바깥의 결이 더 거칩니다.' },
+    wrap: { w: [-0.1, 0.3], a: { K: 180, d: 0.04, kind: 'hamming', mode: 'fft-h', M: 128 }, b: { K: 180, d: 0.04, kind: 'hamming', mode: 'fft-h', M: 256 },
+      ta: '제로 패딩 길이 M = 128', tb: '제로 패딩 길이 M = 256', msg: '검출기 간격 0.04 cm(검출기 78개, 2Nₛ−1 = 155), 각도 180개, Hamming 필터, 커널 DFT 방식. 밝기 범위 −0.1 ~ 0.3. M = 128은 155보다 짧아 원형 컨볼루션이 생깁니다.' },
+    bias: { w: [0.98, 1.05], a: { K: 180, d: 0.04, kind: 'hamming', mode: 'fft-w', M: 256 }, b: { K: 180, d: 0.04, kind: 'hamming', mode: 'fft-h', M: 256 },
+      ta: '주파수에서 |ω| 곱하기', tb: '커널 h[n]을 DFT', msg: '검출기 간격 0.04 cm, 각도 180개, Hamming 필터, M = 256. 밝기 범위 0.98 ~ 1.05(뇌 조직). 왼쪽은 영상 전체가 조금 어둡습니다.' }
+  };
+  var ui = document.getElementById('r9f-ui'), note = document.getElementById('r9f-note'), imA = document.getElementById('r9f-a'), imB = document.getElementById('r9f-b');
+  var ta = document.getElementById('r9f-ta'), tb = document.getElementById('r9f-tb');
+  r9.styleButtons(ui);
+  var btns = ui.querySelectorAll('button');
+  function run(o) {
+    var key = JSON.stringify(o);
+    if (!cache[key]) { var c = { model: 'sl', n: N }, k; for (k in o) c[k] = o[k]; var r = r9.fbp(c); cache[key] = { r: r, rms: r9.outRms(r) }; }
+    return cache[key];
+  }
+  function render() {
+    var s = R[cur], A = run(s.a), B = run(s.b), w = s.w, i;
+    imA.setAttribute('href', r9.image(N, N, function (a, b) { return (A.r.img[b * N + a] - w[0]) / (w[1] - w[0]); }));
+    imB.setAttribute('href', r9.image(N, N, function (a, b) { return (B.r.img[b * N + a] - w[0]) / (w[1] - w[0]); }));
+    ta.textContent = s.ta; tb.textContent = s.tb;
+    for (i = 0; i < btns.length; i++) r9.paint(btns[i], btns[i].getAttribute('data-r') === cur);
+    note.textContent = s.msg + ' 두개골 바깥 rms: 왼쪽 ' + A.rms.toFixed(3) + ', 오른쪽 ' + B.rms.toFixed(3) + ' · 뇌 조직의 점 (0, −0.3): 왼쪽 ' + r9.at(A.r, 0, -0.3).toFixed(3) + ', 오른쪽 ' + r9.at(B.r, 0, -0.3).toFixed(3) + ' (원본 1.02).';
+  }
+  ui.addEventListener('click', function (e) { var t = e.target.closest('button[data-r]'); if (t) { cur = t.getAttribute('data-r'); render(); } });
+  r9.onShow(ui, render);
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 11 -->
+<section class="screen" data-title="값의 단위와 스케일">
+  <p class="kicker">6장 · 페이지 11</p>
+  <h2>값의 단위와 스케일</h2>
+
+  <p>알고리즘의 구조가 맞아도 인자 하나를 빠뜨리면 영상의 값이 상수배로 틀어집니다. 영상의 모양은 그대로여서 눈으로는 알아채기 어렵습니다. 이 페이지는 재구성한 값이 감쇠계수 \(\mu\)(cm\(^{-1}\))로 맞는지 단위로 따라가 확인하고, 숫자로 검산하는 방법을 정리합니다.</p>
+
+  <h3>단위 따라가기</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>양</th><th>단위</th><th>설명</th></tr>
+      <tr><td>투영값 \(p[k, n]\)</td><td>없음</td><td>\(-\ln(I/I_0)\)입니다(<a href="../../part0/ch02.html#s3">0편 2장 페이지 3</a>).</td></tr>
+      <tr><td>검출기 간격 \(\Delta s\)</td><td>cm</td><td>컨볼루션의 \(ds'\)입니다.</td></tr>
+      <tr><td>커널 \(h[n]\)</td><td>cm\(^{-2}\)</td><td>\(1/(4(\Delta s)^{2})\), \(-1/(\pi^{2}n^{2}(\Delta s)^{2})\)</td></tr>
+      <tr><td>필터링한 투영 \(q = \Delta s\sum p\,h\)</td><td>cm\(^{-1}\)</td><td>cm \(\times\) cm\(^{-2}\)</td></tr>
+      <tr><td>각도 가중 \(\pi/N_\theta\)</td><td>없음</td><td>라디안 단위의 각도 간격입니다.</td></tr>
+      <tr><td>재구성한 값 \(\mu = (\pi/N_\theta)\sum q\)</td><td>cm\(^{-1}\)</td><td>0편 1장의 감쇠계수와 같은 단위입니다.</td></tr>
+    </table>
+  </div>
+
+  <p>검출기 간격을 cm로 쓰면 \(\mu\)가 cm\(^{-1}\)로 나옵니다. mm로 쓰면 mm\(^{-1}\)로 나오므로, 입력의 길이 단위가 결과의 단위를 정합니다. 이 책의 Shepp-Logan 팬텀 값은 단위 없는 상대값이어서(3장 페이지 4) 길이를 cm로 읽으면 같은 값을 cm\(^{-1}\)로 읽습니다.</p>
+
+  <h3>빠뜨리기 쉬운 인자</h3>
+
+  <p>인자 하나를 빠뜨렸을 때 영상 전체가 몇 배가 되는지를 검출기 간격 \(\Delta s = 0.04\) cm, 각도 \(N_\theta = 180\)개, FFT 길이 \(M = 2048\)로 계산한 값은 아래 표와 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>빠뜨린 것</th><th>어디에 있는 인자인가</th><th>영상이 몇 배가 되는가</th><th>값</th></tr>
+      <tr><td>컨볼루션의 \(\Delta s\)</td><td>\(q = \Delta s\sum p\,h\)</td><td>\(1/\Delta s\)</td><td>25배</td></tr>
+      <tr><td>각도 가중 \(\pi/N_\theta\)</td><td>\(\mu = (\pi/N_\theta)\sum q\)</td><td>\(N_\theta/\pi\)</td><td>57.3배</td></tr>
+      <tr><td>역 FFT의 \(1/M\)</td><td>FFT 구현에 따라 역변환에 이미 들어 있기도 함</td><td>\(M\)</td><td>2048배</td></tr>
+      <tr><td>커널의 \(1/(\Delta s)^{2}\) (정수 번호만 쓴 \(h' = h(\Delta s)^{2}\) 사용)</td><td>\(h[n]\)의 정의</td><td>\((\Delta s)^{2}\)</td><td>0.0016배</td></tr>
+      <tr><td>\(360^{\circ}\) 데이터에서 \(\tfrac12\)</td><td>각도 가중 \(\pi/N = \tfrac12 \times 2\pi/N\)</td><td>2</td><td>2배</td></tr>
+    </table>
+  </div>
+
+  <ul>
+    <li>마지막 행에서 \(N\)개의 각도가 \(0\)~\(2\pi\)에 있으면 각도 간격은 \(2\pi/N\)이고 모든 직선이 두 번 측정됩니다(3장 페이지 9). 따라서 가중은 \(\tfrac12 \times 2\pi/N = \pi/N\)이 됩니다.</li>
+    <li>FFT 라이브러리는 역변환에 \(1/M\)을 넣는 것과 넣지 않는 것이 있습니다. 쓰는 라이브러리의 정의를 확인해야 합니다. 이 책의 DFT는 2장 페이지 5처럼 정방향에 인자가 없고 역방향에 \(1/M\)이 있습니다.</li>
+  </ul>
+
+  <h3>질량 보존으로 검산</h3>
+
+  <p>인자를 빠뜨렸는지는 영상의 모양으로 알 수 없지만, 숫자 하나로 검산할 수 있습니다. 3장 페이지 7의 질량 보존(증명은 페이지 8, 심화)대로 모든 각도에서 투영의 합 \(\int p\,ds\)는 영상의 합 \(\iint\mu\,dx\,dy\)와 같습니다. 재구성한 영상의 같은 양, 곧 모든 화소 값의 합에 화소 넓이 \((\Delta x)^{2}\)를 곱한 값이 측정 데이터의 \(\Delta s\sum_n p[k, n]\)과 같아야 합니다.</p>
+
+  <p style="text-align:center">\[(\Delta x)^{2}\sum_{\text{화소}} \mu \ \approx\ \Delta s \sum_{n} p[k, n]\quad (\text{아무 } k)\]</p>
+
+  <p>Shepp-Logan 팬텀(\(\Delta s = 0.04\) cm, 각도 180개, 영상 \(160 \times 160\))에서 \(\theta = 0\)의 투영 한 행으로 계산한 \(\Delta s\sum_n p[0, n]\)은 2.1974이고 재구성한 영상의 값은 2.2031입니다. 두 값은 0.3% 이내로 같습니다. 두 값의 비가 1이면 인자가 맞고, 비가 25이면 \(\Delta s\)를, 57.3이면 \(\pi/N_\theta\)를 빠뜨린 것입니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">검산이 맞는 조건</p>
+    <p>이 검산은 영상이 물체를 모두 담고 검출기가 영상 전체를 덮을 때 맞습니다. 영상이 물체 일부만 담거나 검출기가 물체를 덮지 못하면(5장 페이지 11) 합이 달라지므로, 그런 데이터에서는 이 검산을 쓰지 못합니다.</p>
+  </div>
+
+  <p>CT 영상의 값을 HU로 바꾸는 식(<a href="../../part0/ch01.html#s7">0편 1장 페이지 7</a>)은 \(\mu\)와 물의 \(\mu_{\mathrm{water}}\)가 같은 단위일 때 성립합니다. 단위나 스케일이 틀린 \(\mu\)를 HU로 바꾸면 물이 0 HU로 나오지 않습니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 12 -->
+<section class="screen" data-title="재구성 격자의 크기">
+  <p class="kicker">6장 · 페이지 12 · 심화</p>
+  <h2>재구성 격자의 크기</h2>
+
+  <p>페이지 1에서 영상 격자의 화소 간격을 \(\Delta x\)라고 했습니다. \(\Delta x\)는 검출기 간격 \(\Delta s\)나 각도 수와 달리 측정이 아니라 계산하는 쪽이 고르는 값입니다. 작게 잡으면 영상이 촘촘해지지만 계산이 늘어나고, 크게 잡으면 계산은 줄지만 영상이 담지 못하는 성분이 생깁니다. 이 페이지는 \(\Delta x\)를 정하는 기준을 정리합니다.</p>
+
+  <h3>영상의 나이퀴스트 주파수</h3>
+
+  <p>화소 간격 \(\Delta x\)인 영상이 담을 수 있는 가장 높은 공간 주파수도 나이퀴스트 주파수 \(1/(2\Delta x)\)입니다(페이지 2). 재구성에는 검출기 간격이 정한 \(W = 1/(2\Delta s)\)까지의 성분이 들어 있으므로, 영상이 이 성분을 담으려면 다음이 필요합니다.</p>
+
+  <p style="text-align:center">\[\frac{1}{2\Delta x} \ \ge\ W = \frac{1}{2\Delta s}\quad\Longleftrightarrow\quad \Delta x \le \Delta s\]</p>
+
+  <p>\(\Delta x\)가 \(\Delta s\)보다 크면 영상의 나이퀴스트 주파수가 \(W\)보다 낮아, \(W\)까지의 성분 가운데 높은 쪽을 영상이 담지 못합니다. 이 성분은 화소 중심에서 값을 읽을 때 낮은 주파수로 섞여 들어갑니다. 반대로 \(\Delta x\)를 \(\Delta s\)의 절반보다 작게 잡아도 측정에 없던 성분이 새로 생기지는 않아서, 영상이 부드럽게 보일 뿐 정보는 늘지 않습니다.</p>
+
+  <h3>시야(FOV)와 화소 수</h3>
+
+  <p>여기서 시야는 영상으로 재구성하는 영역, 곧 3장 페이지 10의 재구성 시야(Display FOV)를 말합니다. 이 영역은 검출기가 정하는 스캔 시야 안에 들어와야 합니다. 한 변이 \(N_x\)개 화소인 정사각형 영상의 한 변의 길이는 \(N_x\Delta x\)이고, 모서리는 중심에서 \(\tfrac{\sqrt{2}}{2}N_x\Delta x\)만큼 떨어져 있습니다. 모서리까지 모든 각도에서 검출기 안에 들어오려면 \(N_s\Delta s \ge \sqrt{2}\,N_x\Delta x\)이어야 합니다(페이지 7). \(\Delta x = \Delta s\)로 두면 \(N_x \le N_s/\sqrt{2}\)입니다. 검출기가 736개이면 \(N_x \le 520\)이어서 \(512 \times 512\)를 쓸 수 있습니다.</p>
+
+  <h3>계산량</h3>
+
+  <p>역투영의 계산량은 \(N_\theta N_x^{2}\)이고(페이지 8), \(N_x = L/\Delta x\)이므로 화소 간격에 \(1/(\Delta x)^{2}\)로 비례합니다. 같은 시야에서 화소 간격을 반으로 줄이면 역투영이 4배가 됩니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>화소 간격 \(\Delta x\)</th><th>영상의 나이퀴스트 주파수와 \(W\)</th><th>영상</th><th>역투영 계산량</th></tr>
+      <tr><td>\(2\Delta s\)</td><td>\(W/2\)로 \(W\)보다 낮음</td><td>\(W\)까지의 성분을 담지 못함</td><td>\(1/4\)</td></tr>
+      <tr><td>\(\Delta s\)</td><td>\(W\)와 같음</td><td>측정이 담은 성분을 모두 담는 가장 성긴 격자</td><td>1</td></tr>
+      <tr><td>\(\Delta s/2\)</td><td>\(2W\)로 \(W\)보다 높음</td><td>정보는 같고 더 부드럽게 보임</td><td>4</td></tr>
+    </table>
+  </div>
+
+  <h3>격자 크기를 바꿔 보기</h3>
+
+  <p>아래 위젯은 검출기 간격 \(\Delta s = 0.02\) cm(\(W = 25\) cm\(^{-1}\)), 각도 180개, Ram-Lak 필터로 영상 격자만 바꿔 가며 재구성합니다. 왼쪽은 영상 전체이고, 가운데는 주황 상자 부분을 그 격자의 화소 그대로 확대한 것, 오른쪽은 가장 촘촘한 격자(\(320 \times 320\))의 같은 부분입니다. 확대한 부분은 두개골의 오른쪽 경계와 그 바깥입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 262" role="img" aria-label="왼쪽은 선택한 격자 크기로 재구성한 전체 영상과 확대할 부분을 나타낸 상자, 가운데는 그 부분을 선택한 격자의 화소 그대로 확대한 것, 오른쪽은 320 곱하기 320 격자로 재구성한 같은 부분">
+      <image id="r9h-a" x="14" y="34" width="176" height="176" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <image id="r9h-b" x="222" y="34" width="176" height="176" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <image id="r9h-c" x="450" y="34" width="176" height="176" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <rect id="r9h-box" x="0" y="0" width="10" height="10" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <rect x="14" y="34" width="176" height="176"/><rect x="222" y="34" width="176" height="176"/><rect x="450" y="34" width="176" height="176"/>
+      </g>
+      <g font-size="11.5" class="svg-fg" font-weight="700">
+        <text x="14" y="24" id="r9h-t1">선택한 격자</text>
+        <text x="222" y="24" id="r9h-t2">확대: 선택한 격자</text>
+        <text x="450" y="24">확대: 320 × 320 격자</text>
+      </g>
+      <g font-size="10.5" class="svg-muted">
+        <text x="222" y="228">확대한 범위: x = 0.55 ~ 1.05 cm, y = −0.25 ~ 0.25 cm</text>
+        <text x="222" y="244">밝기 범위 −0.15 ~ 1.15 (두 확대 영상 같음)</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽 영상의 밝기 범위는 0 ~ 2이고, 확대한 두 영상의 밝기 범위는 같습니다. 주황 상자가 확대한 부분입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="r9h-ui">
+    <span>영상 격자</span>
+    <button type="button" data-ui data-n="40">40 × 40</button>
+    <button type="button" data-ui data-n="80">80 × 80</button>
+    <button type="button" data-ui data-n="160">160 × 160</button>
+    <button type="button" data-ui data-n="320">320 × 320</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r9h-note"></p>
+
+  <ul>
+    <li><b>40 × 40.</b> \(\Delta x = 0.055\) cm는 \(\Delta s\)의 2.75배이고 영상의 나이퀴스트 주파수는 \(9.1\) cm\(^{-1}\)입니다. 확대한 부분에서 두개골의 얇은 경계가 화소 한 개 폭으로 뭉개져 두께와 밝기가 정확하지 않고, 경계 바깥의 물결은 거의 보이지 않습니다.</li>
+    <li><b>80 × 80.</b> \(\Delta x = 0.0275\) cm, 나이퀴스트 주파수 \(18.2\) cm\(^{-1}\)로 \(W = 25\)보다 낮습니다. 경계는 나오지만 바깥의 물결이 화소와 비슷한 크기여서 바둑판 같은 불규칙한 무늬로 보입니다.</li>
+    <li><b>160 × 160.</b> \(\Delta x \le \Delta s\)이어서 나이퀴스트 주파수(\(36.4\) cm\(^{-1}\))가 \(W\)보다 높습니다. 물결의 방향과 간격이 320 × 320과 비슷하지만 화소의 바둑판 결이 아직 남아 있습니다.</li>
+    <li><b>320 × 320.</b> \(\Delta x = 0.34\Delta s\)로 같은 성분이 더 매끄럽게 그려집니다. 측정에 없던 구조가 새로 나타나는 것은 아니고, 역투영 계산량만 160의 4배입니다.</li>
+  </ul>
+
+<script>
+(function () {
+  var r9 = window.r9, DL = 0.02, K = 180, cache = {}, NN = 160, half = r9.HALF;
+  var X0 = 0.55, X1 = 1.05, Y0 = -0.25, Y1 = 0.25, W0 = -0.15, W1 = 1.15;
+  var ui = document.getElementById('r9h-ui'), note = document.getElementById('r9h-note'), imA = document.getElementById('r9h-a'), imB = document.getElementById('r9h-b'), imC = document.getElementById('r9h-c');
+  var box = document.getElementById('r9h-box'), t1 = document.getElementById('r9h-t1'), t2 = document.getElementById('r9h-t2');
+  r9.styleButtons(ui);
+  var btns = ui.querySelectorAll('button');
+  function get(n) {
+    if (!cache[n]) cache[n] = r9.fbp({ model: 'sl', K: K, d: DL, kind: 'ramlak', n: n });
+    return cache[n];
+  }
+  function crop(r, el) {                  // 격자 r 에서 확대 범위의 화소를 그대로 잘라 그린다
+    var px = r.px, i0 = Math.floor((X0 + half) / px), i1 = Math.ceil((X1 + half) / px), j0 = Math.floor((half - Y1) / px), j1 = Math.ceil((half - Y0) / px), w = i1 - i0, h = j1 - j0;
+    el.setAttribute('href', r9.image(w, h, function (a, b) { return (r.img[(j0 + b) * r.n + (i0 + a)] - W0) / (W1 - W0); }));
+    el.setAttribute('preserveAspectRatio', 'none');
+  }
+  function render() {
+    var r = get(NN), big = get(320), i, a = r.img;
+    imA.setAttribute('href', r9.image(NN, NN, function (c, d) { return a[d * NN + c] / 2; }));
+    crop(r, imB); crop(big, imC);
+    box.setAttribute('x', 14 + (X0 + half) / (2 * half) * 176); box.setAttribute('y', 34 + (half - Y1) / (2 * half) * 176);
+    box.setAttribute('width', (X1 - X0) / (2 * half) * 176); box.setAttribute('height', (Y1 - Y0) / (2 * half) * 176);
+    t1.textContent = '선택한 격자 ' + NN + ' × ' + NN; t2.textContent = '확대: ' + NN + ' × ' + NN + ' 격자';
+    for (i = 0; i < btns.length; i++) r9.paint(btns[i], +btns[i].getAttribute('data-n') === NN);
+    note.textContent = '화소 간격 Δx = ' + +r.px.toFixed(5) + ' cm = ' + +(r.px / DL).toFixed(2) + 'Δs · 영상의 나이퀴스트 주파수 ' + +(1 / (2 * r.px)).toFixed(1) + ' cm⁻¹ (W = 25 cm⁻¹) · 역투영 계산량 ' + (K * NN * NN / 1e6).toFixed(1) + ' × 10⁶ 회';
+  }
+  ui.addEventListener('click', function (e) { var t = e.target.closest('button[data-n]'); if (t) { NN = +t.getAttribute('data-n'); render(); } });
+  r9.onShow(ui, render);
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 13 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">6장 · 페이지 13</p>
+  <h2>6장 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>이산 FBP는 sinogram의 행마다 \(q[k, n] = \Delta s\sum_m p[k, m]\,h[n - m]\)으로 필터링하고, 화소마다 \(\tau = s/\Delta s + (N_s - 1)/2\)를 계산해 이웃한 두 값을 선형 보간해 읽은 뒤, 각도 합에 \(\pi/N_\theta\)를 곱합니다.</li>
+      <li>검출기 간격 \(\Delta s\)가 쓸 수 있는 가장 높은 주파수 \(W = 1/(2\Delta s)\)를 정합니다. Ram-Lak 커널은 \(h[0] = 1/(4(\Delta s)^{2})\), 0이 아닌 짝수 \(n\)에서 0, 홀수 \(n\)에서 \(-1/(\pi^{2}n^{2}(\Delta s)^{2})\)이고, 윈도우 필터의 커널도 닫힌 식으로 구합니다.</li>
+      <li>FFT로 필터링할 때는 커널 \(h[n]\)을 DFT하고 길이 \(M \ge 2N_s - 1\)로 영 채웁니다. 주파수에서 \(|\omega_j|\)를 바로 곱하면 영상 전체가 낮아지며, (심화) 낮아지는 크기는 약 \(\pi\iint\mu\,dx\,dy/(6(M\Delta s)^{2})\)입니다. 검출기 안에서 \(\Delta s\sum q\)가 0이 아닌 것은 오류가 아닙니다.</li>
+      <li>각도는 \(N_\theta \gtrsim \pi R/\Delta s\)개가 필요하고 모자라면 줄무늬가 생깁니다. 링잉은 윈도우 필터로 줄이고, 에일리어싱은 윈도우가 일부 줄이지만 검출기 간격을 좁혀야 더 줄며, 줄무늬는 각도 수로 줄입니다.</li>
+      <li>값이 \(\mu\)로 맞는지는 \((\Delta x)^{2}\sum\mu \approx \Delta s\sum_n p[k, n]\)으로 검산합니다. (심화) 영상 격자는 \(\Delta x \le \Delta s\)로 잡습니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="qn">마무리 퀴즈 1</p>
+    <p class="q">검출기 간격이 \(\Delta s = 0.04\) cm인 평행빔 데이터에 Ram-Lak 필터를 쓸 때, 차단 주파수 \(W\)와 이산 램프 커널의 \(h[0]\)은 얼마일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 25 cm⁻¹ 는 1/Δs 입니다. 샘플 두 개가 있어야 무늬 한 주기를 담으므로, 담을 수 있는 가장 높은 주파수는 1/Δs 가 아니라 그 절반입니다.">\(W = 25\ \mathrm{cm}^{-1}\), \(h[0] = 156.25\ \mathrm{cm}^{-2}\)</li>
+      <li data-why="틀립니다. W 는 맞지만 h[0] 이 틀렸습니다. 1/(Δs)² = 625 이고 h[0] 은 여기에 1/4 이 곱해진 1/(4(Δs)²) = 156.25 입니다. 4 는 W = 1/(2Δs) 를 제곱한 데서 나옵니다.">\(W = 12.5\ \mathrm{cm}^{-1}\), \(h[0] = 625\ \mathrm{cm}^{-2}\)</li>
+      <li data-why="틀립니다. 6.25 cm⁻¹ 는 1/(4Δs) 입니다. 주기 4Δs 인 무늬는 샘플 네 개로 한 주기를 담으니 담을 수 있는 무늬이지만, 가장 높은 주파수는 아닙니다. h[0] 은 틀린 W 에서 W² 를 계산한 값이어서, W 가 틀리면 함께 틀립니다.">\(W = 6.25\ \mathrm{cm}^{-1}\), \(h[0] = 39.06\ \mathrm{cm}^{-2}\)</li>
+      <li data-why="맞습니다. W = 1/(2Δs) = 1/0.08 = 12.5 cm⁻¹ 이고, h[0] = W² = 1/(4(Δs)²) = 1/(4 × 0.0016) = 156.25 cm⁻² 입니다.">\(W = 12.5\ \mathrm{cm}^{-1}\), \(h[0] = 156.25\ \mathrm{cm}^{-2}\)</li>
+    </ol>
+    <div class="explain">
+      <p>검출기 간격을 절반으로 줄이면 \(W\)가 2배가 되어 해상도는 좋아지지만, 램프 필터를 거친 백색잡음의 표준편차도 \(2^{3/2} \approx 2.8\)배가 됩니다(5장 페이지 8, 심화). 간격을 좁힌 만큼 선량을 늘리지 않으면 영상의 잡음이 커집니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="qn">마무리 퀴즈 2</p>
+    <p class="q">검출기가 \(N_s = 500\)개일 때, 원형 컨볼루션을 피하는 2의 거듭제곱 길이 가운데 가장 짧은 FFT 길이는 얼마일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 512 는 N_s 이상이지만 필요한 2N_s − 1 = 999 보다 짧습니다. 커널이 배열 끝을 넘어 반대쪽 끝의 투영값과 섞입니다.">512</li>
+      <li data-why="맞습니다. 필요한 커널 값은 n − m = −499 … 499 의 999개이므로 M ≥ 999 이고, 이 조건을 만족하는 2의 거듭제곱 중 가장 짧은 것은 1024 입니다.">1024</li>
+      <li data-why="틀립니다. 999 는 조건을 만족하는 가장 짧은 길이이지만 2의 거듭제곱이 아닙니다. 이 문제는 2의 거듭제곱 중에서 고르는 문제입니다.">999</li>
+      <li data-why="틀립니다. 2048 도 조건을 만족해서 결과는 맞지만 가장 짧은 길이가 아니어서 계산이 약 2배 듭니다.">2048</li>
+    </ol>
+    <div class="explain">
+      <p>제로 패딩은 DFT의 주파수 간격 \(1/(M\Delta s)\)을 촘촘하게 할 뿐이고 \(W = 1/(2\Delta s)\)를 바꾸지 않습니다. 제로 패딩을 늘려도 해상도는 좋아지지 않으며, 해상도를 얻으려면 검출기 간격을 좁혀야 합니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="qn">마무리 퀴즈 3</p>
+    <p class="q">주파수에서 \(|\omega_j|\)를 곱하는 방식으로 \(M = 1024\)에서 필터링했더니, 값이 1이어야 할 원판 안쪽이 \(0.996\), 값이 0이어야 할 바깥이 \(-0.005\)로 나왔습니다. 원인과 대처로 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 제로 패딩을 줄이면 오히려 원형 컨볼루션이 생겨 결과가 더 나빠집니다. 원인은 제로 패딩이 모자란 것이 아니라 필터를 주파수에서 만든 방식에 있습니다.">제로 패딩이 지나쳐서 생긴 오차이므로 \(M\)을 \(N_s\)에 가깝게 줄이면 오차가 사라진다.</li>
+      <li data-why="틀립니다. 각도 가중이 틀리면 영상 전체가 상수배로 틀어지는데, 여기서는 안쪽과 바깥이 같은 크기만큼 낮아진 것이어서 곱이 아니라 덧셈 꼴의 오차입니다.">각도 가중 \(\pi/N_\theta\)를 잘못 적용했으므로 각도 수 \(N_\theta\)로 가중을 다시 계산한다.</li>
+      <li data-why="틀립니다. 윈도우 필터를 바꿔도 필터가 만들어지는 방식은 같아서 같은 크기의 치우침이 남습니다. 윈도우는 높은 주파수를 줄일 뿐 영상 전체의 값을 옮기지 못합니다.">Hamming 같은 윈도우 필터로 바꾸면 높은 주파수가 줄어 함께 사라진다.</li>
+      <li data-why="맞습니다. 페이지 3의 표처럼 이 방식은 영상 전체를 일정하게 조금 낮춥니다. 커널 h[n]을 DFT한 필터를 쓰거나 M을 키우면 줄어듭니다. (심화) 배열 전체의 합이 정확히 0이 되도록 필터를 만들기 때문이며, 낮아지는 크기는 π∬μ/(6(MΔs)²) 정도입니다(페이지 5).">주파수에서 만든 필터가 영상 전체를 낮추므로 \(h[n]\)을 DFT한 필터로 바꾼다.</li>
+    </ol>
+    <div class="explain">
+      <p>(심화) 치우침의 크기는 영상의 총량 \(\iint\mu\,dx\,dy\)에 비례합니다(페이지 5). 같은 \(M\)이라도 물체가 크고 감쇠가 클수록 영상이 더 많이 어두워지므로, 팬텀으로 확인한 \(M\)이 실제 환자 데이터에도 충분하다고 단정할 수 없습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="qn">마무리 퀴즈 4</p>
+    <p class="q">검출기 간격이 \(\Delta s = 0.05\) cm이고 물체가 회전 중심에서 반지름 \(R = 10\) cm 안에 있습니다. 줄무늬가 보이지 않으려면 각도가 대략 몇 개 필요할까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. N_θ ≳ πR/Δs = π × 10/0.05 ≈ 630 입니다. 가장 바깥에서 이웃한 두 직선 사이의 거리 RΔθ 가 검출기 간격 Δs 보다 크지 않아야 합니다.">약 630개</li>
+      <li data-why="틀립니다. 200 은 R/Δs 입니다. 각도 간격은 라디안이고 범위가 π 이므로 Δθ = π/N_θ 이며, π 가 빠지면 이웃한 직선 사이의 거리를 3분의 1로 잘못 어림하게 됩니다.">약 200개</li>
+      <li data-why="틀립니다. 1260 은 2πR/Δs 로, 각도 범위를 0 ~ 2π 로 잡았을 때의 값입니다. 평행빔은 0 ~ π 로 충분하므로 같은 직선을 두 번 재는 셈입니다.">약 1260개</li>
+      <li data-why="틀립니다. 400 은 검출기 수 2R/Δs 와 같은 값입니다. 각도 수를 검출기 수와 같게 두면 필요한 수의 약 64% 이어서, 가장 바깥에서 이웃한 직선 사이가 검출기 간격의 1.6배로 벌어져 줄이 보입니다.">약 400개</li>
+    </ol>
+    <div class="explain">
+      <p>이 어림은 물체가 반지름 \(R\) 원을 가득 채워도 줄이 보이지 않을 조건이어서, 큰 구조만 볼 때는 더 적은 각도로도 쓸 수 있습니다(페이지 6의 Shepp-Logan 팬텀은 어림값의 절반 정도에서 값이 안정됩니다). 각도를 더 줄여야 할 때는 2편 4·5장에서 다루는 정규화를 씁니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>검출기 간격이 \(\Delta s = 0.04\) cm입니다. 차단 주파수 \(W\), Ram-Lak 커널의 \(h[0]\), \(h[\pm 1]\), \(h[\pm 3]\), 그리고 Shepp-Logan 커널의 \(h[0]\), \(h[\pm 1]\), \(h[\pm 2]\)를 구하세요.</li>
+      <li>검출기 \(N_s = 1000\)개, \(\Delta s = 0.05\) cm입니다. (가) FFT 길이 \(M\)을 정하세요. (나) 각도 하나의 필터링에서 직접 합과 FFT의 곱셈 횟수(직접 합 \(N_s^{2}\), FFT \(2M\log_2 M\))를 비교하세요. (다, 심화) 반지름 10 cm, \(\mu = 0.2\ \mathrm{cm}^{-1}\)인 균일한 원판을 주파수 방식으로 이 \(M\)에서 필터링하면 영상이 얼마나 낮아지는지 페이지 5의 식으로 어림하세요.</li>
+      <li>평행빔 장치에서 \(\Delta s = 0.05\) cm이고 물체가 반지름 12 cm 안에 있습니다. (가) 필요한 각도 수를 어림하고 800개로 정했을 때의 각도 간격과 각도 가중을 쓰세요. (나) 같은 장치가 \(0\)~\(2\pi\)에 걸쳐 1600개의 각도에서 측정했다면 각도 가중은 얼마여야 하는지 쓰세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> \(W = 1/(2 \times 0.04) = 12.5\ \mathrm{cm}^{-1}\)입니다. \((\Delta s)^{2} = 0.0016\)이므로 Ram-Lak 커널은 \(h[0] = 1/(4 \times 0.0016) = 156.25\), \(h[\pm 1] = -1/(\pi^{2} \times 0.0016) \approx -63.33\), \(h[\pm 3] = h[\pm 1]/9 \approx -7.04\)입니다(단위 \(\mathrm{cm}^{-2}\)).
+      Shepp-Logan 커널은 \(h[n] = -2/(\pi^{2}(\Delta s)^{2}(4n^{2} - 1))\)이므로 \(h[0] = 2/(\pi^{2} \times 0.0016) \approx 126.65\), \(h[\pm 1] = -h[0]/3 \approx -42.22\), \(h[\pm 2] = -h[0]/15 \approx -8.44\)입니다. \(h[0]\)이 Ram-Lak의 0.81배입니다.</p>
+      <p><b>2번.</b> (가) \(2N_s - 1 = 1999\) 이상인 가장 작은 2의 거듭제곱은 \(M = 2048\)입니다.
+      (나) 직접 합은 \(N_s^{2} = 10^{6}\)번, FFT는 \(2 \times 2048 \times 11 = 45056\)번이어서 약 22배 차이입니다.
+      (다) 총량은 \(\iint\mu\,dx\,dy = 0.2 \times \pi \times 10^{2} \approx 62.8\)이고 \((M\Delta s)^{2} = (2048 \times 0.05)^{2} \approx 10486\)이므로 \(\Delta\mu \approx -\pi \times 62.8/(6 \times 10486) \approx -0.0031\ \mathrm{cm}^{-1}\)입니다. 원판의 값 \(0.2\)의 약 1.6%이며, 영상 전체가 이만큼 낮아집니다.</p>
+      <p><b>3번.</b> (가) \(\pi R/\Delta s = \pi \times 12/0.05 \approx 754\)이므로 800개면 충분합니다. 각도 간격은 \(\Delta\theta = \pi/800\) rad \(= 0.225^{\circ}\)이고, 각도 가중도 \(\pi/800 \approx 0.00393\)입니다.
+      (나) 각도 간격이 \(2\pi/1600\)이고 모든 직선을 두 번 측정했으므로, 가중은 \(\tfrac12 \times 2\pi/1600 = \pi/1600 \approx 0.00196\)입니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 \(W\)를 \(1/\Delta s\)로 쓰는 것입니다. 담을 수 있는 가장 높은 주파수는 \(1/(2\Delta s)\)입니다.</li>
+        <li>1번에서 짝수 \(n\)에도 \(-1/(\pi^{2}n^{2}(\Delta s)^{2})\)을 넣는 것입니다. Ram-Lak 커널은 0이 아닌 짝수 \(n\)에서 0이지만, Shepp-Logan 커널은 짝수 \(n\)에서도 0이 아닙니다.</li>
+        <li>2번 (나)에서 FFT의 곱셈 횟수에 제로 패딩 길이 \(M\) 대신 \(N_s\)를 쓰는 것입니다. FFT는 영 채운 길이 \(M\)에서 하므로 \(M\log_2 M\)입니다.</li>
+        <li>2번 (다)에서 \(\Delta\mu\)를 원판의 값 0.2에 곱하는 것입니다. 식의 분자는 값이 아니라 총량 \(\iint\mu\,dx\,dy\)입니다.</li>
+        <li>3번 (나)에서 \(2\pi/1600\)을 그대로 쓰는 것입니다. 같은 직선을 두 번 더하므로 \(\tfrac12\)을 곱해야 합니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch07.html"><span>다음 장</span>7장 — 실제 장치는 왜 평행빔이 아닐까요? 팬빔과 rebinning</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

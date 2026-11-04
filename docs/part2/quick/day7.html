@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="day7">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7일차 · FBP 대 반복법, 1·2편 돌아보기 — CT 재구성 2편 빠르게 보기</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="각도가 모자랄 때의 FBP와 반복법">
+  <p class="kicker">7일차 · 페이지 1</p>
+  <h1>FBP 대 반복법, 1·2편 돌아보기</h1>
+
+  <p class="lead">1편의 FBP와 2편의 반복법은 같은 측정값에서 영상을 구하는 두 방법입니다. 오늘은 두 방법을 같은 조건에서 견주어 봅니다. 먼저 각도가 모자랄 때의 재구성 결과(페이지 1)와 광선마다 잡음이 다른 경우(페이지 2)를 보고, 계산 비용과 선택 기준을 정리합니다(페이지 3). 마지막으로 1편과 2편 전체를 한 장의 지도로 돌아봅니다(페이지 4).</p>
+
+  <h3>같은 팬텀, 네 가지 재구성</h3>
+
+  <p><a href="day4.html#s5">4일차 페이지 5</a>와 같은 \(48 \times 48\) Shepp-Logan 팬텀을 검출기 \(61\)개로 측정하고, 각도 수 \(K\)를 \(0^{\circ}\)에서 \(180^{\circ}\)까지 고르게 줄여 재구성합니다. 비교하는 방법은 다음과 같습니다.</p>
+
+  <ul>
+    <li><b>FBP.</b> 1편의 필터 역투영입니다. 필터는 윈도우 없는 Ram-Lak 커널을 썼습니다.</li>
+    <li><b>정규화 없음.</b> \(\lambda = 0\)으로 비음수 조건만 지키며 \(600\)회 반복한 대수적 재구성입니다.</li>
+    <li><b>TV 고정 걸음.</b> 평활화 TV(\(\lambda = 0.001\), \(\delta = 0.01\))를 더하고 걸음 크기를 고정해 \(600\)회 반복한 재구성입니다.</li>
+    <li><b>GPBB.</b> 같은 TV를 5일차의 GPBB로 수렴할 때까지(\(\lVert\mathbf{u}\rVert &lt; 10^{-4}\)) 푼 재구성입니다.</li>
+  </ul>
+
+  <p>아래 위젯은 FBP, TV 고정 걸음, GPBB의 결과를 참값과 나란히 보여 줍니다. 처음 열 때와 각도 수를 처음 고를 때 계산하느라 잠시 걸립니다. 영상은 값 \(0.98 \sim 1.05\)를 흑백으로 나타낸 것이라 뇌 조직 안의 작은 차이가 보입니다.</p>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="d6-cmp-k">
+    <span>각도 수 \(K\)</span>
+    <button type="button" data-k="10">10</button>
+    <button type="button" data-k="18">18</button>
+    <button type="button" data-k="40">40</button>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 690 220" role="img" aria-label="선택한 각도 수에서 FBP, TV 고정 걸음, GPBB로 재구성한 영상과 참값 영상을 나란히 보여 줍니다">
+      <image id="d6-cmp-fbp" x="14" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <image id="d6-cmp-fix" x="184" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <image id="d6-cmp-gp" x="354" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <image id="d6-cmp-true" x="524" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><rect x="14" y="26" width="150" height="150"/><rect x="184" y="26" width="150" height="150"/><rect x="354" y="26" width="150" height="150"/><rect x="524" y="26" width="150" height="150"/></g>
+      <g font-size="11.5" font-weight="700" class="svg-fg"><text x="14" y="18">FBP</text><text x="184" y="18">TV 고정 걸음(600회)</text><text x="354" y="18">GPBB(수렴까지)</text><text x="524" y="18">참값</text></g>
+      <g font-size="11" class="svg-muted"><text x="14" y="196" id="d6-cmp-r1"></text><text x="184" y="196" id="d6-cmp-r2"></text><text x="354" y="196" id="d6-cmp-r3"></text></g>
+    </svg>
+    <figcaption id="d6-cmp-cap">계산 중입니다…</figcaption>
+  </figure>
+
+  <p>위젯의 숫자는 참값과의 <span class="term" data-term="rmse">RMSE</span>(Root Mean Square Error)입니다. 같은 조건의 결과를 표로 모으면 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>각도 수 \(K\)</th><th>FBP</th><th>정규화 없음(\(600\)회)</th><th>TV 고정 걸음(\(600\)회)</th><th>GPBB(수렴까지)</th></tr>
+      <tr><td>\(10\)</td><td>\(0.3245\)</td><td>\(0.1860\)</td><td>\(0.1461\)</td><td>\(0.1278\)(\(280\)회)</td></tr>
+      <tr><td>\(18\)</td><td>\(0.2376\)</td><td>\(0.1141\)</td><td>\(0.0577\)</td><td>\(0.0332\)(\(208\)회)</td></tr>
+      <tr><td>\(40\)</td><td>\(0.1769\)</td><td>\(0.0456\)</td><td>\(0.0129\)</td><td>\(0.0100\)(\(116\)회)</td></tr>
+      <tr><td>\(40\) + 측정 잡음</td><td>\(0.1776\)</td><td>\(0.0536\)</td><td>\(0.0198\)</td><td>\(0.0168\)(\(156\)회)</td></tr>
+    </table>
+  </div>
+
+  <p>표에서 읽을 수 있는 것은 세 가지입니다.</p>
+
+  <ol>
+    <li><b>각도가 모자랄수록 FBP의 오차가 큽니다.</b> FBP 대 GPBB의 오차 비는 \(K = 10\)에서 약 \(2.5\)배, \(K = 18\)에서 약 \(7.2\)배, \(K = 40\)에서 약 \(17.7\)배입니다. 각도가 줄면 FBP는 주파수 평면의 틈(<a href="day4.html#s4">4일차 페이지 4</a>) 때문에 줄무늬가 생기는 데 비해, 반복법은 정규화로 그 틈을 일부 메웁니다.</li>
+    <li><b>정규화 없는 반복법도 FBP보다 낮습니다.</b> 광선의 실제 기하를 시스템 행렬에 그대로 쓰는 대수적 모델의 이득입니다. TV는 여기에 더해 오차를 더 줄입니다.</li>
+    <li><b>측정 잡음을 더하면 FBP는 거의 그대로이고, 반복법은 조금 커집니다.</b> 고정 걸음 두 방법은 \(600\)회로 미리 끊은 것이 조기 종료처럼 작용했습니다. GPBB는 수렴까지 돌렸는데도 \(0.0100\)에서 \(0.0168\)이 됩니다.</li>
+  </ol>
+
+  <div class="box warn">
+    <p class="box-t">이 비교의 범위</p>
+    <ul>
+      <li>팬텀은 구간 상수에 가까워 TV에 유리합니다. 질감이 많은 실제 영상에서는 TV의 이득이 줄어듭니다.</li>
+      <li>\(\lambda\)는 참값과의 오차가 가장 작도록 미리 고른 값입니다. 실제에서는 데이터와의 차이를 잡음 크기와 맞추는 방법으로 정해야 합니다.</li>
+      <li>FBP는 윈도우 필터로 잡음과 해상도를 조절할 수 있는데 이 비교에서는 쓰지 않았습니다. \(48 \times 48\) 팬텀 하나의 결과이므로 크기가 다른 영상이나 다른 장치에 그대로 옮기지 않습니다.</li>
+      <li>\(K = 10\)에서는 TV로도 오차가 \(0.1278\)이 남습니다. 측정이 너무 적으면 사전 정보로 메울 수 없는 부분이 있습니다.</li>
+    </ul>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch07.html#s9">2편 7장 페이지 9</a>: 같은 표와 위젯, 잡음 있는 경우의 분석</li>
+      <li><a href="../detail/ch05.html#s8">2편 5장 페이지 8</a>: 정규화 없음과 TV를 고정 걸음으로 비교한 위젯</li>
+    </ul>
+  </div>
+
+  <script>
+(function () {
+var N = 48;
+    var D2R = Math.PI / 180;
+    var SL = [
+      ['a', 0, 0, 0.92, 0.69, 90, 2.0], ['b', 0, -0.0184, 0.874, 0.6624, 90, -0.98],
+      ['c', 0.22, 0, 0.31, 0.11, 72, -0.02], ['d', -0.22, 0, 0.41, 0.16, 108, -0.02],
+      ['e', 0, 0.35, 0.25, 0.21, 90, 0.01], ['f', 0, 0.1, 0.046, 0.046, 0, 0.01],
+      ['g', 0, -0.1, 0.046, 0.046, 0, 0.01], ['h', -0.08, -0.605, 0.046, 0.023, 0, 0.01],
+      ['i', 0, -0.605, 0.023, 0.023, 0, 0.01], ['j', 0.06, -0.605, 0.046, 0.023, 90, 0.01]
+    ];
+    function ellMu(x, y) {
+      var v = 0, i, e, c, s, u, w;
+      for (i = 0; i < SL.length; i++) {
+        e = SL[i]; c = Math.cos(e[5] * D2R); s = Math.sin(e[5] * D2R);
+        u = (x - e[1]) * c + (y - e[2]) * s; w = -(x - e[1]) * s + (y - e[2]) * c;
+        if (u * u / (e[3] * e[3]) + w * w / (e[4] * e[4]) <= 1) v += e[6];
+      }
+      return v;
+    }
+    function buildGrid(N, half) {
+      var cell = 2 * half / N, xs = new Float64Array(N * N), ys = new Float64Array(N * N), ix, iy;
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        xs[iy * N + ix] = -half + (ix + 0.5) * cell;
+        ys[iy * N + ix] = half - (iy + 0.5) * cell;
+      }
+      return { N: N, half: half, cell: cell, xs: xs, ys: ys };
+    }
+    function buildSystemMatrix(grid, angles, dets) {
+      var N = grid.N, half = grid.half, cell = grid.cell;
+      var rows = [], k, n, theta, s, c, sn, p0x, p0y, dx, dy;
+      var lines = [], li;
+      for (li = 0; li <= N; li++) lines.push(-half + li * cell);
+      for (k = 0; k < angles.length; k++) {
+        theta = angles[k]; c = Math.cos(theta); sn = Math.sin(theta);
+        for (n = 0; n < dets.length; n++) {
+          s = dets[n]; p0x = s * c; p0y = s * sn; dx = -sn; dy = c;
+          var txlo, txhi, tylo, tyhi, tmin, tmax, ts, li2, t, x, y, ix, iy, idx, skip = false;
+          if (Math.abs(dx) > 1e-12) { txlo = (-half - p0x) / dx; txhi = (half - p0x) / dx; if (txlo > txhi) { t = txlo; txlo = txhi; txhi = t; } }
+          else { if (p0x < -half || p0x > half) skip = true; txlo = -1e9; txhi = 1e9; }
+          if (!skip) {
+            if (Math.abs(dy) > 1e-12) { tylo = (-half - p0y) / dy; tyhi = (half - p0y) / dy; if (tylo > tyhi) { t = tylo; tylo = tyhi; tyhi = t; } }
+            else { if (p0y < -half || p0y > half) skip = true; tylo = -1e9; tyhi = 1e9; }
+          }
+          if (skip) { rows.push({ cols: [], vals: [] }); continue; }
+          tmin = Math.max(txlo, tylo); tmax = Math.min(txhi, tyhi);
+          if (tmin >= tmax - 1e-12) { rows.push({ cols: [], vals: [] }); continue; }
+          ts = [tmin, tmax];
+          for (li2 = 1; li2 < N; li2++) {
+            var xk = lines[li2], yk = lines[li2];
+            if (Math.abs(dx) > 1e-12) { t = (xk - p0x) / dx; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+            if (Math.abs(dy) > 1e-12) { t = (yk - p0y) / dy; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+          }
+          ts.sort(function (a, b) { return a - b; });
+          var cols = [], vals = [], map = {};
+          for (li2 = 0; li2 < ts.length - 1; li2++) {
+            var ta = ts[li2], tb = ts[li2 + 1], len = tb - ta;
+            if (len <= 1e-12) continue;
+            var tm = (ta + tb) / 2;
+            x = p0x + tm * dx; y = p0y + tm * dy;
+            ix = Math.floor((x + half) / cell); iy = Math.floor((half - y) / cell);
+            if (ix < 0 || ix >= N || iy < 0 || iy >= N) continue;
+            idx = iy * N + ix;
+            if (map.hasOwnProperty(idx)) { vals[map[idx]] += len; } else { map[idx] = cols.length; cols.push(idx); vals.push(len); }
+          }
+          rows.push({ cols: cols, vals: vals });
+        }
+      }
+      var M = rows.length, Npix = N * N;
+      return { rows: rows, M: M, Npix: Npix };
+    }
+    function forward(sysA, x) {
+      var M = sysA.M, rows = sysA.rows, b = new Float64Array(M), i, j, r, s;
+      for (i = 0; i < M; i++) { r = rows[i]; s = 0; for (j = 0; j < r.cols.length; j++) s += r.vals[j] * x[r.cols[j]]; b[i] = s; }
+      return b;
+    }
+    function backward(sysA, dvec) {
+      var M = sysA.M, rows = sysA.rows, x = new Float64Array(sysA.Npix), i, j, r;
+      for (i = 0; i < M; i++) { r = rows[i]; for (j = 0; j < r.cols.length; j++) x[r.cols[j]] += r.vals[j] * dvec[i]; }
+      return x;
+    }
+    function rmseFn(x, xt) {
+      var i, s = 0; for (i = 0; i < x.length; i++) { var dd = x[i] - xt[i]; s += dd * dd; }
+      return Math.sqrt(s / x.length);
+    }
+    function tvEnergyGradHuber(x, N, delta) {
+      function at(ix, iy) { if (ix < 0 || ix >= N || iy < 0 || iy >= N) return 0; return x[iy * N + ix]; }
+      var g = new Float64Array(N * N), ix, iy, coeff = new Float64Array(N * N);
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        if (ix === N - 1 && iy === N - 1) { coeff[iy * N + ix] = 0; continue; }
+        var xc = at(ix, iy), xr = (ix < N - 1) ? at(ix + 1, iy) : xc, xd = (iy < N - 1) ? at(ix, iy + 1) : xc;
+        var dx = (ix < N - 1) ? (xr - xc) : 0, dy = (iy < N - 1) ? (xd - xc) : 0;
+        var t = Math.sqrt(dx * dx + dy * dy);
+        coeff[iy * N + ix] = (t <= delta) ? (1 / delta) : (t > 1e-12 ? (1 / t) : 0);
+      }
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        var xc = at(ix, iy), xr = (ix < N - 1) ? at(ix + 1, iy) : xc, xd = (iy < N - 1) ? at(ix, iy + 1) : xc;
+        var dx1 = (ix < N - 1) ? (xr - xc) : 0, dy1 = (iy < N - 1) ? (xd - xc) : 0;
+        var c1 = coeff[iy * N + ix];
+        var term1x = -c1 * dx1, term1y = -c1 * dy1, term2 = 0, term3 = 0;
+        if (ix > 0) { var xl = at(ix - 1, iy), cl = coeff[iy * N + (ix - 1)]; term2 = cl * (xc - xl); }
+        if (iy > 0) { var xu = at(ix, iy - 1), cu = coeff[(iy - 1) * N + ix]; term3 = cu * (xc - xu); }
+        g[iy * N + ix] = term1x + term1y + term2 + term3;
+      }
+      return g;
+    }
+    function tvValue(x, N, delta) {
+      var s = 0, ix, iy, c, dx, dy, t;
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        c = x[iy * N + ix];
+        dx = ix < N - 1 ? x[iy * N + ix + 1] - c : 0;
+        dy = iy < N - 1 ? x[(iy + 1) * N + ix] - c : 0;
+        t = Math.sqrt(dx * dx + dy * dy);
+        s += t <= delta ? t * t / (2 * delta) : t - delta / 2;
+      }
+      return s;
+    }
+    function dot(a, b) { var s = 0, i; for (i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+    function gpbb(sysA, N, b, lambda, delta, opt) {
+      var tol = opt.tol, maxIter = opt.maxIter, alpha = opt.alpha0, keep = !!opt.keep;
+      var n = sysA.Npix, m = sysA.M, i, k;
+      var x = new Float64Array(n), r = new Float64Array(m);
+      for (i = 0; i < m; i++) r[i] = -b[i];
+      var g = backward(sysA, r); for (i = 0; i < n; i++) g[i] *= 2;          // TV 기울기는 x=0 에서 0
+      var J0 = dot(r, r) + lambda * tvValue(x, N, delta);
+      var hist = { J: [J0], un: [], a: [], eta: [] }, snaps = keep ? [new Float64Array(x)] : null;
+      var recent = [J0], u = new Float64Array(n), xe = new Float64Array(n), re = new Float64Array(m), gn, s = new Float64Array(n), y = new Float64Array(n);
+      for (k = 0; k < maxIter; k++) {
+        for (i = 0; i < n; i++) u[i] = Math.max(x[i] - alpha * g[i], 0) - x[i];
+        var un = Math.sqrt(dot(u, u)); hist.un.push(un); hist.a.push(alpha);
+        if (un < tol) break;
+        var Au = forward(sysA, u), eta = 1, gu = dot(g, u), mx = Math.max.apply(null, recent), f;
+        for (;;) {
+          for (i = 0; i < n; i++) xe[i] = x[i] + eta * u[i];
+          for (i = 0; i < m; i++) re[i] = r[i] + eta * Au[i];
+          f = dot(re, re) + (lambda > 0 ? lambda * tvValue(xe, N, delta) : 0);
+          if (f <= mx + 1e-4 * eta * gu || eta < 1e-12) break;
+          eta /= 2;
+        }
+        for (i = 0; i < n; i++) { s[i] = eta * u[i]; x[i] += s[i]; }
+        for (i = 0; i < m; i++) r[i] += eta * Au[i];
+        gn = backward(sysA, r); for (i = 0; i < n; i++) gn[i] *= 2;
+        if (lambda > 0) { var gt = tvEnergyGradHuber(x, N, delta); for (i = 0; i < n; i++) gn[i] += lambda * gt[i]; }
+        for (i = 0; i < n; i++) y[i] = gn[i] - g[i];
+        var sy = dot(s, y), ss = dot(s, s);
+        alpha = sy > 0 ? Math.min(1e8, Math.max(1e-8, ss / sy)) : 1e8;
+        g = gn;
+        hist.J.push(f); hist.eta.push(eta);
+        recent.push(f); if (recent.length > 10) recent.shift();
+        if (keep) snaps.push(new Float64Array(x));
+      }
+      return { x: x, iters: k, hist: hist, snaps: snaps };
+    }
+  function imageURL(arr, lo, hi) {
+    var cv = document.createElement('canvas'), ctx, im, i, g;
+    cv.width = N; cv.height = N; ctx = cv.getContext('2d'); im = ctx.createImageData(N, N);
+    for (i = 0; i < N * N; i++) {
+      g = Math.round(255 * Math.max(0, Math.min(1, (arr[i] - lo) / (hi - lo))));
+      im.data[4 * i] = im.data[4 * i + 1] = im.data[4 * i + 2] = g; im.data[4 * i + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+
+var grid = buildGrid(N, 1), Ns = 61, ds = 2.9 / (Ns - 1), dets = [], ii;
+for (ii = 0; ii < Ns; ii++) dets.push(-1.45 + ii * ds);
+var xTrue = new Float64Array(N * N); for (ii = 0; ii < N * N; ii++) xTrue[ii] = ellMu(grid.xs[ii], grid.ys[ii]);
+var kit = { N: N, xTrue: xTrue, gpbb: gpbb, rmseFn: rmseFn, forward: forward, backward: backward, grid: grid, dets: dets,
+            buildSystemMatrix: buildSystemMatrix, tvEnergyGradHuber: tvEnergyGradHuber, imageURL: imageURL };
+var ALPHA = { 10: 0.5330, 18: 0.4825, 40: 0.2514 }, cache = {}, curK = 18;
+  function ramLakKernel(Ns2, delta) {
+    var h = new Float64Array(2 * Ns2 - 1), c = Ns2 - 1, n;
+    for (n = -(Ns2 - 1); n <= Ns2 - 1; n++) {
+      if (n === 0) h[n + c] = 1 / (4 * delta * delta);
+      else if (n % 2 === 0) h[n + c] = 0;
+      else h[n + c] = -1 / (n * n * Math.PI * Math.PI * delta * delta);
+    }
+    return h;
+  }
+  function filterRow(row, h, delta) {
+    var Ns2 = row.length, Lh = h.length, c = (Lh - 1) / 2, out = new Float64Array(Ns2), n, m, s, k;
+    for (n = 0; n < Ns2; n++) {
+      s = 0;
+      for (m = 0; m < Ns2; m++) { k = n - m + c; if (k >= 0 && k < Lh) s += row[m] * h[k]; }
+      out[n] = s * delta;
+    }
+    return out;
+  }
+  function fbpReconstruct(grid, angles, dets, sino) {
+    var Ns2 = dets.length, delta = dets[1] - dets[0], h = ramLakKernel(Ns2, delta);
+    var K2 = angles.length, q = new Float64Array(K2 * Ns2), k, n, ix, iy, f;
+    for (k = 0; k < K2; k++) { f = filterRow(sino.slice(k * Ns2, (k + 1) * Ns2), h, delta); for (n = 0; n < Ns2; n++) q[k * Ns2 + n] = f[n]; }
+    var mu = new Float64Array(N * N), dmin = dets[0];
+    for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+      var x = grid.xs[iy * N + ix], y = grid.ys[iy * N + ix], acc = 0;
+      for (k = 0; k < K2; k++) {
+        var s = x * Math.cos(angles[k]) + y * Math.sin(angles[k]);
+        var tau = (s - dmin) / delta, i0 = Math.floor(tau), fr = tau - i0;
+        if (i0 < 0 || i0 >= Ns2 - 1) continue;
+        acc += (1 - fr) * q[k * Ns2 + i0] + fr * q[k * Ns2 + i0 + 1];
+      }
+      mu[iy * N + ix] = (Math.PI / K2) * acc;
+    }
+    return mu;
+  }
+  function fixedStepTV(sysA, bData, lambda, delta, alpha, iters) {
+    var n = sysA.Npix, x = new Float64Array(n), it, i, r, gD, gT, upd;
+    for (it = 0; it < iters; it++) {
+      r = kit.forward(sysA, x);
+      for (i = 0; i < r.length; i++) r[i] -= bData[i];
+      gD = kit.backward(sysA, r);
+      gT = kit.tvEnergyGradHuber(x, N, delta);
+      for (i = 0; i < n; i++) {
+        upd = 2 * gD[i] + lambda * gT[i];
+        x[i] = Math.max(x[i] - alpha * upd, 0);
+      }
+    }
+    return x;
+  }
+  function compute(K) {
+    if (cache[K]) return cache[K];
+    var angles = [], i, A, b, fbpX, fixX, G;
+    for (i = 0; i < K; i++) angles.push(i * Math.PI / K);
+    A = kit.buildSystemMatrix(kit.grid, angles, kit.dets);
+    b = kit.forward(A, kit.xTrue);
+    fbpX = fbpReconstruct(kit.grid, angles, kit.dets, b);
+    fixX = fixedStepTV(A, b, 0.001, 0.01, ALPHA[K], 600);
+    G = kit.gpbb(A, N, b, 0.001, 0.01, { tol: 1e-4, maxIter: 1500, alpha0: 1, keep: false });
+    cache[K] = {
+      fbp: { url: kit.imageURL(fbpX, 0.98, 1.05), e: kit.rmseFn(fbpX, kit.xTrue) },
+      fix: { url: kit.imageURL(fixX, 0.98, 1.05), e: kit.rmseFn(fixX, kit.xTrue) },
+      gp: { url: kit.imageURL(G.x, 0.98, 1.05), e: kit.rmseFn(G.x, kit.xTrue), it: G.iters }
+    };
+    return cache[K];
+  }
+
+var cap = document.getElementById('d6-cmp-cap'), inited = false;
+function render() {
+  var btns = document.querySelectorAll('#d6-cmp-k button'), q;
+  for (q = 0; q < btns.length; q++) {
+    var on = +btns[q].getAttribute('data-k') === curK;
+    btns[q].style.fontWeight = on ? '700' : '400';
+    btns[q].style.borderColor = on ? 'var(--accent)' : '';
+  }
+  cap.textContent = '계산 중입니다…';
+  setTimeout(function () {
+    var o = compute(curK);
+    document.getElementById('d6-cmp-fbp').setAttribute('href', o.fbp.url);
+    document.getElementById('d6-cmp-fix').setAttribute('href', o.fix.url);
+    document.getElementById('d6-cmp-gp').setAttribute('href', o.gp.url);
+    document.getElementById('d6-cmp-r1').textContent = 'RMSE ' + o.fbp.e.toFixed(4);
+    document.getElementById('d6-cmp-r2').textContent = 'RMSE ' + o.fix.e.toFixed(4);
+    document.getElementById('d6-cmp-r3').textContent = 'RMSE ' + o.gp.e.toFixed(4) + ' · ' + o.gp.it + '회';
+    cap.textContent = 'K=' + curK + ' · 잡음 없는 데이터 · λ=0.001, δ=0.01. 반복 수는 브라우저의 수치 계산 차이로 몇 회 달라질 수 있습니다.';
+  }, 15);
+}
+document.getElementById('d6-cmp-k').addEventListener('click', function (e) {
+  var t = e.target.closest('button[data-k]'); if (!t) return;
+  curK = +t.getAttribute('data-k'); render();
+});
+function init() {
+  if (inited) return; inited = true;
+  document.getElementById('d6-cmp-true').setAttribute('href', kit.imageURL(kit.xTrue, 0.98, 1.05));
+  render();
+}
+var sec = cap.closest('.screen');
+if (sec.classList.contains('is-active')) init();
+else new MutationObserver(function (_, ob) { if (sec.classList.contains('is-active')) { ob.disconnect(); init(); } }).observe(sec, { attributes: true, attributeFilter: ['class'] });
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="광선마다 다른 신뢰도와 가중 최소제곱">
+  <p class="kicker">7일차 · 페이지 2</p>
+  <h2>광선마다 다른 신뢰도와 가중 최소제곱</h2>
+
+  <p>지금까지의 반복법은 모든 광선의 데이터와의 차이를 똑같이 취급했습니다. 그러나 측정의 잡음은 광선마다 다릅니다. 물체를 두껍게 지나는 광선은 검출기에 도달하는 광자 수가 적어서 잡음이 큽니다. 잡음이 큰 측정값은 덜 믿는 것이 합리적입니다.</p>
+
+  <h3>광선마다 다른 잡음</h3>
+
+  <p>입사 광자 수의 평균을 \(N_0\)이라 하면, 투영값 \(p\)인 광선에 도달하는 광자 수의 평균은 \(N_0 e^{-p}\)이고, 투영값의 표준편차는 근사적으로 다음과 같습니다(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>).</p>
+
+  <p style="text-align:center">\[\sigma_p \approx \frac{e^{p/2}}{\sqrt{N_0}}\]</p>
+
+  <p>\(p\)가 클수록, 곧 두꺼운 방향일수록 \(\sigma_p\)가 커집니다. 통계에서는 분산이 큰 측정값일수록 가중치를 작게 주는 것이 최선이며, 광선 \(i\)의 가중치를 분산의 역수 \(w_i = 1/\sigma_i^2\)로 둡니다. 이 값은 \(N_0 e^{-p_i}\), 곧 도달한 광자 수의 평균과 같습니다. 아래 위젯에서 \(p\)와 \(N_0\)를 바꾸어 보세요.</p>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="d6-w-p">투영값 \(p\)</label>
+    <input id="d6-w-p" type="range" min="0" max="80" step="1" value="30" style="width:12rem">
+    <b id="d6-w-pv">3.0</b>
+    <label for="d6-w-n">입사 광자 수 \(N_0\)</label>
+    <select id="d6-w-n" style="font:inherit;font-size:.86rem">
+      <option value="1000">10³</option>
+      <option value="10000" selected>10⁴</option>
+      <option value="100000">10⁵</option>
+    </select>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="d6-w-out"></p>
+
+  <script>
+  (function () {
+    var sp = document.getElementById('d6-w-p'), sn = document.getElementById('d6-w-n'), out = document.getElementById('d6-w-out');
+    function render() {
+      var p = +sp.value / 10, n = +sn.value, sg = Math.exp(p / 2) / Math.sqrt(n), w = 1 / (sg * sg);
+      document.getElementById('d6-w-pv').textContent = p.toFixed(1);
+      out.textContent = 'σ = ' + sg.toFixed(4) + ' · 가중치 w = ' + Math.round(w) + ' · p = 0 인 광선 대비 ' + (Math.exp(-p)).toFixed(4) + '배';
+    }
+    sp.addEventListener('input', render); sn.addEventListener('input', render); render();
+  })();
+  </script>
+
+  <p>\(N_0 = 10^4\)이면 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>투영값 \(p\)</th><td>\(0\)</td><td>\(1\)</td><td>\(3\)</td><td>\(5\)</td><td>\(7\)</td></tr>
+      <tr><th>\(\sigma_p\)</th><td>\(0.0100\)</td><td>\(0.0165\)</td><td>\(0.0448\)</td><td>\(0.1218\)</td><td>\(0.3312\)</td></tr>
+      <tr><th>가중치 \(w = 1/\sigma_p^2\)</th><td>\(10{,}000\)</td><td>\(3{,}679\)</td><td>\(498\)</td><td>\(67\)</td><td>\(9\)</td></tr>
+    </table>
+  </div>
+
+  <p>\(p = 7\)인 광선의 가중치는 \(p = 0\)인 광선의 약 \(0.1\%\)입니다. 이 가중치를 데이터 항에 곱한 목적함수를 <span class="term" data-term="weightls">가중 최소제곱</span>(Weighted Least Squares)이라고 합니다.</p>
+
+  <p style="text-align:center">\[J(\mathbf{x}) = \sum_i w_i\,\bigl(b_i - (\mathbf{A}\mathbf{x})_i\bigr)^2 = (\mathbf{b} - \mathbf{A}\mathbf{x})^{\mathsf T}\mathbf{W}(\mathbf{b} - \mathbf{A}\mathbf{x}), \qquad \mathbf{W} = \operatorname{diag}(w_1, \dots, w_m)\]</p>
+
+  <p>여기서 \(w_i\)는 측정의 통계적 신뢰도이며, 시스템 행렬의 원소 \(a_{ij}\)(광선과 화소의 교차 길이, 1편의 \(w_{ij}\))와 다른 값입니다.</p>
+
+  <h3>반복법과 FBP에서의 반영</h3>
+
+  <ul>
+    <li><b>경사하강형 갱신.</b> 데이터 항의 기울기가 \(-2\mathbf{A}^{\mathsf T}\mathbf{W}(\mathbf{b} - \mathbf{A}\mathbf{x})\)로 바뀌므로, 갱신식의 잔차에 \(\mathbf{W}\)를 곱하면 됩니다. 2일차의 SIRT에서는 잔차를 광선의 길이 합 \(r_i\)로 나누던(\(1/r_i\)를 곱하던) 자리에 \(w_i\)를 곱합니다.</li>
+    <li><b>ART의 Kaczmarz 갱신.</b> 식 하나의 양변에 \(\sqrt{w_i}\)를 곱해도 갱신식의 분자와 분모에서 상쇄되어 걸음이 달라지지 않으므로, 가중치를 그대로 끼워 넣을 수 없습니다.</li>
+    <li><b>GPBB.</b> 데이터 항의 기울기만 \(2\mathbf{A}^{\mathsf T}\mathbf{W}(\mathbf{A}\mathbf{x} - \mathbf{b})\)로 바꾸면 5일차의 순서도를 그대로 쓸 수 있습니다. 정규화 항을 더한 이 목적함수를 <span class="term" data-term="pwls">PWLS</span>(Penalized Weighted Least Squares)라고 합니다.</li>
+    <li><b>FBP.</b> 모든 투영에 같은 필터를 쓰는 공식이라 광선마다의 신뢰도를 반영하기 어렵습니다. 대신 윈도우 필터로 높은 주파수의 잡음을 줄이는 방법이 있습니다(<a href="../../part1/quick/day4.html#s5">1편 빠르게 보기 4일차 페이지 5</a>).</li>
+  </ul>
+
+  <div class="box warn">
+    <p class="box-t">이 코스가 다루지 않은 것</p>
+    <p>이 코스는 가중 최소제곱으로 재구성한 수치 결과를 보이지 않습니다. 가중치의 효과는 잡음 수준과 물체의 두께 분포에 따라 달라지며, 잡음이 모든 광선에서 비슷하면 \(\mathbf{W}\)가 거의 상수라서 차이가 작습니다. 투과 CT에서는 광자 수가 포아송 분포(Poisson Distribution)를 따르는 정확한 통계 모델도 있는데, 가중 최소제곱은 그것을 정규 분포로 근사한 모델입니다.</p>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch02.html#s9">2편 2장 페이지 9</a>: 가중치를 SIRT와 경사하강형 갱신에 넣는 방법</li>
+      <li><a href="../detail/ch02.html#s10">2편 2장 페이지 10</a>: FBP와 ART·SIRT·SART의 비교 표</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="계산 비용과 방법의 선택 기준">
+  <p class="kicker">7일차 · 페이지 3</p>
+  <h2>계산 비용과 방법의 선택 기준</h2>
+
+  <p>페이지 1에서 반복법이 오차를 줄였습니다. 그 대가는 계산량입니다. 이 페이지는 비용을 순투영과 역투영의 횟수로 비교하고, 상황에 따라 방법을 고르는 기준을 정리합니다.</p>
+
+  <h3>계산 횟수로 본 비용</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>방법</th><th>순투영 \(\mathbf{A}\)</th><th>역투영 \(\mathbf{A}^{\mathsf T}\)</th><th>비고</th></tr>
+      <tr><td>FBP</td><td>없음</td><td>한 번</td><td>그 전에 투영마다 필터링을 한 번 합니다.</td></tr>
+      <tr><td>ART·SIRT·SART</td><td>한 바퀴당 한 번과 같은 양</td><td>한 바퀴당 한 번과 같은 양</td><td>한 바퀴는 모든 광선을 한 번씩 쓰는 것이며, 수십~수백 바퀴가 필요합니다.</td></tr>
+      <tr><td>GPBB</td><td>반복마다 한 번</td><td>반복마다 한 번</td><td>이 설정에서 \(116\)~\(280\)회(고정 걸음은 \(985\)~\(3{,}252\)회)입니다.</td></tr>
+    </table>
+  </div>
+
+  <p>GPBB는 반복 한 번이 순투영과 역투영 한 쌍이고, 이 설정에서 \(116\)~\(280\)번 반복했습니다. 역투영만 세어도 FBP는 한 번, GPBB는 \(116\)~\(280\)번입니다. 반복법의 계산량은 해석적 방법보다 훨씬 큽니다. 다만 반복 한 번의 비용은 FBP 한 번과 같은 크기이며, 문제는 그 반복을 수십~수백 번 되풀이해야 한다는 점입니다. 같은 TV 재구성을 고정 걸음 대신 BB 스텝으로 풀면 반복 수가 약 \(8\sim12\)배 줄어듭니다(5일차).</p>
+
+  <p>시스템 행렬을 저장하지 않고 순투영과 역투영을 필요할 때마다 계산하는 방식(<a href="../detail/ch01.html#s7">2편 1장 페이지 7</a>)을 쓰면 메모리는 아끼지만 계산량은 줄지 않습니다. 이 표의 횟수는 같은 크기의 작은 예제를 기준으로 한 값이며, 실제 장치의 크기와 구현에서의 시간은 따로 재야 합니다.</p>
+
+  <h3>두 방법의 비교</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>FBP</th><th>반복법(정규화 포함)</th></tr>
+      <tr><td>계산 비용</td><td>낮음(필터링 한 번, 역투영 한 번)</td><td>높음(순투영·역투영을 수십~수백 번)</td></tr>
+      <tr><td>각도가 모자랄 때</td><td>줄무늬 아티팩트</td><td>정규화로 일부 보충하지만 한계가 있음</td></tr>
+      <tr><td>광선마다 다른 신뢰도</td><td>반영하기 어려움</td><td>가중 최소제곱으로 반영 가능</td></tr>
+      <tr><td>비음수 같은 제약</td><td>공식에 없음</td><td>사영으로 걸음마다 지킴</td></tr>
+      <tr><td>기하가 바뀔 때</td><td>팬빔처럼 공식을 다시 유도</td><td>시스템 행렬만 바꿈</td></tr>
+      <tr><td>사람이 정하는 값</td><td>필터, 차단 주파수</td><td>\(\lambda\), \(\delta\), 반복 수나 멈춤 기준</td></tr>
+    </table>
+  </div>
+
+  <h3>방법을 고르는 기준</h3>
+
+  <p>위에서 아래로 차례로 답하면 후보가 줄어듭니다.</p>
+
+  <ol>
+    <li><b>각도가 충분히 많고 잡음이 적은가, 결과가 빨리 필요한가?</b> 예이면 FBP입니다. 반복법의 이득이 작고 비용만 커집니다.</li>
+    <li><b>각도가 모자라거나 선량을 줄여 잡음이 큰가?</b> 예이면 정규화(TV)를 더한 반복법을 고려합니다. 사전 정보가 맞지 않는 영상에서는 효과가 줄어듭니다.</li>
+    <li><b>광선마다 신뢰도가 크게 다른가?</b> 예이면 데이터 항에 가중치를 넣은 가중 최소제곱(PWLS)을 씁니다.</li>
+    <li><b>비음수 제약, 특수한 스캔 기하, 사전 정보를 함께 쓰고 싶은가?</b> 예이면 시스템 행렬로 모델을 세우는 반복법이 유연합니다. 식이 복잡하더라도 5일차의 GPBB 같은 방법이 목적함수의 기울기만 있으면 됩니다.</li>
+  </ol>
+
+  <div class="box note">
+    <p class="box-t">다른 최적화 방식</p>
+    <p>TV를 평활화하지 않고 그대로 다루거나 데이터 모델을 바꾸고 싶으면 GPBB 말고도 방법이 있습니다. ISTA·FISTA는 TV를 근위 연산(Proximal Operator)으로 직접 다루고, ADMM·Split Bregman은 데이터 항과 TV 항을 쪼개 풉니다. Chambolle-Pock은 쌍대 변수(Dual Variable)를 쓰며, ML-EM·OS-EM은 포아송 통계를 쓰는 곱셈형 갱신입니다. 이 방법들은 이 코스에서 이름만 소개합니다. 제약형을 직접 푸는 ASD-POCS는 <a href="day6.html">6일차</a>와 <a href="../detail/ch08.html#s1">2편 8장</a>에서 다룹니다. 문제 구조별 선택 표는 <a href="../detail/ch09.html#s8">2편 9장 페이지 8</a>에, 각 방법의 설명은 <a href="../detail/ch09.html#s1">2편 9장 페이지 1</a>부터 있습니다. 9장은 모든 페이지가 심화이므로 필요할 때 찾아 읽으면 됩니다.</p>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">1편과 2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../../part1/detail/ch06.html#s8">1편 6장 페이지 8</a>: 이산 FBP의 비용(필터링 한 번과 역투영 한 번)</li>
+      <li><a href="../detail/ch07.html#s9">2편 7장 페이지 9</a>: GPBB와 FBP의 비용 비교, <a href="../detail/ch01.html#s9">2편 1장 페이지 9</a>: 해석적 방법과 대수적 방법의 비교</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="1편과 2편 전체 지도">
+  <p class="kicker">7일차 · 페이지 4</p>
+  <h2>1편과 2편 전체 지도</h2>
+
+  <p>두 편은 같은 측정값 \(p\)에서 출발해 영상을 구하는 두 갈래입니다. 1편은 연속 모델에서 공식을 먼저 얻고 그 공식을 이산 데이터로 계산했습니다. 2편은 광선마다 식을 세워 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)로 모으고, 오차를 줄이는 방향으로 영상을 고쳐 가며 풀었습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 245" role="img" aria-label="위쪽은 1편의 흐름, 아래쪽은 2편의 흐름을 단계별 상자와 화살표로 나타낸 지도">
+      <defs><marker id="d6-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g font-size="12" class="svg-fg" font-weight="700"><text x="14" y="20">1편: 공식으로 직접 계산(해석적 재구성)</text><text x="14" y="148">2편: 방정식을 세워 반복으로 풀이(대수적 재구성)</text></g>
+      <g stroke-width="1.4" style="stroke:var(--accent);fill:var(--accent-bg)">
+        <rect x="14" y="32" width="112" height="68" rx="8"/><rect x="144" y="32" width="112" height="68" rx="8"/><rect x="274" y="32" width="112" height="68" rx="8"/><rect x="404" y="32" width="112" height="68" rx="8"/><rect x="534" y="32" width="92" height="68" rx="8"/>
+      </g>
+      <g stroke-width="1.4" style="stroke:var(--warn);fill:var(--warn-bg)">
+        <rect x="14" y="160" width="112" height="68" rx="8"/><rect x="144" y="160" width="112" height="68" rx="8"/><rect x="274" y="160" width="112" height="68" rx="8"/><rect x="404" y="160" width="112" height="68" rx="8"/><rect x="534" y="160" width="92" height="68" rx="8"/>
+      </g>
+      <g stroke-width="1.4" fill="none" style="stroke:var(--muted)">
+        <path d="M126 66 H142" marker-end="url(#d6-ar)"/><path d="M256 66 H272" marker-end="url(#d6-ar)"/><path d="M386 66 H402" marker-end="url(#d6-ar)"/><path d="M516 66 H532" marker-end="url(#d6-ar)"/>
+        <path d="M126 194 H142" marker-end="url(#d6-ar)"/><path d="M256 194 H272" marker-end="url(#d6-ar)"/><path d="M386 194 H402" marker-end="url(#d6-ar)"/><path d="M516 194 H532" marker-end="url(#d6-ar)"/>
+      </g>
+      <g font-size="11" class="svg-fg" text-anchor="middle" font-weight="700">
+        <text x="70" y="54">측정값</text><text x="200" y="54">푸리에</text><text x="330" y="54">램프 필터와</text><text x="460" y="54">평행빔에서</text><text x="580" y="54">이산</text>
+        <text x="70" y="182">Ax = b</text><text x="200" y="182">ART · SIRT</text><text x="330" y="182">불량조건</text><text x="460" y="182">정규화</text><text x="580" y="182">GPBB</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="middle">
+        <text x="70" y="71">p(θ, s)</text><text x="70" y="86">sinogram</text>
+        <text x="200" y="71">슬라이스 정리</text><text x="330" y="71">역투영 = FBP</text><text x="460" y="71">팬빔으로</text><text x="460" y="86">변수변환</text><text x="580" y="71">계산</text>
+        <text x="70" y="199">순투영 A</text><text x="200" y="199">· SART</text><text x="330" y="199">반 수렴</text><text x="460" y="199">TV, sparse-view</text><text x="580" y="199">사영 + BB</text><text x="580" y="214">· ASD-POCS</text>
+      </g>
+      <text x="320" y="127" text-anchor="middle" font-size="11" class="svg-muted">두 흐름은 같은 측정값에서 출발합니다.</text>
+    </svg>
+    <figcaption>위쪽 줄이 1편(빠르게 보기 1~7일차), 아래쪽 줄이 2편(빠르게 보기 1~7일차)의 흐름입니다.</figcaption>
+  </figure>
+
+  <h3>날짜별 내용</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>편</th><th>날짜</th><th>내용</th></tr>
+      <tr><td rowspan="7">1편</td><td><a href="../../part1/quick/day1.html">1일차</a></td><td>CT 영상이 무엇의 지도이고 측정값이 왜 선적분인가</td></tr>
+      <tr><td><a href="../../part1/quick/day2.html">2일차</a></td><td>Radon 변환과 sinogram</td></tr>
+      <tr><td><a href="../../part1/quick/day3.html">3일차</a></td><td>푸리에 슬라이스 정리</td></tr>
+      <tr><td><a href="../../part1/quick/day4.html">4일차</a></td><td>역투영과 램프 필터, 필터 역투영(FBP)</td></tr>
+      <tr><td><a href="../../part1/quick/day5.html">5일차</a></td><td>평행빔 FBP의 이산 계산</td></tr>
+      <tr><td><a href="../../part1/quick/day6.html">6일차</a></td><td>팬빔의 변수변환</td></tr>
+      <tr><td><a href="../../part1/quick/day7.html">7일차</a></td><td>팬빔 FBP의 이산 계산과 1주 돌아보기</td></tr>
+      <tr><td rowspan="7">2편</td><td><a href="day1.html">1일차</a></td><td>재구성을 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)로 쓰기, 순투영 \(\mathbf{A}\)와 역투영 \(\mathbf{A}^{\mathsf T}\)</td></tr>
+      <tr><td><a href="day2.html">2일차</a></td><td>ART·SIRT·SART</td></tr>
+      <tr><td><a href="day3.html">3일차</a></td><td>목적함수, 불량조건, 반 수렴</td></tr>
+      <tr><td><a href="day4.html">4일차</a></td><td>Tikhonov 정규화, TV, 압축 센싱의 기본 생각, sparse-view 결과</td></tr>
+      <tr><td><a href="day5.html">5일차</a></td><td>GP, BB 스텝, GPBB로 TV 재구성 계산</td></tr>
+      <tr><td><a href="day6.html">6일차</a></td><td>잡음 크기를 제약으로: ASD-POCS(사영 + TV 하강)</td></tr>
+      <tr><td>7일차</td><td>FBP 대 반복법의 비교와 전체 지도(이 페이지)</td></tr>
+    </table>
+  </div>
+
+  <h3>이어서 읽을 곳</h3>
+
+  <ul>
+    <li><b>1편 자세히 보기.</b> 이 코스에서 아이디어만 본 유도와 증명, 수치 예는 <a href="../../part1/detail/index.html">1편 자세히 보기</a>에 있습니다. 팬빔의 short scan, 콘빔과 FDK도 그곳에서 이어집니다.</li>
+    <li><b>2편 자세히 보기.</b> <a href="../detail/index.html">2편 자세히 보기</a>의 1~8장이 이 코스의 본편입니다. 3장은 수학 복습이라 필요한 곳만 찾아 읽어도 됩니다. 5장의 압축 센싱 이론(<a href="../detail/ch05.html#s2">2편 5장 페이지 2</a>부터 7까지)은 이 코스에서 기본 생각만 다루었습니다.</li>
+    <li><b>연속 모델.</b> <a href="../detail/ch10.html#s1">2편 10장</a>(함수공간과 범함수의 미분)과 <a href="../detail/ch11.html#s1">11장</a>(연속 모델의 대수적 재구성)은 두 편을 연속 모델로 잇는 심화 내용이며, 논문을 읽을 때 필요합니다.</li>
+  </ul>
+
+  <p>두 편 모두에서 페이지 머리에 "심화"가 붙은 곳은 처음 읽을 때 건너뛰어도 뒤 내용이 이어집니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">7일차 · 페이지 5</p>
+  <h2>7일차 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>\(48 \times 48\) 팬텀의 sparse-view 재구성에서 FBP의 오차는 \(K = 10, 18, 40\)에서 \(0.3245,\ 0.2376,\ 0.1769\)이고 GPBB는 \(0.1278,\ 0.0332,\ 0.0100\)입니다. 각도가 모자랄수록 FBP는 줄무늬가 생기고, 반복법은 광선의 실제 기하와 TV 정규화로 오차를 줄입니다.</li>
+      <li>잡음은 광선마다 다릅니다. 두꺼운 방향의 광선은 \(\sigma_p \approx e^{p/2}/\sqrt{N_0}\)가 커서, 가중치 \(w_i = 1/\sigma_i^2\)를 데이터 항에 곱한 가중 최소제곱으로 반영할 수 있습니다. FBP는 이를 반영하기 어렵습니다.</li>
+      <li>GPBB 한 반복은 순투영과 역투영 한 쌍이고, 이 설정에서 \(116\)~\(280\)회 반복합니다. FBP는 필터링 한 번과 역투영 한 번이어서 계산량이 훨씬 작습니다.</li>
+      <li>각도가 충분하고 잡음이 적고 빨라야 하면 FBP, 각도가 모자라거나 잡음이 크거나 제약·특수 기하·가중이 필요하면 정규화를 더한 반복법을 고려합니다.</li>
+      <li>1편은 연속 모델에서 공식을 얻어 계산하고, 2편은 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)를 세워 목적함수를 줄이며 풉니다. 두 편은 같은 측정값에서 출발합니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">각도 수가 줄수록 FBP 재구성에 줄무늬가 생기는 이유로 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 램프 필터는 각도가 줄어도 그대로이고, 줄무늬의 원인이 아닙니다. 필터를 바꾼다고 비어 있는 주파수 정보가 채워지지 않습니다.">각도가 줄면 램프 필터의 식이 바뀌기 때문입니다.</li>
+      <li data-why="틀립니다. 비음수 조건은 FBP 공식에 들어 있지 않으며, 줄무늬와 관계가 없습니다.">FBP가 비음수 조건을 지키지 못하기 때문입니다.</li>
+      <li data-why="틀립니다. 측정 잡음이 없는 데이터에서도 각도가 줄면 줄무늬가 생깁니다. 이 표의 K=10 결과도 잡음 없는 데이터입니다.">각도가 줄면 측정값의 잡음이 저절로 커지기 때문입니다.</li>
+      <li data-why="맞습니다. 각도 하나의 투영은 주파수 평면의 직선 하나를 채웁니다. 각도가 줄면 직선 사이의 틈이 커지고 FBP는 그 정보 없이 계산하므로 줄무늬가 생깁니다.">주파수 평면에서 직선 사이의 틈이 벌어져 그 틈의 정보가 비기 때문입니다.</li>
+    </ol>
+    <div class="explain">
+      <p>틈의 크기는 각도 수에 반비례합니다. 각도 수를 반으로 줄이면 같은 반지름에서 이웃한 직선 사이의 간격이 두 배가 됩니다(<a href="../detail/ch05.html#s7">2편 5장 페이지 7</a>, 심화). 반복법도 그 정보를 만들어 내지는 못하고 "기울기가 희소하다"는 사전 정보로 일부 채울 뿐이라, \(K = 10\)처럼 틈이 크면 오차가 남습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="q">가중 최소제곱에서 두껍게 지나는 광선(투영값 \(p\)가 큰 광선)의 가중치가 작은 이유로 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. 두꺼운 방향에서는 도달 광자 수가 적어 σ_p가 커지고, 가중치는 분산의 역수 1/σ²이므로 작아집니다.">도달하는 광자 수가 적어 잡음 \(\sigma_p\)가 크고, 가중치는 분산의 역수이기 때문입니다.</li>
+      <li data-why="틀립니다. 신호가 약해도 정보는 있습니다. 가중치는 값의 크기가 아니라 측정값의 신뢰도에 따라 정합니다.">투영값이 커서 측정값의 정보가 작고 재구성에 필요하지 않기 때문입니다.</li>
+      <li data-why="틀립니다. 광선과 화소의 교차 길이는 시스템 행렬의 원소 a_ij이고, 통계적 가중치 w_i와는 다른 값입니다.">광선이 길어서 시스템 행렬의 원소 값이 크게 나오기 때문입니다.</li>
+      <li data-why="틀립니다. 반복 수는 가중치와 별개로 정합니다. 가중치는 한 반복 안에서 광선마다 잔차를 얼마나 반영할지를 정합니다.">가중치를 작게 해야 수렴까지의 반복 횟수가 줄어들기 때문입니다.</li>
+    </ol>
+    <div class="explain">
+      <p>\(N_0\)가 \(4\)배가 되면 모든 광선의 \(\sigma_p\)가 절반이 됩니다. 광자를 더 많이 쓰면 가중치의 절대 크기가 커지지만, 광선 사이의 가중치 비는 \(e^{-p}\)로 같습니다. 그래서 정규화 항이 없는 가중 최소제곱의 해는 모든 \(w_i\)에 같은 수를 곱해도 바뀌지 않습니다. 정규화 항(\(\lambda\))이 있으면 가중치 전체의 크기가 데이터 항과 정규화 항의 균형을 바꾸므로 해가 달라집니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">GPBB와 FBP의 계산 비용에 대한 설명으로 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. BB 스텝은 반복 수를 줄일 뿐 한 반복의 비용을 줄이지 않습니다. 한 반복에는 순투영과 역투영이 한 번씩 들어가고, FBP에는 순투영이 없습니다.">BB 스텝 덕분에 GPBB 전체가 FBP 한 번과 같은 비용으로 끝납니다.</li>
+      <li data-why="틀립니다. FBP는 투영마다 필터링을 한 뒤 역투영을 한 번 합니다. 역투영을 여러 번 반복하지 않습니다.">FBP가 필터링과 역투영을 수십~수백 번 반복하므로 GPBB보다 비쌉니다.</li>
+      <li data-why="틀립니다. 시스템 행렬을 저장하든 필요할 때마다 계산하든 순투영과 역투영의 횟수는 같습니다. 저장은 메모리의 문제입니다.">시스템 행렬을 저장해 두면 반복법의 계산량이 FBP보다 적어집니다.</li>
+      <li data-why="맞습니다. 이 설정에서 GPBB는 116~280회 반복하고 반복마다 순투영·역투영이 한 번씩 필요합니다. FBP는 필터링과 역투영이 한 번씩입니다.">GPBB는 반복마다 순투영·역투영 한 쌍을 \(116\)~\(280\)회 해서 FBP보다 계산이 훨씬 많습니다.</li>
+    </ol>
+    <div class="explain">
+      <p>2편 2장 페이지 10의 예제에서 ART·SIRT·SART는 한 바퀴의 계산량이 비슷했고, 세 방법의 차이는 한 바퀴가 줄이는 오차의 크기에서 났습니다(<a href="../detail/ch02.html#s10">2편 2장 페이지 10</a>). 비용을 비교할 때는 이처럼 계산의 단위를 먼저 맞춥니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>페이지 1의 표에서 \(K = 10, 18, 40\) 각각의 FBP 오차를 GPBB 오차로 나눈 비를 구하세요. 각도 수가 늘수록 비가 커지는지 작아지는지 말하고, 그 이유를 추측해 한두 문장으로 쓰세요.</li>
+      <li>\(N_0 = 10^5\)일 때 투영값 \(p = 2\)인 광선과 \(p = 6\)인 광선의 \(\sigma_p\)와 가중치 \(w\)를 구하고, 두 가중치의 비를 구하세요.</li>
+      <li>다음 세 상황에서 FBP와 정규화를 더한 반복법 중 무엇을 먼저 고려할지 이유와 함께 쓰세요. (가) 각도 \(720\)개로 찍은 선량 충분한 데이터를 빠르게 미리 보고 싶다. (나) 선량을 줄이려고 각도를 \(20\)개만 찍었다. (다) 두께 차이가 큰 물체여서 광선마다 광자 수가 크게 다르다.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> \(K = 10\)에서 \(0.3245/0.1278 \approx 2.54\), \(K = 18\)에서 \(0.2376/0.0332 \approx 7.16\), \(K = 40\)에서 \(0.1769/0.0100 \approx 17.7\)입니다. 각도 수가 늘수록 비가 커집니다. 이유의 추측: 정보가 충분해질수록 GPBB의 오차는 빠르게(\(0.1278\)에서 \(0.0100\)으로) 줄지만, FBP는 각도 부족 외에 이산 샘플링과 필터에서 오는 오차가 남아 천천히(\(0.3245\)에서 \(0.1769\)로) 줄기 때문이라고 볼 수 있습니다. 표만으로 원인을 단정할 수는 없습니다.</p>
+      <p><b>2번.</b> \(\sqrt{N_0} = \sqrt{10^5} \approx 316.2\)입니다. \(p = 2\)이면 \(\sigma_p = e^{1}/316.2 \approx 0.00860\), \(w = 1/\sigma_p^2 = N_0 e^{-2} \approx 13{,}534\)입니다. \(p = 6\)이면 \(\sigma_p = e^{3}/316.2 \approx 0.0635\), \(w = N_0 e^{-6} \approx 248\)입니다. 가중치의 비는 \(e^{4} \approx 54.6\)배입니다.</p>
+      <p><b>3번.</b> (가) FBP입니다. 각도가 충분하고 잡음이 적으며 빨라야 하므로 반복법의 이득이 작고 비용만 큽니다. (나) 정규화(TV)를 더한 반복법을 먼저 고려합니다. 각도가 모자라 FBP에는 줄무늬가 생기고, 기울기가 희소하다는 사전 정보로 일부 보충할 수 있기 때문입니다. 다만 사전 정보가 맞는 영상인지 확인해야 합니다. (다) 가중 최소제곱(PWLS)을 쓰는 반복법을 고려합니다. 광선마다 신뢰도가 다르고 FBP는 이를 반영하기 어렵기 때문입니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 비가 큰 것을 "GPBB가 FBP보다 계산이 빠르다"로 읽는 것입니다. 이 숫자는 오차의 비이며 비용과 관계가 없습니다.</li>
+        <li>2번에서 가중치의 비를 \(p\)의 비 \(3\)배로 쓰는 것입니다. \(w\)는 \(e^{-p}\)에 비례하므로 \(p\)가 \(4\) 늘면 \(e^{4}\)배 줄어듭니다.</li>
+        <li>3번 (나)에서 "반복법이면 각도가 얼마든 FBP보다 항상 좋다"고 결론짓는 것입니다. 페이지 1의 \(K = 10\)처럼 측정이 너무 적으면 반복법에도 오차가 남습니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <p>이것으로 2편 빠르게 보기 코스를 마칩니다. 식의 유도와 수치 예를 더 보려면 <a href="../detail/index.html">2편 자세히 보기 목차</a>에서 시작하고, 이 코스의 날짜별 목록은 <a href="index.html">2편 빠르게 보기 표지</a>에 있습니다.</p>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="../detail/index.html"><span>다음에 읽을 것</span>2편 자세히 보기</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

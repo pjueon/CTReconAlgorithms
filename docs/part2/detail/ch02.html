@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch02">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2장 · 한 광선씩, 또는 한꺼번에: 고전적 반복법 ART·SART·SIRT — CT 재구성 알고리즘2 - 대수적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="직선으로의 사영 반복">
+  <p class="kicker">2장 · 페이지 1</p>
+  <h1>한 광선씩, 또는 한꺼번에: 고전적 반복법 ART·SART·SIRT</h1>
+
+  <p class="lead">1장 페이지 8에서 \(\mathbf{A}\mathbf{x}=\mathbf{b}\)의 크기가 수십만 \(\times\) 수십만에 이르러 가우스 소거나 역행렬 같은 보통의 방법을 쓸 수 없다고 했습니다. 그래서 이 식을 한꺼번에 풀지 않고, 식 하나씩(또는 몇 개씩) 맞춰 가며 조금씩 다가가는 방법을 봅니다.</p>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>식 하나를 정확히 만족시키는 갱신을 유도하고, 이것이 Kaczmarz·ART라는 이름으로 불린다는 것을 봅니다(페이지 2).</li>
+      <li>이 갱신이 언제 한 점으로 수렴하는지, 완화 인자와 광선 순서가 수렴에 어떤 영향을 주는지 봅니다(페이지 3).</li>
+      <li>ART의 의사코드와 순서도를 봅니다(페이지 4).</li>
+      <li>모든 광선을 한꺼번에 반영하는 SIRT를 봅니다(페이지 5).</li>
+      <li>각도 단위로 갱신하는 SART를 봅니다(페이지 6).</li>
+      <li>최소제곱 관점에서 SIRT가 가중 경사하강법이라는 것과, 짝이 맞지 않는 반복이 왜 다른 수렴 조건을 갖는지 봅니다(페이지 7, 심화).</li>
+      <li>잡음이 있을 때 반복을 계속하면 생기는 반 수렴을 보고, 언제 멈춰야 하는지, Shepp-Logan 팬텀으로 반복 횟수에 따른 재구성 변화를 눈으로 봅니다(페이지 8).</li>
+      <li>광선마다 신뢰도가 다를 때 가중치를 반영하는 방법을 봅니다(페이지 9).</li>
+      <li>FBP와 ART·SIRT·SART를 비교합니다(페이지 10).</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지(7)는 처음 읽을 때 건너뛰어도 됩니다.</p>
+  </div>
+
+  <h2>직선 두 개로 사영을 반복해 보기</h2>
+
+  <p>가장 작은 경우로 미지수 두 개, 식 두 개인 연립방정식을 생각해 봅니다. 식 하나는 평면 위의 직선 하나이고, 두 식을 동시에 만족하는 점은 두 직선의 교점입니다. 두 식을 한꺼번에 풀지 않고, 먼저 한 식만 정확히 맞추는 점으로 옮기고, 그다음 다른 식만 정확히 맞추는 점으로 옮기기를 되풀이하면 어떻게 될까요?</p>
+
+  <p>직선 하나를 \(\mathbf a\cdot\mathbf x=b\)(\(\mathbf a\)는 그 직선의 법선 벡터, \(\mathbf x=(x_1,x_2)\))라고 적습니다. 첫 번째 직선은 \(\mathbf a_1\cdot\mathbf x=b_1\)(\(\mathbf a_1=(1,0)\), \(b_1=2\), 즉 수직선 \(x_1=2\))로 고정하고, 두 번째 직선은 교점 \((2,1)\)을 지나되 첫 번째 직선과 이루는 각 \(\varphi\)를 바꿀 수 있게 둡니다(\(\mathbf a_2=(\cos\varphi,\sin\varphi)\), \(b_2=2\cos\varphi+\sin\varphi\)). 이 \(\varphi\)는 두 직선 사이의 각이며, 1장의 화소 기저 \(\varphi_j\)와는 글자만 같습니다.</p>
+
+  <p>시작점에서 한 직선 위로 내린 수선의 발로 옮기는 것을 사영(Projection)이라고 부릅니다. 영어로는 CT의 순투영(Forward Projection)도 "projection"이라고 부르지만, 두 개념을 헷갈리지 않도록 이 책에서는 선형대수의 이 연산만 '사영'이라는 다른 한글 낱말로 가리킵니다. 아래 위젯에서 각 \(\varphi\)를 바꾸고 '한 걸음' 버튼을 눌러 두 직선에 번갈아 사영해 보세요.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 660 320" role="img" aria-label="두 직선과 그 교점으로 다가가는 사영 경로. 가로축과 세로축은 각각 미지수 x1, x2">
+      <g class="svg-line" stroke-width="1" opacity=".5">
+        <path d="M90 230 H610"/><path d="M90 20 V297"/>
+      </g>
+      <path id="w1-l1" class="svg-line" stroke-width="1.6" style="stroke:var(--fg)"/>
+      <path id="w1-l2" class="svg-line" stroke-width="1.6" style="stroke:var(--accent)"/>
+      <path id="w1-path" fill="none" stroke-width="1.3" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <g id="w1-pts"></g>
+      <circle id="w1-sol" r="5.5" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <g class="svg-muted" font-size="10.5">
+        <text x="600" y="248">x1</text>
+        <text x="96" y="30">x2</text>
+      </g>
+    </svg>
+    <figcaption>검은 직선은 \(x_1=2\), 파란 직선은 각 \(\varphi\)만큼 기울어진 두 번째 직선입니다. 점선은 시작점에서 교점(주황 원)으로 다가가는 경로입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="w1-ui">
+    <label for="w1-phi">두 직선 사이각 φ</label>
+    <input id="w1-phi" type="range" min="15" max="90" step="5" value="60" style="width:11rem">
+    <b id="w1-phi-val">60°</b>
+    <button type="button" id="w1-step">한 걸음</button>
+    <button type="button" id="w1-reset">처음부터</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w1-note"></p>
+
+<script>
+(function () {
+  var l1 = document.getElementById('w1-l1'), l2 = document.getElementById('w1-l2'),
+      path = document.getElementById('w1-path'), pts = document.getElementById('w1-pts'),
+      sol = document.getElementById('w1-sol'), phiEl = document.getElementById('w1-phi'),
+      phiVal = document.getElementById('w1-phi-val'), note = document.getElementById('w1-note');
+  function X(x1) { return 90 + x1 * 80; }
+  function Y(x2) { return 230 - x2 * 45; }
+  var phi, x0 = [-0.5, -1], x, hist, steps;
+  function lines() {
+    phi = phiEl.value * Math.PI / 180;
+    l1.setAttribute('d', 'M' + X(2).toFixed(1) + ' ' + Y(4.2).toFixed(1) + ' V' + Y(-2).toFixed(1));
+    var dx = -Math.sin(phi), dy = Math.cos(phi), p1 = [2 - 5 * dx, 1 - 5 * dy], p2 = [2 + 5 * dx, 1 + 5 * dy];
+    l2.setAttribute('d', 'M' + X(p1[0]).toFixed(1) + ' ' + Y(p1[1]).toFixed(1) + ' L' + X(p2[0]).toFixed(1) + ' ' + Y(p2[1]).toFixed(1));
+  }
+  function proj(which, p) {
+    var a, b;
+    if (which === 1) { a = [1, 0]; b = 2; } else { a = [Math.cos(phi), Math.sin(phi)]; b = 2 * a[0] + 1 * a[1]; }
+    var pred = a[0] * p[0] + a[1] * p[1], r = b - pred, denom = a[0] * a[0] + a[1] * a[1], f = r / denom;
+    return [p[0] + f * a[0], p[1] + f * a[1]];
+  }
+  function reset() { x = x0.slice(); hist = [x.slice()]; steps = 0; render(); }
+  function step() { var which = (steps % 2 === 0) ? 1 : 2; x = proj(which, x); hist.push(x.slice()); steps++; render(); }
+  function render() {
+    var d = '', i;
+    for (i = 0; i < hist.length; i++) d += (i ? 'L' : 'M') + X(hist[i][0]).toFixed(1) + ' ' + Y(hist[i][1]).toFixed(1);
+    path.setAttribute('d', d);
+    pts.innerHTML = hist.map(function (p, i) {
+      return '<circle cx="' + X(p[0]).toFixed(1) + '" cy="' + Y(p[1]).toFixed(1) + '" r="' + (i === hist.length - 1 ? 4.5 : 2.6) + '" class="svg-fg"' + (i === hist.length - 1 ? '' : ' opacity=".55"') + '/>';
+    }).join('');
+    sol.setAttribute('cx', X(2)); sol.setAttribute('cy', Y(1));
+    var dist = Math.sqrt(Math.pow(x[0] - 2, 2) + Math.pow(x[1] - 1, 2));
+    phiVal.textContent = phiEl.value + '°';
+    note.textContent = steps + '번 사영 · 교점까지 거리 ' + dist.toFixed(4);
+  }
+  phiEl.addEventListener('input', function () { lines(); reset(); });
+  document.getElementById('w1-step').addEventListener('click', step);
+  document.getElementById('w1-reset').addEventListener('click', reset);
+  lines(); reset();
+})();
+</script>
+
+  <p>두 직선이 직각(\(\varphi=90°\))에 가까우면 한 번씩만 사영해도 교점에 거의 도착합니다. 반면 \(\varphi\)가 작아 두 직선이 거의 나란하면, 한 번 사영해도 다른 직선 쪽으로는 거의 움직이지 않아 여러 번 오가야 교점에 가까워집니다. 1장 페이지 8에서 "거의 같은 직선을 겨냥하는 두 광선"이 조건수를 나쁘게 만든다고 한 것과 같은 현상입니다 — 두 식이 거의 같은 방향을 가리키면 수렴이 느려집니다.</p>
+
+  <p>이 작은 예제의 \(\mathbf a_1,\mathbf a_2\)는 이름만 다를 뿐, 1장에서 본 시스템 행렬 \(\mathbf A\)의 행과 똑같은 역할을 합니다. 미지수가 두 개가 아니라 화소 수만큼(수십만 개) 있고, 직선이 아니라 그만큼 큰 공간의 초평면(Hyperplane)이라는 점만 다릅니다. 다음 페이지에서 이 사영을 일반적인 식으로 적습니다.</p>
+</section>
+
+<!-- ─ 페이지 2 -->
+<section class="screen" data-title="Kaczmarz 갱신식과 ART">
+  <p class="kicker">2장 · 페이지 2</p>
+  <h2>하나의 식에 맞춰 옮기기: Kaczmarz 갱신식</h2>
+
+  <p>페이지 1의 사영을 일반적인 식으로 적습니다. \(\mathbf A\)의 \(i\)번째 행을 벡터 \(\mathbf a_i=(a_{i1},\ldots,a_{in})\)라고 쓰면, 그 행이 나타내는 식은 \(\mathbf a_i\cdot\mathbf x=b_i\)입니다. 현재 추정값 \(\mathbf x^{(k)}\)를 이 식 하나만 정확히 만족하는 점으로 옮기는 갱신은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\mathbf x^{(k+1)} = \mathbf x^{(k)} + \frac{b_i - \mathbf a_i\cdot\mathbf x^{(k)}}{\lVert\mathbf a_i\rVert^{2}}\,\mathbf a_i\]</p>
+
+  <p>이 식을 한 번 실행하는 것이 페이지 1 위젯에서 '한 걸음'을 한 번 누르는 것, 즉 직선 하나로 한 번 사영하는 것입니다(위젯도 이 식으로 점을 옮깁니다). 아래 그림처럼 현재 점에서 식 \(i\)의 직선(미지수가 많으면 초평면)으로 수선을 내려 그 발로 옮기며, 옮기는 방향은 법선 \(\mathbf a_i\), 옮기는 거리는 \(|b_i-\mathbf a_i\cdot\mathbf x^{(k)}|/\lVert\mathbf a_i\rVert\)입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 520 250" role="img" aria-label="현재 점 x(k)에서 직선 a_i·x=b_i로 수선을 내려 그 발 x(k+1)로 옮기는 사영 한 번. 옮기는 방향은 법선 a_i">
+      <defs><marker id="p2-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+      <marker id="p2-arn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <path d="M50 224 L470 56" class="svg-line" stroke-width="1.8" style="stroke:var(--fg)"/>
+      <path d="M309.3 120.4 L313 129.7 L303.7 133.4" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path d="M340.8 226.1 L301.6 128.2" fill="none" stroke-width="1.8" stroke-dasharray="5 3" style="stroke:var(--accent)" marker-end="url(#p2-ar)"/>
+      <path d="M150 184.6 L129.6 133.6" fill="none" stroke-width="1.5" style="stroke:var(--muted)" marker-end="url(#p2-arn)"/>
+      <circle cx="340.8" cy="226.1" r="4.5" class="svg-fg"/>
+      <circle cx="300" cy="124.1" r="4.5" style="fill:var(--accent)"/>
+      <g class="svg-fg" font-size="13">
+        <text x="352" y="231">x<tspan font-size="9.5" dy="-6">(k)</tspan></text>
+        <text x="268" y="108">x<tspan font-size="9.5" dy="-6">(k+1)</tspan></text>
+        <text x="405" y="110">a<tspan font-size="9.5" dy="3">i</tspan><tspan dy="-3">·x = b</tspan><tspan font-size="9.5" dy="3">i</tspan></text>
+      </g>
+      <g class="svg-muted" font-size="11.5">
+        <text x="96" y="126">a<tspan font-size="9" dy="3">i</tspan><tspan dy="-3"> (법선)</tspan></text>
+        <text x="334" y="172">거리 = |잔차| / ‖a<tspan font-size="9" dy="3">i</tspan><tspan dy="-3">‖</tspan></text>
+      </g>
+    </svg>
+    <figcaption>갱신식 한 번 = 사영 한 번. 여기서 직선은 X선이 지나가는 길이 아니라, 광선 \(i\)의 측정식 \(\mathbf a_i\cdot\mathbf x=b_i\)를 만족하는 \(\mathbf x\)들의 모임입니다.</figcaption>
+  </figure>
+
+  <details class="fold">
+    <summary>유도: 사영의 방향과 크기</summary>
+    <div class="fold-body">
+      <p>식 \(\mathbf a_i\cdot\mathbf x=b_i\)가 나타내는 초평면의 법선 방향은 \(\mathbf a_i\)입니다. 그래서 \(\mathbf x^{(k)}\)에서 이 초평면으로 가는 가장 짧은 길은 \(\mathbf a_i\) 방향을 따라가는 것뿐입니다. \(\mathbf x^{(k+1)}=\mathbf x^{(k)}+t\,\mathbf a_i\)라고 두고, 이 식이 \(\mathbf a_i\cdot\mathbf x^{(k+1)}=b_i\)를 만족하도록 \(t\)를 정합니다.</p>
+      <p style="text-align:center">\[\mathbf a_i\cdot(\mathbf x^{(k)}+t\mathbf a_i) = \mathbf a_i\cdot\mathbf x^{(k)} + t\lVert\mathbf a_i\rVert^{2} = b_i \ \Longrightarrow\ t=\frac{b_i-\mathbf a_i\cdot\mathbf x^{(k)}}{\lVert\mathbf a_i\rVert^{2}}\]</p>
+      <p>이 \(t\)를 대입하면 위 갱신식이 됩니다. 분자 \(b_i-\mathbf a_i\cdot\mathbf x^{(k)}\)는 지금 추정값이 식 \(i\)를 얼마나 못 만족하는지를 나타내는 잔차(Residual)입니다.</p>
+    </div>
+  </details>
+
+  <p>이 방법은 폴란드 수학자 Kaczmarz가 처음 제안했고(S. Kaczmarz, <i>Angenäherte Auflösung von Systemen linearer Gleichungen</i>, Bulletin International de l'Académie Polonaise des Sciences et des Lettres, 1937), CT 재구성에서는 대수적 재구성 기법(<span class="term" data-term="art">ART, Algebraic Reconstruction Technique</span>)이라는 이름으로 쓰입니다(R. Gordon, R. Bender, G. T. Herman, <i>Algebraic reconstruction techniques (ART) for three-dimensional electron microscopy and X-ray photography</i>, Journal of Theoretical Biology 29(3), 1970, 471–481). 이 책은 이름과 역할만 다룹니다.</p>
+
+  <h3>2×2 화소 예로 한 바퀴 돌려 보기</h3>
+
+  <p>용어를 먼저 정리합니다. 광선 전체를 한 번씩 다 쓰는 것을 이 장에서는 한 바퀴(또는 한 번의 통과, Sweep, 한 번의 반복)라고 부르고, 세 말은 같은 뜻입니다. "반복 N회", "N바퀴", "N회 통과"도 모두 전체 광선을 N번 돌았다는 뜻입니다.</p>
+
+  <p>1장 페이지 2의 \(2\times2\) 화소 예(\(\mathbf b=(0.7,0.4,0.3,0.8,0.707)\), 광선 ①~⑤)에 \(\mathbf x^{(0)}=(0,0,0,0)\)에서 시작해 광선 ①부터 ⑤까지 한 번씩 적용해 봅니다. 표의 한 행이 갱신식 한 번, 즉 위젯의 한 걸음입니다. 미지수가 4개라 4차원 공간의 초평면으로 사영하므로 그림으로 그리지는 못하지만 하는 일은 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>광선</th><th>잔차</th><th>갱신 후 \(\mathbf x\)</th></tr>
+      <tr><td>①</td><td>0.700</td><td>(0.350, 0.350, 0, 0)</td></tr>
+      <tr><td>②</td><td>0.400</td><td>(0.350, 0.350, 0.200, 0.200)</td></tr>
+      <tr><td>③</td><td>−0.250</td><td>(0.225, 0.350, 0.075, 0.200)</td></tr>
+      <tr><td>④</td><td>0.250</td><td>(0.225, 0.475, 0.075, 0.325)</td></tr>
+      <tr><td>⑤</td><td>−0.071</td><td>(0.200, 0.475, 0.075, 0.300)</td></tr>
+    </table>
+  </div>
+
+  <p>단 한 바퀴(광선 다섯 개를 한 번씩)만 돌았는데도 참값 \(\mathbf x=(0.2,0.5,0.1,0.3)\)에 매우 가까워졌습니다. 화소 1과 4는 광선 ⑤(대각선)가 마지막으로 바로잡아 정확히 맞고, 광선 ⑤를 지나지 않는 화소 2와 3은 \(0.025\)만큼의 오차가 남아 있습니다. 이 오차는 광선을 한 바퀴 더 돌리면 더 줄어듭니다(페이지 3).</p>
+
+  <p>아래 위젯으로 같은 과정을 한 단계씩 볼 수 있습니다. '다음'을 누르면 먼저 이번에 쓰는 광선이 격자 위에 겹쳐 보이고 잔차가 계산되며, 한 번 더 누르면 그 광선이 지나는 화소의 값만 바뀝니다. 다섯 번째 광선 뒤에도 계속 누르면 두 번째 바퀴로 넘어가 화소 2와 3의 오차가 더 줄어드는 것을 볼 수 있습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 290" role="img" aria-label="2×2 화소 격자 위에 이번 갱신에 쓰는 광선을 겹쳐 보이고, 그 광선이 지나는 화소 값을 갱신하는 ART 한 단계씩 보기. 오른쪽에 보정 계산과 참값을 적는다">
+      <defs><marker id="k2-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+      <g id="k2-cells"></g>
+      <g id="k2-rays"></g>
+      <g id="k2-txt"></g>
+      <g id="k2-info" class="svg-fg"></g>
+      <g id="k2-true"></g>
+    </svg>
+    <figcaption>칸 안의 큰 숫자는 지금 추정값이고, 색이 짙을수록 값이 큽니다. 주황 화살표가 이번 단계의 광선이며, 갱신 직후에는 바뀐 양이 칸 아래쪽에 작게 나타납니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <button type="button" id="k2-next">다음</button>
+    <button type="button" id="k2-play">자동 재생</button>
+    <button type="button" id="k2-reset">처음부터</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="k2-note"></p>
+
+<script>
+/* 2×2 화소 예의 ART·SART·SIRT 한 단계씩 보기. K2W(접두어, 초기 모드). 접두어-mode <select>가 있으면 그 값을 쓴다 */
+window.K2W = function (P, mode0) {
+  var R2 = Math.SQRT2;
+  var A = [[1, 1, 0, 0], [0, 0, 1, 1], [1, 0, 1, 0], [0, 1, 0, 1], [R2, 0, 0, R2]];
+  var B = [0.7, 0.4, 0.3, 0.8, 0.707], T = [0.2, 0.5, 0.1, 0.3], NAME = ['①', '②', '③', '④', '⑤'];
+  var GROUPS = { art: [[0], [1], [2], [3], [4]], sart: [[0, 1], [2, 3], [4]], sirt: [[0, 1, 2, 3, 4]] };
+  var GNAME = { art: '광선', sart: '각도', sirt: '전체' };
+  /* 격자: 화소 1 왼쪽 위, 2 오른쪽 위, 3 왼쪽 아래, 4 오른쪽 아래. 칸 100px, 원점 (60,40) */
+  var RAY = [[25, 106, 295, 106], [25, 206, 295, 206], [76, 8, 76, 272], [176, 8, 176, 272], [32, 12, 288, 268]];
+  var LAB = [[8, 110], [8, 210], [82, 16], [182, 16], [12, 14]];
+  var VAL = [[22, 98], [22, 198], [97, 16], [197, 16], [2, 34]];
+  function $(id) { return document.getElementById(P + '-' + id); }
+  var cellsEl = $('cells'), raysEl = $('rays'), txtEl = $('txt'), infoEl = $('info'), trueEl = $('true'),
+      noteEl = $('note'), playBtn = $('play'), modeEl = $('mode');
+  var mode, x, g, phase, corr, sum, cw, delta, lastG, timer = null;
+  function f3(v) { var s = Math.abs(v) < 5e-4 ? '0.000' : v.toFixed(3); return s.replace('-', '−'); }
+  function sg(v) { return (v >= 0 ? '+' : '') + f3(v); }
+  function cell(j) { return [60 + (j % 2) * 100, 40 + Math.floor(j / 2) * 100]; }
+  function dot(a) { var s = 0, j; for (j = 0; j < 4; j++) s += a[j] * x[j]; return s; }
+  function grp() { var G = GROUPS[mode]; return G[g % G.length]; }
+  function reset() { x = [0, 0, 0, 0]; g = 0; phase = 0; corr = sum = cw = delta = lastG = null; render(); }
+  function next() {
+    var G = grp(), j, n;
+    if (phase === 0) {                       /* 1단계: 광선 겹쳐 보기, 보정 계산(지금 x 기준) */
+      corr = {}; delta = null;
+      G.forEach(function (i) {
+        var a = A[i], r = B[i] - dot(a), d = 0;
+        for (j = 0; j < 4; j++) d += (mode === 'art' ? a[j] * a[j] : a[j]);
+        corr[i] = { s: dot(a), r: r, q: r / d, d: d };
+      });
+      phase = 1;
+    } else if (phase === 1 && mode !== 'art') {   /* 2단계: 화소마다 모으기(역투영)와 가중치 합 */
+      sum = [0, 0, 0, 0]; cw = [0, 0, 0, 0];
+      G.forEach(function (i) { for (j = 0; j < 4; j++) { sum[j] += A[i][j] * corr[i].q; cw[j] += A[i][j]; } });
+      phase = 2;
+    } else {                                 /* 마지막 단계: 갱신 */
+      delta = [0, 0, 0, 0];
+      if (mode === 'art') { n = G[0]; for (j = 0; j < 4; j++) delta[j] = corr[n].q * A[n][j]; }
+      else for (j = 0; j < 4; j++) delta[j] = cw[j] > 0 ? sum[j] / cw[j] : 0;
+      for (j = 0; j < 4; j++) x[j] += delta[j];
+      lastG = G; g++; phase = 0; sum = cw = null;
+    }
+    render();
+  }
+  function render() {
+    var h = '', t = '', j, p, i, G = phase > 0 ? grp() : lastG, NG = GROUPS[mode].length;
+    for (j = 0; j < 4; j++) {
+      p = cell(j);
+      h += '<rect x="' + p[0] + '" y="' + p[1] + '" width="100" height="100" fill-opacity="' + Math.min(0.85, Math.max(0, x[j]) * 1.3).toFixed(2) + '" style="fill:var(--accent)"/>';
+      h += '<rect x="' + p[0] + '" y="' + p[1] + '" width="100" height="100" class="svg-line" stroke-width="1.2"/>';
+      t += '<text x="' + (p[0] + 54) + '" y="' + (p[1] + 48) + '" text-anchor="middle" font-size="19" font-weight="700" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round;stroke-opacity:.85">' + f3(x[j]) + '</text>';
+      t += '<text x="' + (p[0] + 92) + '" y="' + (p[1] + 16) + '" text-anchor="end" font-size="10.5" class="svg-muted">' + (j + 1) + '</text>';
+      if (phase === 2 && cw[j] > 0) t += '<text x="' + (p[0] + 54) + '" y="' + (p[1] + 90) + '" text-anchor="middle" font-size="11" style="fill:var(--warn);paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round;stroke-opacity:.85">' + f3(sum[j]) + ' ÷ ' + f3(cw[j]) + '</text>';
+      else if (phase === 2) t += '<text x="' + (p[0] + 54) + '" y="' + (p[1] + 90) + '" text-anchor="middle" font-size="11" class="svg-muted">지나는 광선 없음</text>';
+      else if (phase === 0 && delta && Math.abs(delta[j]) > 1e-12) t += '<text x="' + (p[0] + 54) + '" y="' + (p[1] + 90) + '" text-anchor="middle" font-size="12" style="fill:var(--warn);paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round;stroke-opacity:.85">' + sg(delta[j]) + '</text>';
+    }
+    cellsEl.innerHTML = h; txtEl.innerHTML = t;
+    var rh = '';
+    for (i = 0; i < 5; i++) {
+      var on = G && G.indexOf(i) >= 0, q = RAY[i];
+      rh += '<path d="M' + q[0] + ' ' + q[1] + ' L' + q[2] + ' ' + q[3] + '" fill="none" stroke-linecap="round" ' +
+        (on ? 'stroke-width="3" style="stroke:var(--warn)" marker-end="url(#' + P + '-ar)"' + (phase === 0 ? ' opacity=".45"' : '') : 'stroke-width="1" stroke-dasharray="3 4" style="stroke:var(--muted)" opacity=".6"') + '/>';
+      rh += '<text x="' + LAB[i][0] + '" y="' + LAB[i][1] + '" font-size="12" ' + (on ? 'style="fill:var(--warn)" font-weight="700"' : 'class="svg-muted"') + '>' + NAME[i] + '</text>';
+      if (on && phase > 0 && mode !== 'art') rh += '<text x="' + VAL[i][0] + '" y="' + VAL[i][1] + '" font-size="10.5" font-weight="700" style="fill:var(--warn)">' + f3(corr[i].q) + '</text>';
+    }
+    raysEl.innerHTML = rh;
+    var L = [], done = phase > 0 ? g : Math.max(g - 1, 0), sweep = Math.floor(done / NG) + 1, head, c;
+    function gl(G) { return G.map(function (i) { return NAME[i]; }).join(''); }
+    if (phase === 1 && mode === 'art') {
+      c = corr[G[0]];
+      L.push(['광선 ' + NAME[G[0]] + ' · ' + sweep + '바퀴째 · 잔차 계산', 1]);
+      L.push(['측정값 b = ' + f3(B[G[0]]), 0]);
+      L.push(['지금 합 a·x = ' + f3(c.s), 0]);
+      L.push(['잔차 = ' + f3(c.r), 1]);
+      L.push(['지나는 화소마다 잔차/‖a‖² × aᵢⱼ', 2]);
+      L.push(['= ' + sg(c.q * (G[0] === 4 ? R2 : 1)) + '씩 더할 차례', 2]);
+    } else if (phase === 1) {
+      L.push([(mode === 'sirt' ? '광선 전체' : '광선 ' + gl(G)) + ' · ' + sweep + '바퀴째 · 보정 계산', 1]);
+      G.forEach(function (i) { c = corr[i]; L.push([NAME[i] + ' (' + f3(B[i]) + ' − ' + f3(c.s) + ') ÷ ' + f3(c.d) + ' = ' + f3(c.q), 0]); });
+      L.push(['(측정값 − 지금 합) ÷ rᵢ, 모두 같은 x로 계산', 2]);
+    } else if (phase === 2) {
+      L.push([(mode === 'sirt' ? '광선 전체' : '광선 ' + gl(G)) + ' · 화소마다 모으기', 1]);
+      L.push(['칸 아래: 받은 보정의 합 ÷ cⱼ', 0]);
+      L.push(['합 = Σ aᵢⱼ × (광선 i의 보정)', 2]);
+      L.push(['cⱼ = 이번에 쓴 광선의 aᵢⱼ 합', 2]);
+      L.push(['나눈 값을 더할 차례(평균)', 2]);
+    } else if (lastG) {
+      L.push([(mode === 'sirt' ? '광선 전체' : '광선 ' + gl(lastG)) + ' · ' + sweep + '바퀴째 · 갱신 완료', 1]);
+      L.push([mode === 'art' ? '광선 ' + NAME[lastG[0]] + '의 식이 이제 정확히 맞습니다' : '화소마다 평균 보정을 더했습니다', 0]);
+      if (mode !== 'sirt') L.push(['(이번 광선이 지나지 않는 화소는 그대로)', 2]);
+      L.push([mode === 'sirt' ? '다음: 다시 광선 전체(다음 바퀴)' : '다음: 광선 ' + gl(grp()), 2]);
+    } else {
+      L.push(['시작점 x⁽⁰⁾ = (0, 0, 0, 0)', 1]);
+      L.push([mode === 'art' ? '한 번에 광선 하나씩 고칩니다' : mode === 'sart' ? '한 번에 같은 각도의 광선 묶음씩' : '한 번에 광선 다섯 개 전부를 모아', 2]);
+      L.push([mode === 'art' ? '(한 바퀴 = 갱신 5번)' : mode === 'sart' ? '(①② 가로, ③④ 세로, ⑤ 대각; 한 바퀴 = 갱신 3번)' : '(한 바퀴 = 갱신 1번)', 2]);
+    }
+    infoEl.innerHTML = L.map(function (l, n) {
+      return '<text x="330" y="' + (36 + n * 21) + '"' + (l[1] === 1 ? ' font-weight="700" font-size="13.5"' : '') + (l[1] === 2 ? ' class="svg-muted" font-size="11.5"' : l[1] === 1 ? '' : ' font-size="12.5"') + '>' + l[0] + '</text>';
+    }).join('');
+    var th = '<text x="510" y="182" font-size="11.5" class="svg-muted">참값</text>';
+    for (j = 0; j < 4; j++) {
+      var tx = 510 + (j % 2) * 50, ty = 190 + Math.floor(j / 2) * 40;
+      th += '<rect x="' + tx + '" y="' + ty + '" width="50" height="40" fill-opacity="' + (T[j] * 1.3).toFixed(2) + '" style="fill:var(--accent)"/>';
+      th += '<rect x="' + tx + '" y="' + ty + '" width="50" height="40" class="svg-line" stroke-width="1"/>';
+      th += '<text x="' + (tx + 25) + '" y="' + (ty + 25) + '" text-anchor="middle" font-size="12" class="svg-fg">' + T[j].toFixed(1) + '</text>';
+    }
+    trueEl.innerHTML = th;
+    var e = 0; for (j = 0; j < 4; j++) e = Math.max(e, Math.abs(x[j] - T[j]));
+    noteEl.textContent = '갱신 ' + g + '번 · ' + Math.floor(g / NG) + '바퀴 완료 · 참값과의 최대 오차 ' + f3(e);
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; playBtn.textContent = '자동 재생'; } }
+  $('next').addEventListener('click', function () { stop(); next(); });
+  $('reset').addEventListener('click', function () { stop(); reset(); });
+  playBtn.addEventListener('click', function () {
+    if (timer) { stop(); return; }
+    playBtn.textContent = '멈춤'; timer = setInterval(next, 900);
+  });
+  if (modeEl) modeEl.addEventListener('change', function () { stop(); mode = modeEl.value; reset(); });
+  mode = modeEl ? modeEl.value : mode0;
+  reset();
+};
+</script>
+<script>K2W('k2', 'art');</script>
+</section>
+
+<!-- ─ 페이지 3 -->
+<section class="screen" data-title="수렴: 일관성·완화·순서">
+  <p class="kicker">2장 · 페이지 3</p>
+  <h2>수렴 조건: 일관성과 완화 인자</h2>
+
+  <h3>일관 시스템과 불일치 시스템</h3>
+
+  <p>페이지 1~2의 예처럼 모든 식을 동시에 만족하는 점이 있는 경우를 일관 시스템(Consistent System)이라고 합니다. 이 경우 Kaczmarz 갱신을 계속하면 그 점으로 수렴합니다. 그런데 실제 측정값 \(\mathbf b\)에는 항상 잡음이 섞여 있어서, 모든 식을 동시에 만족하는 점이 존재하지 않는 불일치 시스템(Inconsistent System)이 되는 경우가 흔합니다.</p>
+
+  <p>불일치 시스템에서는 한 점으로 수렴하지 않습니다. 예를 들어 두 직선이 \(x_1=2\)와 \(x_1=2.3\)처럼 평행하면(법선이 둘 다 \((1,0)\)이지만 값이 다름) 교점이 없습니다. 첫 번째로 사영하면 \(x_1=2\)가 되고, 두 번째로 사영하면 \(x_1=2.3\)이 되어, 이후로는 \(2\)와 \(2.3\) 사이를 영원히 오갑니다(\(x_2\)는 두 식 모두에 등장하지 않으므로 시작값 그대로 남습니다). 식이 많아지면 이렇게 한 점이 아니라 작은 영역을 오가는 극한 순환(Limit Cycle)이 됩니다.</p>
+
+  <h3>완화 인자</h3>
+
+  <p>잡음으로 흔들리는 식을 매번 정확히 맞추면 그 흔들림이 고스란히 추정값에 들어갑니다. 그래서 갱신의 크기를 완화 인자(<span class="term" data-term="relax">Relaxation Parameter</span>) \(\tau\)로 줄입니다.</p>
+
+  <p style="text-align:center">\[\mathbf x^{(k+1)} = \mathbf x^{(k)} + \tau\,\frac{b_i - \mathbf a_i\cdot\mathbf x^{(k)}}{\lVert\mathbf a_i\rVert^{2}}\,\mathbf a_i\]</p>
+
+  <p>\(\tau=1\)이 페이지 2의 갱신이고, 일관 시스템에서는 \(0<\tau<2\)이면 수렴하고 \(\tau\)가 2를 넘으면(\(\tau>2\)) 발산한다고 알려져 있습니다(\(\tau=2\)는 경계값으로, 사영이 반사(reflection)가 되어 수렴도 발산도 아닌 채로 맴돕니다). 1장 페이지 2의 \(2\times2\) 화소 예(다섯 광선, 일관 시스템)로 직접 확인해 보면, \(\tau=1.9\)로 300바퀴를 돌리면 정확히 \(\mathbf x=(0.2,0.5,0.1,0.3)\)에 도착하지만, \(\tau=2.1\)로는 80바퀴가 되기 전에 값이 걷잡을 수 없이 커집니다. 실무에서는 \(\tau\)를 1보다 작게 두어 잡음의 영향을 더 줄이는 경우가 많습니다. 잡음이 있을 때 반복을 너무 오래 계속하면 생기는 문제는 페이지 8에서 다시 봅니다.</p>
+
+  <p>\(\tau\)를 바꾸면 오차가 줄어드는 속도가 어떻게 달라지는지 같은 \(2\times2\) 화소 예(잡음 없음, 광선 ①→⑤ 순서)로 봅니다. 가로축은 한 바퀴(광선 다섯 개를 한 번씩 쓴 것)를 센 횟수이고,
+  세로축은 참값 \((0.2,0.5,0.1,0.3)\)까지의 거리를 10의 거듭제곱 눈금으로 나타낸 것입니다. 점선은 \(\tau=1\)일 때의 곡선입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 660 268" role="img" aria-label="완화 인자 tau에 따른 참값과의 거리 곡선. 가로축은 한 바퀴를 센 횟수 0~60, 세로축은 거리의 상용로그">
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M70 224 H620"/><path d="M70 24 V224"/></g>
+      <g id="w3-grid" fill="none" stroke-width="0.6" opacity=".35" style="stroke:var(--muted)"></g>
+      <path id="w3-ref" fill="none" stroke-width="1.4" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <path id="w3-line" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <g class="svg-muted" font-size="10" id="w3-ticks"></g>
+      <g class="svg-muted" font-size="10"><text x="620" y="259" text-anchor="end">한 바퀴 수 (0~60)</text><text x="70" y="13" text-anchor="start">거리</text></g>
+    </svg>
+    <figcaption>파란 실선이 선택한 \(\tau\)의 곡선, 회색 점선이 \(\tau=1\)입니다. 곡선이 아래로 곧게 내려갈수록 빠르게 수렴하고, 위로 올라가면 발산입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="w3-ui">
+    <label for="w3-tau">완화 인자 τ</label>
+    <input id="w3-tau" type="range" min="0.1" max="2.2" step="0.1" value="1" style="width:12rem">
+    <b id="w3-tau-val">1.0</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w3-note"></p>
+
+  <p>20바퀴를 돌린 뒤의 거리는 \(\tau=0.5\)에서 약 \(7\times10^{-4}\), \(\tau=1\)에서 약 \(7\times10^{-8}\), \(\tau=1.2\)에서 약 \(8\times10^{-9}\), \(\tau=1.5\)에서 약 \(1.5\times10^{-6}\), \(\tau=1.9\)에서 약 \(0.06\)입니다.
+  이 예에서는 \(\tau\)가 1 근처일 때 가장 빠르고(1.2 안팎이 가장 낮습니다), 그보다 작게도 크게도 잡을수록 느려집니다. \(\tau=2\)에서는 처음 거리 0.62가 줄지도 늘지도 않고 \(\tau>2\)에서는 커집니다.
+  가장 빠른 \(\tau\)의 위치는 광선 배치마다 다르므로 이 값을 일반 규칙으로 삼으면 안 됩니다. 잡음이 있을 때 \(\tau<1\)을 쓰는 이유는 수렴 속도가 아니라, 한 걸음의 크기를 줄여 잡음을 덜 따라가기 위해서입니다.</p>
+
+<script>
+(function () {
+  var S2 = Math.SQRT2, A = [[1, 1, 0, 0], [0, 0, 1, 1], [1, 0, 1, 0], [0, 1, 0, 1], [S2, 0, 0, S2]];
+  var XT = [0.2, 0.5, 0.1, 0.3], b = A.map(function (r) { return r.reduce(function (s, v, j) { return s + v * XT[j]; }, 0); });
+  var NS = 60, LO = -12, HI = 6;
+  var line = document.getElementById('w3-line'), ref = document.getElementById('w3-ref'), tauEl = document.getElementById('w3-tau'),
+      tauVal = document.getElementById('w3-tau-val'), note = document.getElementById('w3-note'),
+      grid = document.getElementById('w3-grid'), ticks = document.getElementById('w3-ticks');
+  function X(k) { return 70 + k / NS * 550; }
+  function Y(e) { var l = Math.log(Math.max(e, 1e-12)) / Math.LN10; l = Math.min(HI, Math.max(LO, l)); return 224 - (l - LO) / (HI - LO) * 200; }
+  function run(tau) {
+    var x = [0, 0, 0, 0], errs, k, i, j, a, p, n2, f, e;
+    errs = [Math.sqrt(XT.reduce(function (s, v) { return s + v * v; }, 0))];
+    for (k = 1; k <= NS; k++) {
+      for (i = 0; i < 5; i++) {
+        a = A[i]; p = 0; n2 = 0; for (j = 0; j < 4; j++) { p += a[j] * x[j]; n2 += a[j] * a[j]; }
+        f = tau * (b[i] - p) / n2; for (j = 0; j < 4; j++) x[j] += f * a[j];
+      }
+      e = 0; for (j = 0; j < 4; j++) e += (x[j] - XT[j]) * (x[j] - XT[j]);
+      errs.push(Math.sqrt(e));
+    }
+    return errs;
+  }
+  function path(errs) { var d = '', k; for (k = 0; k <= NS; k++) d += (k ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(errs[k]).toFixed(1); return d; }
+  var g = '', t = '', e;
+  for (e = LO; e <= HI; e += 6) { g += '<path d="M70 ' + Y(Math.pow(10, e)).toFixed(1) + ' H620"/>'; t += '<text x="64" y="' + (Y(Math.pow(10, e)) + 3.5).toFixed(1) + '" text-anchor="end">10' + (e < 0 ? '⁻' : '') + {12: '¹²', 6: '⁶', 0: '⁰'}[Math.abs(e)] + '</text>'; }
+  for (e = 0; e <= NS; e += 10) t += '<text x="' + X(e).toFixed(1) + '" y="238" text-anchor="middle">' + e + '</text>';
+  grid.innerHTML = g; ticks.innerHTML = t;
+  var base = run(1);
+  ref.setAttribute('d', path(base));
+  function update() {
+    var tau = Math.round(tauEl.value * 10) / 10, errs = run(tau);
+    line.setAttribute('d', path(errs));
+    tauVal.textContent = tau.toFixed(1);
+    function f(v) { return v >= 1e4 || v < 1e-3 ? v.toExponential(1) : v.toFixed(3); }
+    note.textContent = 'τ = ' + tau.toFixed(1) + ' · 5바퀴 뒤 거리 ' + f(errs[5]) + ' · 20바퀴 뒤 ' + f(errs[20]) + ' · 60바퀴 뒤 ' + f(errs[60]);
+  }
+  tauEl.addEventListener('input', update);
+  update();
+})();
+</script>
+
+  <h3>광선의 순서</h3>
+
+  <p>페이지 1의 위젯에서 보았듯, 사이각이 좁은(거의 같은 방향을 겨냥하는) 두 식을 번갈아 사영하면 느리게 수렴합니다. 그래서 광선을 처리하는 순서도 수렴 속도에 영향을 줍니다. 이웃한 각도의 광선을 연달아 처리하면 사이각이 좁아 느리고, 각도를 멀찍이 떼어 가며 처리하거나 순서를 뒤섞으면 평균적으로 더 빠르게 줄어드는 경향이 있습니다.</p>
+
+  <div class="box note">
+    <p class="box-t">데이터가 부족한 경우</p>
+    <p>1장 페이지 8에서 광선 ①~④만으로는 \(\mathbf x=(0.2,0.5,0.1,0.3)\)과 \(\mathbf x'=(0.3,0.4,0,0.4)\)를 구별할 수 없다고 했습니다(둘 다 같은 측정값을 줍니다). 이 네 식만으로 \(\mathbf x^{(0)}=\mathbf 0\)에서 Kaczmarz를 한 바퀴 돌리면 어디로 가는지는 직접 해보기(페이지 11)에서 확인합니다.</p>
+  </div>
+</section>
+
+<!-- ─ 페이지 4 -->
+<section class="screen" data-title="ART 의사코드·순서도">
+  <p class="kicker">2장 · 페이지 4</p>
+  <h2>ART 의사코드와 순서도</h2>
+
+  <p>지금까지의 갱신을 알고리즘으로 정리합니다. 여기서 반복(Iteration) 한 번은 모든 광선을 한 차례씩 다 쓰는 것, 즉 한 번의 통과(Sweep)를 뜻합니다. 이 장에서 "반복 N회", "N바퀴", "N회 통과"는 모두 전체 통과를 N번 했다는 같은 뜻입니다(페이지 2).</p>
+
+<pre><span class="cap"># ART(Kaczmarz)</span><code>x ← 0                                       # 1
+for k = 1 .. 최대 반복 수:                     # 2
+    for i = 1 .. m:                           # 3  (광선 순서대로, 또는 섞어서)
+        resid ← b[i] − a_i · x                # 4
+        factor ← τ · resid / ‖a_i‖²           # 5
+        x ← x + factor · a_i                  # 6
+    if 멈춤 조건(x, b):                        # 7  (페이지 8)
+        break                                 # 8
+return x                                       # 9
+</code></pre>
+
+  <ol class="notes">
+    <li><span class="ln">3행</span> 안쪽 반복이 한 번의 통과입니다. 광선 \(m\)개를 전부 처리해야 1회 반복이 끝납니다.</li>
+    <li><span class="ln">4~6행</span> 페이지 3의 갱신식 그대로입니다. \(a_i\)가 가리키는 화소만 바뀌고, 나머지 화소는 그 단계에서 바뀌지 않습니다.</li>
+    <li><span class="ln">7행</span> 미리 정한 반복 수에 도달했는지, 또는 페이지 8의 불일치 원칙처럼 잔차가 충분히 줄었는지로 판단합니다.</li>
+  </ol>
+
+  <figure class="fig">
+    <svg viewBox="0 0 660 190" role="img" aria-label="ART 순서도. x를 0으로 초기화한 뒤 광선마다 잔차로 화소를 갱신하고, 광선이 남아 있으면 되돌아가고, 다 쓰면 멈춤 조건을 확인해 만족하면 출력하고 아니면 다음 반복으로 되돌아간다">
+      <defs><marker id="s4-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-line" fill="none" stroke-width="1.3">
+        <rect x="10" y="80" width="90" height="42" rx="6"/>
+        <rect x="140" y="80" width="180" height="42" rx="6"/>
+        <polygon points="360,101 400,80 440,101 400,122"/>
+        <polygon points="480,101 520,80 560,101 520,122"/>
+        <rect x="595" y="80" width="55" height="42" rx="6"/>
+      </g>
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.3">
+        <path d="M100 101 H138" marker-end="url(#s4-ar)"/>
+        <path d="M320 101 H358" marker-end="url(#s4-ar)"/>
+        <path d="M440 101 H478" marker-end="url(#s4-ar)"/>
+        <path d="M560 101 H593" marker-end="url(#s4-ar)"/>
+        <path d="M400 80 V38 H230 V78" marker-end="url(#s4-ar)"/>
+        <path d="M520 80 V58 H230 V78" marker-end="url(#s4-ar)"/>
+      </g>
+      <g text-anchor="middle" font-size="10.5" class="svg-fg">
+        <text x="55" y="105">x ← 0</text>
+        <text x="230" y="98">광선 i의 잔차로</text><text x="230" y="112">화소 갱신</text>
+        <text x="400" y="98">광선</text><text x="400" y="111">남음?</text>
+        <text x="520" y="98">멈춤</text><text x="520" y="111">조건?</text>
+        <text x="622" y="105">출력 x</text>
+      </g>
+      <g text-anchor="middle" font-size="9" class="svg-muted">
+        <text x="459" y="95">아니오</text>
+        <text x="579" y="95">예</text>
+        <text x="315" y="34">예: 광선 더 있음</text>
+        <text x="375" y="54">아니오: 다음 반복</text>
+      </g>
+    </svg>
+    <figcaption>광선이 남아 있으면 같은 반복 안에서 계속 갱신하고(위쪽 화살표), 모든 광선을 다 쓰면 멈춤 조건을 확인해 다음 반복이나 출력으로 갑니다.</figcaption>
+  </figure>
+</section>
+
+<!-- ─ 페이지 5 -->
+<section class="screen" data-title="SIRT: 동시 갱신">
+  <p class="kicker">2장 · 페이지 5</p>
+  <h2>모든 광선을 한꺼번에: SIRT</h2>
+
+  <p>ART는 광선 하나를 처리할 때마다 바로 화소를 바꿉니다. 그래서 결과가 광선을 처리한 순서에 따라 달라지고, 한 광선의 잡음이 바로 다음 갱신에 섞여 들어갑니다. 대신 지금의 추정값 \(\mathbf x^{(k)}\)를 그대로 두고 모든 광선의 잔차를 먼저 다 구한 뒤, 그 보정들을 한꺼번에 반영하면 어떻게 될까요?</p>
+
+  <p>이 방식을 동시 반복 재구성 기법(<span class="term" data-term="sirt">SIRT, Simultaneous Iterative Reconstruction Technique</span>)이라고 부릅니다(P. Gilbert, <i>Iterative methods for the three-dimensional reconstruction of an object from projections</i>, Journal of Theoretical Biology 36(1), 1972, 105–117). 갱신식은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[x_j^{(k+1)} = x_j^{(k)} + \tau\,\frac{1}{c_j}\sum_{i} a_{ij}\,\frac{b_i - (\mathbf A\mathbf x^{(k)})_i}{r_i}\]</p>
+
+  <p>두 가중치를 새로 썼습니다. \(r_i:=\sum_j a_{ij}\)는 광선 \(i\)가 지나는 길이의 합(행의 합)이고, \(c_j:=\sum_i a_{ij}\)는 화소 \(j\)를 지나는 광선들의 가중치 합(열의 합)입니다. 잔차를 \(r_i\)로 나누면 광선마다 길이가 다른 것을 보정하고, 보정을 더한 뒤 \(c_j\)로 나누면 여러 광선이 겹치는 화소에서 보정을 모두 더하기만 하는 대신 평균을 냅니다.</p>
+
+  <div class="box note">
+    <p class="box-t">같은 글자 다른 뜻</p>
+    <p>\(r_i\)는 광선 하나의 길이 합일 뿐, 1편에서 쓴 시야 반지름이나 극좌표의 반지름 \(r\)과는 다릅니다. \(c_j\)도 화소 하나의 가중치 합일 뿐, 1장 직접 해보기의 행렬 \(\mathbf C\)와는 다른 기호입니다.</p>
+  </div>
+
+  <h3>2×2 화소 예로 확인</h3>
+
+  <p>같은 예제에 SIRT를 적용합니다(\(\tau=1\)). \(r_i\)는 광선 ①~④가 \(2\), 광선 ⑤가 \(2\sqrt2\)이고, \(c_j\)는 화소 1·4가 \(2+\sqrt2\approx3.414\), 화소 2·3이 \(2\)입니다. \(\mathbf x^{(0)}=\mathbf 0\)에서 한 번 갱신하면 다음과 같습니다. 광선마다의 보정이 화소로 모이는 과정은 식 아래의 그림에 따라가 볼 수 있습니다.</p>
+
+  <p style="text-align:center">\[\mathbf x^{(1)} \approx (0.250,\ 0.375,\ 0.175,\ 0.279)\]</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 320" role="img" aria-label="SIRT 한 번의 갱신에서 광선 ①~⑤의 보정 값이 지나는 화소로 모이는 그림. 광선의 보정은 0.350, 0.200, 0.150, 0.400, 0.250이고, 화소 1~4가 받은 합을 각각 c_j로 나누면 0.250, 0.375, 0.175, 0.279가 된다.">
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.2" opacity=".75">
+        <path d="M200 40 L430 70"/>
+        <path d="M200 40 L430 130"/>
+        <path d="M200 100 L430 190"/>
+        <path d="M200 100 L430 250"/>
+        <path d="M200 160 L430 70"/>
+        <path d="M200 160 L430 190"/>
+        <path d="M200 220 L430 130"/>
+        <path d="M200 220 L430 250"/>
+      </g>
+      <g fill="none" stroke-width="1.8" style="stroke:var(--accent)">
+        <path d="M200 280 L430 70"/>
+        <path d="M200 280 L430 250"/>
+      </g>
+      <g class="svg-fg" font-size="11" font-weight="700">
+        <text x="356" y="108" style="fill:var(--accent)">√2</text>
+        <text x="356" y="270" style="fill:var(--accent)">√2</text>
+      </g>
+      <g class="svg-line" fill="none" stroke-width="1.3" style="fill:var(--bg)">
+        <rect x="14" y="25" width="186" height="30" rx="5"/>
+        <rect x="14" y="85" width="186" height="30" rx="5"/>
+        <rect x="14" y="145" width="186" height="30" rx="5"/>
+        <rect x="14" y="205" width="186" height="30" rx="5"/>
+        <rect x="14" y="265" width="186" height="30" rx="5"/>
+        <rect x="430" y="48" width="244" height="44" rx="5"/>
+        <rect x="430" y="108" width="244" height="44" rx="5"/>
+        <rect x="430" y="168" width="244" height="44" rx="5"/>
+        <rect x="430" y="228" width="244" height="44" rx="5"/>
+      </g>
+      <g class="svg-fg" font-size="11.5">
+        <text x="24" y="44">① 0.700 ÷ 2 = 0.350</text>
+        <text x="24" y="104">② 0.400 ÷ 2 = 0.200</text>
+        <text x="24" y="164">③ 0.300 ÷ 2 = 0.150</text>
+        <text x="24" y="224">④ 0.800 ÷ 2 = 0.400</text>
+        <text x="24" y="284">⑤ 0.707 ÷ 2√2 = 0.250</text>
+      </g>
+      <g class="svg-fg" font-size="10.5">
+        <text x="438" y="66">화소 1: 0.350 + 0.150 + √2×0.250 = 0.854</text>
+        <text x="438" y="83" font-weight="700">÷ c₁ = 3.414 → x₁ = 0.250</text>
+        <text x="438" y="126">화소 2: 0.350 + 0.400 = 0.750</text>
+        <text x="438" y="143" font-weight="700">÷ c₂ = 2 → x₂ = 0.375</text>
+        <text x="438" y="186">화소 3: 0.200 + 0.150 = 0.350</text>
+        <text x="438" y="203" font-weight="700">÷ c₃ = 2 → x₃ = 0.175</text>
+        <text x="438" y="246">화소 4: 0.200 + 0.400 + √2×0.250 = 0.954</text>
+        <text x="438" y="263" font-weight="700">÷ c₄ = 3.414 → x₄ = 0.279</text>
+      </g>
+      <g class="svg-muted" font-size="11">
+        <text x="14" y="14">광선의 보정 (bᵢ − (Ax)ᵢ) ÷ rᵢ</text>
+        <text x="430" y="14">화소가 받아 모은 합을 cⱼ로 나눔</text>
+      </g>
+    </svg>
+    <figcaption>같은 \(2\times2\) 예에서 \(\mathbf x^{(0)}=\mathbf 0\)일 때 SIRT의 한 번 갱신입니다. 왼쪽은 광선마다 잔차를 \(r_i\)로 나눈 보정이고, 선은 그 광선이 지나는 화소로 이어집니다(선의 가중치 \(a_{ij}\)는 √2로 표시한 선만 \(1\)이 아닙니다). 오른쪽에서 화소는 이어진 보정을 \(a_{ij}\)배로 모두 더한 뒤 \(c_j\)로 나누어 평균을 냅니다.</figcaption>
+  </figure>
+
+  <p>같은 과정을 아래 위젯에서 한 단계씩 따라가 볼 수 있습니다. 페이지 2의 ART 위젯과 달리 광선 다섯 개가 한꺼번에 겹쳐 보이고, 다섯 광선의 보정은 모두 지금의 \(\mathbf x\) 하나로 계산됩니다. 그다음 화소마다 받은 보정을 모아 \(c_j\)로 나누고, 그 평균을 네 화소에 한꺼번에 더합니다. '다음'을 계속 누르면 두 번째, 세 번째 갱신으로 이어집니다. 한 번 갱신한 뒤 최대 오차는 0.125로, 페이지 2의 ART가 한 바퀴 뒤 남긴 0.025보다 큽니다.</p>
+  <figure class="fig">
+    <svg viewBox="0 0 640 290" role="img" aria-label="2×2 화소 격자 위에 이번 갱신에 쓰는 광선을 겹쳐 보이고, 그 광선이 지나는 화소 값을 갱신하는 SIRT 한 단계씩 보기. 오른쪽에 보정 계산과 참값을 적는다">
+      <defs><marker id="k5-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+      <g id="k5-cells"></g>
+      <g id="k5-rays"></g>
+      <g id="k5-txt"></g>
+      <g id="k5-info" class="svg-fg"></g>
+      <g id="k5-true"></g>
+    </svg>
+    <figcaption>칸 안의 큰 숫자는 지금 추정값입니다. 1단계에서 광선 다섯 개의 보정값(주황 숫자)을 모두 같은 \(\mathbf x\)로 구하고, 2단계에서 화소마다 받은 보정의 합과 \(c_j\)를 보이며, 3단계에서 나눈 값(평균)을 한꺼번에 더합니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <button type="button" id="k5-next">다음</button>
+    <button type="button" id="k5-play">자동 재생</button>
+    <button type="button" id="k5-reset">처음부터</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="k5-note"></p>
+
+<script>K2W('k5', 'sirt');</script>
+
+  <p>ART가 한 바퀴 만에 거의 참값에 다가간 것과 달리(페이지 2), SIRT는 한 번의 갱신으로는 참값 \((0.2,0.5,0.1,0.3)\)에서 더 멀어 보입니다. 실제로 이 예제에서 참값과의 거리를 \(5\times10^{-4}\) 정도로 줄이려면 SIRT는 약 20번을 되풀이해야 합니다(ART는 한 바퀴 뒤 거리가 이미 약 \(0.035\)입니다). 모든 광선을 동시에 반영하는 대가로 한 번의 갱신이 더 조심스럽고, 보통 ART보다 훨씬 많은 반복이 필요합니다.</p>
+</section>
+
+<!-- ─ 페이지 6 -->
+<section class="screen" data-title="SART: 각도 단위 갱신">
+  <p class="kicker">2장 · 페이지 6</p>
+  <h2>각도 하나씩 한꺼번에: SART</h2>
+
+  <p>ART(광선 하나씩)와 SIRT(광선 전체를 한꺼번에) 사이에는 중간 지점이 있습니다. CT 장치는 한 각도(선원 위치 하나)에서 검출기 전체가 동시에 값을 읽습니다. 그러니 광선 하나씩이 아니라, 같은 각도의 광선들을 한 묶음으로 동시에 반영하고, 그다음 각도로 넘어가면 어떨까요?</p>
+
+  <p>이 방식을 동시 대수적 재구성 기법(<span class="term" data-term="sart">SART, Simultaneous Algebraic Reconstruction Technique</span>)이라고 부릅니다(A. H. Andersen, A. C. Kak, <i>Simultaneous Algebraic Reconstruction Technique (SART): A superior implementation of the ART algorithm</i>, Ultrasonic Imaging 6(1), 1984, 81–94). 각도 \(\theta\)에 속한 광선의 집합을 \(\mathcal I_\theta\)라고 하면, 갱신식은 SIRT와 같은 모양이되 그 각도의 광선만 모읍니다.</p>
+
+  <p style="text-align:center">\[x_j \leftarrow x_j + \tau\,\frac{1}{c_j^{\theta}}\sum_{i\in\mathcal I_\theta} a_{ij}\,\frac{b_i - (\mathbf A\mathbf x)_i}{r_i}, \qquad c_j^{\theta}:=\sum_{i\in\mathcal I_\theta} a_{ij}\]</p>
+
+  <p>모든 각도를 한 번씩 거치면 ART와 마찬가지로 반복 한 번(한 바퀴)이 끝납니다. ART는 광선 하나마다, SIRT는 전체 광선을 다 모은 뒤 한 번, SART는 각도 하나(검출기 전체)마다 갱신한다는 차이뿐입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 260" role="img" aria-label="세 방법이 한 번의 갱신에 쓰는 광선의 비교. 광선 15개(각도 3개, 각도마다 5개) 가운데 ART는 하나, SART는 같은 각도의 5개, SIRT는 15개 전부를 쓴다">
+      <rect x="18" y="18" width="164" height="164" rx="3" class="svg-line" fill="none" stroke-width="1.2"/>
+      <path d="M18.0 52.0L182.0 52.0M18.0 76.0L182.0 76.0M18.0 100.0L182.0 100.0M18.0 124.0L182.0 124.0M18.0 148.0L182.0 148.0M108.1 18.0L182.0 146.0M80.4 18.0L175.1 182.0M24.9 18.0L119.6 182.0M18.0 54.0L91.9 182.0M182.0 54.0L108.1 182.0M175.1 18.0L80.4 182.0M147.3 18.0L52.7 182.0M119.6 18.0L24.9 182.0M91.9 18.0L18.0 146.0" fill="none" stroke-width="1" opacity=".4" style="stroke:var(--muted)"/>
+      <path d="M52.7 18.0L147.3 182.0" fill="none" stroke-width="2.6" stroke-linecap="round" style="stroke:var(--accent)"/>
+      <rect x="238" y="18" width="164" height="164" rx="3" class="svg-line" fill="none" stroke-width="1.2"/>
+      <path d="M238.0 52.0L402.0 52.0M238.0 76.0L402.0 76.0M238.0 100.0L402.0 100.0M238.0 124.0L402.0 124.0M238.0 148.0L402.0 148.0M402.0 54.0L328.1 182.0M395.1 18.0L300.4 182.0M367.3 18.0L272.7 182.0M339.6 18.0L244.9 182.0M311.9 18.0L238.0 146.0" fill="none" stroke-width="1" opacity=".4" style="stroke:var(--muted)"/>
+      <path d="M328.1 18.0L402.0 146.0M300.4 18.0L395.1 182.0M272.7 18.0L367.3 182.0M244.9 18.0L339.6 182.0M238.0 54.0L311.9 182.0" fill="none" stroke-width="2.6" stroke-linecap="round" style="stroke:var(--accent)"/>
+      <rect x="458" y="18" width="164" height="164" rx="3" class="svg-line" fill="none" stroke-width="1.2"/>
+      <path d="" fill="none" stroke-width="1" opacity=".4" style="stroke:var(--muted)"/>
+      <path d="M458.0 52.0L622.0 52.0M458.0 76.0L622.0 76.0M458.0 100.0L622.0 100.0M458.0 124.0L622.0 124.0M458.0 148.0L622.0 148.0M548.1 18.0L622.0 146.0M520.4 18.0L615.1 182.0M492.7 18.0L587.3 182.0M464.9 18.0L559.6 182.0M458.0 54.0L531.9 182.0M622.0 54.0L548.1 182.0M615.1 18.0L520.4 182.0M587.3 18.0L492.7 182.0M559.6 18.0L464.9 182.0M531.9 18.0L458.0 146.0" fill="none" stroke-width="2.6" stroke-linecap="round" style="stroke:var(--accent)"/>
+
+      <g class="svg-fg" font-size="13" font-weight="700" text-anchor="middle">
+        <text x="100" y="206">ART</text><text x="320" y="206">SART</text><text x="540" y="206">SIRT</text>
+      </g>
+      <g class="svg-muted" font-size="11" text-anchor="middle">
+        <text x="100" y="224">갱신 한 번에 광선 1개</text><text x="320" y="224">갱신 한 번에 한 각도의 5개</text><text x="540" y="224">갱신 한 번에 광선 15개 전부</text>
+        <text x="100" y="244">한 바퀴 = 갱신 15번</text><text x="320" y="244">한 바퀴 = 갱신 3번</text><text x="540" y="244">한 바퀴 = 갱신 1번</text>
+      </g>
+    </svg>
+    <figcaption>광선 15개(각도 3개 × 각도마다 5개)를 그린 개념도입니다. 굵은 선이 한 번의 갱신에 쓰는 광선입니다.
+    ART는 광선마다, SART는 각도마다, SIRT는 모든 광선을 모은 뒤에 한 번 영상을 고칩니다. 같은 한 바퀴를 도는 동안 영상이 고쳐지는 횟수가 15번, 3번, 1번으로 달라집니다.</figcaption>
+  </figure>
+
+  <p>같은 \(2\times2\) 예에서 세 방법을 바꿔 가며 한 단계씩 비교해 보세요. 이 작은 예에서는 같은 각도의 광선(①②, ③④)이 화소를 공유하지 않아, 한 바퀴가 끝나면 SART의 숫자가 ART와 똑같아집니다(ART는 ①, ②를 따로 반영하므로 바퀴 중간의 상태는 다릅니다). 차이는 한 번에 겹쳐 쓰는 광선의 수와 한 바퀴의 갱신 횟수(ART 5번, SART 3번, SIRT 1번)에서 보입니다. 같은 각도의 이웃 광선이 화소를 공유하는 실제 크기의 영상에서는 SART의 숫자도 ART와 달라집니다.</p>
+  <figure class="fig">
+    <svg viewBox="0 0 640 290" role="img" aria-label="2×2 화소 격자 위에 이번 갱신에 쓰는 광선을 겹쳐 보이고, 그 광선이 지나는 화소 값을 갱신하는 ART·SART·SIRT 한 단계씩 보기. 오른쪽에 보정 계산과 참값을 적는다">
+      <defs><marker id="k6-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+      <g id="k6-cells"></g>
+      <g id="k6-rays"></g>
+      <g id="k6-txt"></g>
+      <g id="k6-info" class="svg-fg"></g>
+      <g id="k6-true"></g>
+    </svg>
+    <figcaption>ART는 광선 하나, SART는 같은 각도의 광선 묶음(①② 가로, ③④ 세로, ⑤ 대각), SIRT는 광선 전체를 한 번의 갱신에 씁니다. SART·SIRT는 보정 계산 → 화소마다 모으기 → 평균 더하기의 세 단계로 진행합니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="k6-mode">방법</label>
+    <select id="k6-mode"><option value="art">ART</option><option value="sart" selected>SART</option><option value="sirt">SIRT</option></select>
+    <button type="button" id="k6-next">다음</button>
+    <button type="button" id="k6-play">자동 재생</button>
+    <button type="button" id="k6-reset">처음부터</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="k6-note"></p>
+
+<script>K2W('k6', 'sart');</script>
+
+  <h3>3×3 화소 예: SART가 ART와 달라지는 경우</h3>
+
+  <p>같은 각도의 이웃 광선이 화소를 나눠 지나가도록 \(3\times3\) 화소 예를 만들어 봅니다. 참값은 \((0.2,0.5,0.1;\ 0.4,0.8,0.3;\ 0.1,0.3,0.6)\)(행 순서)이고, 광선은 세 각도에 12개입니다. 가로 ①~③과 ↗ 대각 ⑧~⑫는 같은 각도끼리 화소를 공유하지 않지만, ↘ 대각 ④~⑦은 반 칸씩 엇갈려 있어 이웃한 두 광선이 같은 화소를 함께 지납니다(\(\mathbf A\)의 랭크는 9라 해는 하나입니다).</p>
+
+  <p>이 묶음에서 두 방법의 계산이 갈립니다. 광선을 고르는 순서가 같아도 그렇습니다. 차이는 다음 광선의 잔차를 어떤 \(\mathbf x\)로 구하느냐에 있습니다. ART는 광선 ④로 화소를 고친 뒤, 그 고쳐진 \(\mathbf x\)로 광선 ⑤의 잔차를 구합니다. SART는 ④~⑦의 잔차를 모두 묶음에 들어가기 전의 같은 \(\mathbf x\)로 구하고, 보정을 화소마다 모아 평균을 냅니다. ④와 ⑤처럼 화소를 공유하는 광선에서는 앞 광선의 갱신이 다음 광선의 예측값을 바꾸므로 두 잔차가 달라집니다.</p>
+
+  <p>가로 ①~③까지는 두 방법의 값이 같아서, 둘 다 \((0.267,0.267,0.267;\ 0.5,0.5,0.5;\ 0.333,0.333,0.333)\)에서 ④~⑦ 묶음을 시작합니다. 이 같은 출발점에서 광선별 잔차를 비교하면 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>광선</th><th>ART의 잔차<br>(앞 광선이 고친 \(\mathbf x\)로, 차례로)</th><th>SART의 잔차<br>(묶음 시작의 같은 \(\mathbf x\)로)</th></tr>
+      <tr><td>④</td><td>−0.259</td><td>−0.259</td></tr>
+      <tr><td>⑤</td><td>0.432</td><td>0.259</td></tr>
+      <tr><td>⑥</td><td>0.118</td><td>0.377</td></tr>
+      <tr><td>⑦</td><td>−0.141</td><td>−0.094</td></tr>
+    </table>
+  </div>
+
+  <p>첫 광선 ④만 같고, ⑤부터는 ART 쪽에 앞 광선의 갱신이 반영되어 값이 달라집니다. 묶음이 끝난 뒤 가운데 화소(5번)는 ART가 0.656, SART가 0.590입니다. 2×2 예에서 두 방법이 같았던 것은 같은 각도의 광선이 화소를 공유하지 않아, 앞 광선의 갱신이 다음 광선의 예측값을 바꾸지 못했기 때문입니다.</p>
+
+  <p>아래 위젯은 두 방법을 같은 광선 순서로 나란히 진행합니다. 아래쪽 표에서 광선별 잔차가 언제부터 달라지는지, 묶음이 끝난 뒤 어느 칸의 값이 달라지는지(주황 테두리) 확인해 보세요.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 500" role="img" aria-label="3×3 화소 예에서 ART(왼쪽)와 SART(오른쪽)를 같은 광선 순서로 나란히 진행하는 그림. 아래 표에 이번 묶음의 광선별 잔차를 두 방법으로 나란히 적는다">
+      <defs><marker id="k7-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+      <g id="k7-grid"></g>
+      <g id="k7-tab"></g>
+    </svg>
+    <figcaption>광선 ①~③은 가로, ④~⑦은 반 칸씩 엇갈린 ↘ 대각(\(a_{ij}=\)√2/2 ≈ 0.707), ⑧~⑫는 화소 중심을 지나는 ↗ 대각(\(a_{ij}=\)√2 ≈ 1.414)입니다. 왼쪽 ART는 '다음'마다 광선 하나를 반영하고, 오른쪽 SART는 묶음 시작의 \(\mathbf x\)로 잔차를 구해 두었다가 묶음이 끝나면 모아서 한꺼번에 더합니다. 오른쪽 아래 작은 격자가 참값이고, 그림 아래 줄에 두 방법의 최대 오차를 나란히 적습니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <button type="button" id="k7-next">다음</button>
+    <button type="button" id="k7-play">자동 재생</button>
+    <button type="button" id="k7-reset">처음부터</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="k7-note"></p>
+<script>
+/* 3×3 예에서 ART와 SART를 같은 광선 순서로 나란히 진행. K3C(접두어).
+   화소 (행 r, 열 c)의 번호는 3r+c+1. 격자 좌표 u(오른쪽), v(아래), 칸 [c,c+1]×[r,r+1].
+   광선 ①~③ 가로, ④~⑦ ↘ 대각 u−v = −1.5…1.5(반 칸 엇갈림, 길이 √2/2), ⑧~⑫ ↗ 대각 u+v = 1…5(화소 중심, 길이 √2). */
+window.K3C = function (P) {
+  var R2 = Math.SQRT2, A = [], LINES = [], k, r, c, a, j;
+  function z() { return [0, 0, 0, 0, 0, 0, 0, 0, 0]; }
+  for (r = 0; r < 3; r++) { a = z(); for (c = 0; c < 3; c++) a[3 * r + c] = 1; A.push(a); LINES.push([[0, r + 0.5], [1, 0]]); }
+  for (k = -2; k <= 1; k++) { a = z(); for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) if (c - r === k || c - r === k + 1) a[3 * r + c] = R2 / 2; A.push(a); LINES.push([[k + 0.5, 0], [1, 1]]); }
+  for (k = 1; k <= 5; k++) { a = z(); for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) if (c + r + 1 === k) a[3 * r + c] = R2; A.push(a); LINES.push([[0, k], [1, -1]]); }
+  var T = [0.2, 0.5, 0.1, 0.4, 0.8, 0.3, 0.1, 0.3, 0.6];
+  var B = A.map(function (a) { var s = 0; for (var j = 0; j < 9; j++) s += a[j] * T[j]; return s; });
+  var NAME = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
+  var GROUPS = [[0, 1, 2], [3, 4, 5, 6], [7, 8, 9, 10, 11]], GNAME = ['가로 ①~③', '↘ 대각 ④~⑦', '↗ 대각 ⑧~⑫'];
+  var CS = 64, OY = 72, OXS = [56, 372], M = 0.35;
+  var HALO = 'paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round;stroke-opacity:.85';
+  function $(id) { return document.getElementById(P + '-' + id); }
+  var gridEl = $('grid'), tabEl = $('tab'), noteEl = $('note'), playBtn = $('play');
+  var RAY = LINES.map(function (L) {   /* 격자 좌표 직선을 격자 밖 M칸까지: [u0, v0, u1, v1] */
+    var p = L[0], d = L[1], t0 = -1e9, t1 = 1e9, i, a, b, t;
+    for (i = 0; i < 2; i++) if (d[i] !== 0) { a = (-M - p[i]) / d[i]; b = (3 + M - p[i]) / d[i]; if (a > b) { t = a; a = b; b = t; } t0 = Math.max(t0, a); t1 = Math.min(t1, b); }
+    return [p[0] + t0 * d[0], p[1] + t0 * d[1], p[0] + t1 * d[0], p[1] + t1 * d[1], d];
+  });
+  function dot(a, x) { var s = 0; for (var j = 0; j < 9; j++) s += a[j] * x[j]; return s; }
+  function f3(v) { var s = Math.abs(v) < 5e-4 ? '0.000' : v.toFixed(3); return s.replace('-', '−'); }
+  function sg(v) { return (v >= 0 ? '+' : '') + f3(v); }
+  /* 상태: gi 묶음 번호(누적), s 묶음 안 단계. s=1..n: ART가 광선 G[s−1]을 반영, s=n+1: SART 모으기, s=n+2: SART 갱신 */
+  var xa, xs, gi, s, resA, resS, dA, dS, sum, cw, same0 = true, timer = null;
+  function G() { return GROUPS[gi % 3]; }
+  function reset() { xa = z(); xs = z(); gi = 0; s = 0; same0 = true; resA = {}; resS = {}; dA = dS = sum = cw = null; render(); }
+  function next() {
+    var g = G(), n = g.length, i;
+    if (s === n + 2) { gi++; s = 0; g = G(); n = g.length; }
+    s++;
+    if (s === 1) {                     /* 묶음 시작: SART는 같은 xs로 모든 잔차를 미리 구함 */
+      resA = {}; resS = {}; dS = sum = cw = null;
+      same0 = true; for (j = 0; j < 9; j++) if (Math.abs(xa[j] - xs[j]) > 5e-4) same0 = false;
+      g.forEach(function (i) { resS[i] = B[i] - dot(A[i], xs); });
+    }
+    if (s <= n) {                      /* ART: 광선 하나를 지금의(앞 광선이 고친) xa로 */
+      i = g[s - 1]; var a = A[i], rr = B[i] - dot(a, xa), nn = dot(a, a);
+      resA[i] = rr; dA = z(); for (j = 0; j < 9; j++) { dA[j] = rr / nn * a[j]; xa[j] += dA[j]; }
+    } else if (s === n + 1) {          /* SART: 화소마다 모으기 */
+      dA = null; sum = z(); cw = z();
+      g.forEach(function (i) { var a = A[i], ri = 0; for (j = 0; j < 9; j++) ri += a[j]; for (j = 0; j < 9; j++) { sum[j] += a[j] * resS[i] / ri; cw[j] += a[j]; } });
+    } else {                           /* SART: 평균을 한꺼번에 더함 */
+      dS = z(); for (j = 0; j < 9; j++) { dS[j] = cw[j] > 0 ? sum[j] / cw[j] : 0; xs[j] += dS[j]; }
+    }
+    render();
+  }
+  function render() {
+    var g = G(), n = g.length, h = '', side, i, j, x, ox, actA = s >= 1 && s <= n ? g[s - 1] : -1;
+    for (side = 0; side < 2; side++) {
+      x = side ? xs : xa; ox = OXS[side];
+      h += '<text x="' + (ox + 1.5 * CS) + '" y="22" text-anchor="middle" font-size="14" font-weight="700" class="svg-fg">' + (side ? 'SART: 묶음을 같은 x로 한꺼번에' : 'ART: 광선 하나씩 차례로') + '</text>';
+      for (j = 0; j < 9; j++) {
+        var px = ox + (j % 3) * CS, py = OY + Math.floor(j / 3) * CS, diff = s === n + 2 && Math.abs(xa[j] - xs[j]) > 5e-4;
+        h += '<rect x="' + px + '" y="' + py + '" width="' + CS + '" height="' + CS + '" fill-opacity="' + Math.min(0.85, Math.max(0, x[j]) * 1.1).toFixed(2) + '" style="fill:var(--accent)"/>';
+        h += '<rect x="' + px + '" y="' + py + '" width="' + CS + '" height="' + CS + '" class="svg-line" stroke-width="1.2"/>';
+        if (diff) h += '<rect x="' + (px + 2) + '" y="' + (py + 2) + '" width="' + (CS - 4) + '" height="' + (CS - 4) + '" fill="none" stroke-width="2.5" style="stroke:var(--warn)"/>';
+      }
+      for (i = 0; i < 12; i++) {
+        var on = side ? (s >= 1 && s <= n + 1 && g.indexOf(i) >= 0) : i === actA,
+            done = !side && s >= 1 && g.indexOf(i) >= 0 && i !== actA && resA[i] !== undefined, q = RAY[i];
+        var X0 = ox + q[0] * CS, Y0 = OY + q[1] * CS, X1 = ox + q[2] * CS, Y1 = OY + q[3] * CS;
+        h += '<path d="M' + X0.toFixed(1) + ' ' + Y0.toFixed(1) + ' L' + X1.toFixed(1) + ' ' + Y1.toFixed(1) + '" fill="none" stroke-linecap="round" ' +
+          (on ? 'stroke-width="2.4" style="stroke:var(--warn)" marker-end="url(#' + P + '-ar)"' :
+           done ? 'stroke-width="1.6" style="stroke:var(--warn)" opacity=".35"' :
+           'stroke-width="1" stroke-dasharray="3 4" style="stroke:var(--muted)" opacity=".35"') + '/>';
+        if (on || done) { var dl = Math.sqrt(q[4][0] * q[4][0] + q[4][1] * q[4][1]);
+          h += '<text x="' + (X0 - 12 * q[4][0] / dl - 6).toFixed(1) + '" y="' + (Y0 - 12 * q[4][1] / dl + 4).toFixed(1) + '" font-size="11.5"' + (on ? ' font-weight="700" style="fill:var(--warn)"' : ' class="svg-muted"') + '>' + NAME[i] + '</text>'; }
+      }
+      for (j = 0; j < 9; j++) {
+        var cx = ox + (j % 3) * CS + CS / 2, cy = OY + Math.floor(j / 3) * CS, small = '';
+        h += '<text x="' + cx + '" y="' + (cy + 31) + '" text-anchor="middle" font-size="14" font-weight="700" class="svg-fg" style="' + HALO + '">' + f3(x[j]) + '</text>';
+        h += '<text x="' + (cx + CS / 2 - 5) + '" y="' + (cy + 12) + '" text-anchor="end" font-size="9" class="svg-muted">' + (j + 1) + '</text>';
+        if (!side && dA && Math.abs(dA[j]) > 1e-12) small = sg(dA[j]);
+        if (side && s === n + 1 && cw[j] > 0) small = f3(sum[j]) + '÷' + f3(cw[j]);
+        if (side && s === n + 2 && Math.abs(dS[j]) > 1e-12) small = sg(dS[j]);
+        if (small) h += '<text x="' + cx + '" y="' + (cy + 53) + '" text-anchor="middle" font-size="9.5" style="fill:var(--warn);' + HALO + '">' + small + '</text>';
+      }
+    }
+    gridEl.innerHTML = h;
+    /* 아래 표: 이번 묶음의 광선별 잔차 */
+    var sweep = Math.floor(gi / 3) + 1, t = '', y = 326;
+    t += '<text x="40" y="' + y + '" font-size="13" font-weight="700" class="svg-fg">' + GNAME[gi % 3] + ' · ' + sweep + '바퀴째 · 광선별 잔차</text>';
+    y += 22;
+    t += '<g class="svg-muted" font-size="11.5"><text x="40" y="' + y + '">광선</text><text x="110" y="' + y + '">ART (앞 광선이 고친 x로)</text><text x="330" y="' + y + '">SART (묶음 시작의 x로)</text></g>';
+    g.forEach(function (i) {
+      y += 19;
+      var ra = resA[i], rs = resS[i], same = ra !== undefined && rs !== undefined && Math.abs(ra - rs) < 5e-4;
+      t += '<text x="40" y="' + y + '" font-size="12.5" class="svg-fg">' + NAME[i] + '</text>';
+      t += '<text x="110" y="' + y + '" font-size="12.5"' + (i === actA ? ' font-weight="700"' : '') + ' class="svg-fg">' + (ra === undefined ? '·' : f3(ra)) + '</text>';
+      t += '<text x="330" y="' + y + '" font-size="12.5" class="svg-fg">' + (rs === undefined ? '·' : f3(rs)) + '</text>';
+      if (same0 && ra !== undefined && rs !== undefined) t += '<text x="440" y="' + y + '" font-size="11.5"' + (same ? ' class="svg-muted">같음' : ' style="fill:var(--warn)" font-weight="700">다름') + '</text>';
+    });
+    if (!same0) { y += 19; t += '<text x="40" y="' + y + '" font-size="11.5" style="fill:var(--warn)">이 묶음은 앞 묶음의 결과로 두 방법의 출발 x가 이미 달라, 잔차 차이가 방법 차이만은 아닙니다</text>'; }
+    var msg;
+    if (s === 0) msg = '\'다음\'을 누르면 두 방법이 같은 x에서 출발해 같은 광선 순서로 진행합니다';
+    else if (s <= n) msg = 'ART: 광선 ' + NAME[g[s - 1]] + ' 반영 완료' + (s > 1 ? '(앞 광선이 고친 x로 잔차를 구함)' : '') + ' · SART는 잔차만 구해 두고 기다립니다';
+    else if (s === n + 1) msg = 'SART: 보정을 화소마다 모아 cⱼ로 나눕니다(칸 아래: 합÷cⱼ)';
+    else msg = 'SART 갱신 완료 · 주황 테두리 칸은 두 방법의 값이 다른 칸';
+    t += '<text x="40" y="' + (y + 26) + '" font-size="11.5" class="svg-muted">' + msg + '</text>';
+    /* 오른쪽 아래: 참값 */
+    t += '<text x="530" y="328" font-size="11.5" class="svg-muted">참값</text>';
+    for (j = 0; j < 9; j++) {
+      var tx = 530 + (j % 3) * 30, ty = 336 + Math.floor(j / 3) * 30;
+      t += '<rect x="' + tx + '" y="' + ty + '" width="30" height="30" fill-opacity="' + (T[j] * 1.1).toFixed(2) + '" style="fill:var(--accent)"/>';
+      t += '<rect x="' + tx + '" y="' + ty + '" width="30" height="30" class="svg-line" stroke-width="1"/>';
+      t += '<text x="' + (tx + 15) + '" y="' + (ty + 19) + '" text-anchor="middle" font-size="10.5" class="svg-fg">' + T[j].toFixed(1) + '</text>';
+    }
+    tabEl.innerHTML = t;
+    var ea = 0, es = 0; for (j = 0; j < 9; j++) { ea = Math.max(ea, Math.abs(xa[j] - T[j])); es = Math.max(es, Math.abs(xs[j] - T[j])); }
+    var even = s === 0 || s === n + 2, sw = Math.floor((gi + (s === n + 2 ? 1 : 0)) / 3);
+    noteEl.textContent = sw + '바퀴 완료 · 참값과의 최대 오차 ART ' + f3(ea) + ' · SART ' + f3(es) +
+      (!even ? ' (SART는 묶음 끝에서 갱신)' : Math.abs(ea - es) < 5e-4 ? ' (같음)' : ea < es ? ' (ART가 더 가까움)' : ' (SART가 더 가까움)');
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; playBtn.textContent = '자동 재생'; } }
+  $('next').addEventListener('click', function () { stop(); next(); });
+  $('reset').addEventListener('click', function () { stop(); reset(); });
+  playBtn.addEventListener('click', function () { if (timer) { stop(); return; } playBtn.textContent = '멈춤'; timer = setInterval(next, 1000); });
+  reset();
+};
+</script>
+<script>K3C('k7');</script>
+
+  <p>바퀴 수를 늘리면 어떻게 될까요? 아래 그래프는 같은 \(3\times3\) 예에서 두 방법을 40바퀴까지 돌리며 참값과의 최대 오차를 그린 것입니다(잡음 없음, \(\tau=1\), 위젯과 같은 값). 세로축은 10의 거듭제곱 눈금입니다.</p>
+
+  <figure class="fig">
+    <svg id="e7-svg" viewBox="0 0 660 268" role="img" aria-label="3×3 예에서 ART와 SART의 바퀴 수별 참값과의 최대 오차. 가로축은 한 바퀴 수 0~40, 세로축은 오차의 상용로그. 두 곡선 모두 내려가지만 ART가 더 가파르게 내려가 40바퀴 뒤 ART는 약 2×10⁻⁵, SART는 약 8×10⁻⁴이다">
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M70 224 H620"/><path d="M70 24 V224"/></g>
+      <g id="e7-grid" fill="none" stroke-width="0.6" opacity=".35" style="stroke:var(--muted)"></g>
+      <path id="e7-sart" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <path id="e7-art" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <g class="svg-muted" font-size="10" id="e7-ticks"></g>
+      <g class="svg-muted" font-size="10"><text x="620" y="259" text-anchor="end">한 바퀴 수 (0~40)</text><text x="70" y="13" text-anchor="start">최대 오차</text></g>
+      <g id="e7-lab" font-size="11.5" class="svg-fg"></g>
+      <g id="e7-hover" style="display:none">
+        <path id="e7-vl" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+        <circle id="e7-pa" r="4" style="fill:var(--accent);stroke:var(--bg);stroke-width:2"/>
+        <circle id="e7-ps" r="4" style="fill:var(--warn);stroke:var(--bg);stroke-width:2"/>
+        <rect id="e7-tb" width="150" height="54" rx="4" style="fill:var(--bg);stroke:var(--rule)"/>
+        <text id="e7-tt" font-size="11" class="svg-fg"></text>
+      </g>
+      <rect id="e7-hit" x="70" y="24" width="550" height="200" fill="transparent"/>
+    </svg>
+    <figcaption>파란 선이 ART, 주황 선이 SART입니다(선 끝에 이름을 적었습니다). 그래프 위에 마우스를 올리면 그 바퀴의 두 값을 보여 줍니다.</figcaption>
+  </figure>
+
+<script>
+(function () {
+  /* 위 3×3 위젯과 같은 광선·참값으로 ART와 SART를 40바퀴 돌려 바퀴마다 최대 오차를 구함 */
+  var R2 = Math.SQRT2, A = [], k, r, c, a;
+  function z() { return [0, 0, 0, 0, 0, 0, 0, 0, 0]; }
+  for (r = 0; r < 3; r++) { a = z(); for (c = 0; c < 3; c++) a[3 * r + c] = 1; A.push(a); }
+  for (k = -2; k <= 1; k++) { a = z(); for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) if (c - r === k || c - r === k + 1) a[3 * r + c] = R2 / 2; A.push(a); }
+  for (k = 1; k <= 5; k++) { a = z(); for (r = 0; r < 3; r++) for (c = 0; c < 3; c++) if (c + r + 1 === k) a[3 * r + c] = R2; A.push(a); }
+  var T = [0.2, 0.5, 0.1, 0.4, 0.8, 0.3, 0.1, 0.3, 0.6], GROUPS = [[0, 1, 2], [3, 4, 5, 6], [7, 8, 9, 10, 11]], NS = 40, LO = -5, HI = 0;
+  var B = A.map(function (a) { var s = 0; for (var j = 0; j < 9; j++) s += a[j] * T[j]; return s; });
+  function dot(a, x) { var s = 0; for (var j = 0; j < 9; j++) s += a[j] * x[j]; return s; }
+  function err(x) { var e = 0; for (var j = 0; j < 9; j++) e = Math.max(e, Math.abs(x[j] - T[j])); return e; }
+  function run(sart) {
+    var x = z(), out = [err(x)], s, j;
+    for (s = 1; s <= NS; s++) {
+      GROUPS.forEach(function (G) {
+        if (!sart) G.forEach(function (i) { var f = (B[i] - dot(A[i], x)) / dot(A[i], A[i]); for (j = 0; j < 9; j++) x[j] += f * A[i][j]; });
+        else {
+          var su = z(), cw = z();
+          G.forEach(function (i) { var ri = 0, q; for (j = 0; j < 9; j++) ri += A[i][j]; q = (B[i] - dot(A[i], x)) / ri; for (j = 0; j < 9; j++) { su[j] += A[i][j] * q; cw[j] += A[i][j]; } });
+          for (j = 0; j < 9; j++) if (cw[j] > 0) x[j] += su[j] / cw[j];
+        }
+      });
+      out.push(err(x));
+    }
+    return out;
+  }
+  var EA = run(false), ES = run(true);
+  function X(k) { return 70 + k / NS * 550; }
+  function Y(e) { var l = Math.log(Math.max(e, 1e-12)) / Math.LN10; l = Math.min(HI, Math.max(LO, l)); return 224 - (l - LO) / (HI - LO) * 200; }
+  function path(E) { var d = '', k; for (k = 0; k <= NS; k++) d += (k ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(E[k]).toFixed(1); return d; }
+  function $(id) { return document.getElementById('e7-' + id); }
+  $('art').setAttribute('d', path(EA)); $('sart').setAttribute('d', path(ES));
+  var g = '', t = '', e, SUP = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵' };
+  for (e = LO; e <= HI; e++) { g += '<path d="M70 ' + Y(Math.pow(10, e)).toFixed(1) + ' H620"/>'; t += '<text x="64" y="' + (Y(Math.pow(10, e)) + 3.5).toFixed(1) + '" text-anchor="end">10' + (e < 0 ? '⁻' : '') + SUP[Math.abs(e)] + '</text>'; }
+  for (e = 0; e <= NS; e += 10) t += '<text x="' + X(e).toFixed(1) + '" y="238" text-anchor="middle">' + e + '</text>';
+  $('grid').innerHTML = g; $('ticks').innerHTML = t;
+  $('lab').innerHTML = '<text x="' + (X(NS) - 4) + '" y="' + (Y(EA[NS]) - 7).toFixed(1) + '" text-anchor="end">ART</text>' +
+    '<text x="' + (X(NS) - 4) + '" y="' + (Y(ES[NS]) - 7).toFixed(1) + '" text-anchor="end">SART</text>';
+  function f(v) { return v < 1e-2 ? v.toExponential(1).replace('e-', '×10⁻').replace(/⁻(\d)/, function (m, d) { return '⁻' + SUP[d]; }) : v.toFixed(3); }
+  var svg = $('svg'), hov = $('hover');
+  function show(ev) {
+    var pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+    var p = pt.matrixTransform(svg.getScreenCTM().inverse()), k = Math.round((p.x - 70) / 550 * NS);
+    k = Math.max(0, Math.min(NS, k)); var x = X(k);
+    hov.style.display = '';
+    $('vl').setAttribute('d', 'M' + x + ' 24 V224');
+    $('pa').setAttribute('cx', x); $('pa').setAttribute('cy', Y(EA[k]));
+    $('ps').setAttribute('cx', x); $('ps').setAttribute('cy', Y(ES[k]));
+    var bx = x + 160 > 640 ? x - 158 : x + 8;
+    $('tb').setAttribute('x', bx); $('tb').setAttribute('y', 30);
+    $('tt').innerHTML = '<tspan x="' + (bx + 8) + '" y="47" font-weight="700">' + k + '바퀴</tspan>' +
+      '<tspan x="' + (bx + 8) + '" y="63">ART ' + f(EA[k]) + '</tspan><tspan x="' + (bx + 8) + '" y="78">SART ' + f(ES[k]) + '</tspan>';
+  }
+  $('hit').addEventListener('pointermove', show);
+  $('hit').addEventListener('pointerleave', function () { hov.style.display = 'none'; });
+})();
+</script>
+
+  <p>두 곡선 모두 꾸준히 내려가지만 ART가 더 가파릅니다. 10바퀴 뒤 최대 오차는 ART 0.026, SART 0.056이고, 40바퀴 뒤에는 ART가 약 \(2\times10^{-5}\), SART가 약 \(8\times10^{-4}\)로 차이가 수십 배로 벌어집니다. 잡음이 없는 이 예에서는 광선 하나씩 바로 반영하는 ART가 한 바퀴당 더 많이 다가갑니다.</p>
+
+  <details class="fold">
+    <summary>표로 보기: 바퀴 수별 최대 오차</summary>
+    <div class="fold-body">
+      <div class="table-wrap">
+        <table>
+          <tr><th>한 바퀴 수</th><th>1</th><th>2</th><th>5</th><th>10</th><th>20</th><th>40</th></tr>
+          <tr><td>ART(\(\tau=1\))</td><td>0.183</td><td>0.139</td><td>0.076</td><td>0.026</td><td>0.0021</td><td>\(1.7\times10^{-5}\)</td></tr>
+          <tr><td>SART(\(\tau=1\))</td><td>0.218</td><td>0.175</td><td>0.113</td><td>0.056</td><td>0.013</td><td>\(7.9\times10^{-4}\)</td></tr>
+        </table>
+      </div>
+    </div>
+  </details>
+
+  <p>SART는 한 묶음 안의 보정을 평균 내므로 한 번의 갱신이 더 조심스럽습니다. 그 대신 같은 각도의 광선을 한꺼번에 계산할 수 있어 검출기 한 줄을 통째로 처리하기 좋고, 광선 하나의 잡음이 바로 다음 광선의 갱신으로 넘어가지 않습니다. 잡음이 있을 때의 비교는 아래 Shepp-Logan 예와 페이지 8에서 봅니다.</p>
+
+  <p>48×48 화소·각도 40개·검출기 61개로 만든 작은 Shepp-Logan 예제(페이지 8에서 자세히 봅니다)에서 세 방법을 비교하면, SART는 \(\tau=1\)로는 15바퀴 근처에서 최저 오차를 찍고 바로 다시 커지기 시작했고, \(\tau=0.5\)로 줄이면 27바퀴에서 더 낮은 최저 오차(참값 대비 rmse 약 0.157)에 이르렀습니다. 각도 단위로 한꺼번에 갱신하다 보니 한 번에 반영하는 보정이 SIRT보다 크고, 그만큼 완화 인자를 ART보다 더 조심스럽게 골라야 안정적입니다. 세 방법의 전체 비교는 페이지 10에서 표로 봅니다.</p>
+</section>
+
+<!-- ─ 페이지 7 -->
+<section class="screen" data-title="최소제곱 관점">
+  <p class="kicker">2장 · 페이지 7 · 심화</p>
+  <h2>최소제곱 관점에서 다시 보기</h2>
+
+  <p>지금까지 본 방법들은 \(\lVert\mathbf A\mathbf x-\mathbf b\rVert^{2}\)를 최소로 만드는 목표와 깊이 연결되어 있습니다. 이 값을 \(\mathbf x\)로 미분한 기울기는 \(2\mathbf A^{\mathsf T}(\mathbf A\mathbf x-\mathbf b)\)입니다(정확한 증명은 <a href="ch03.html#s8">3장 페이지 8</a>에서 다룹니다). 기울기의 반대 방향으로 조금씩 내려가는 경사하강법(Gradient Descent)은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\mathbf x^{(k+1)} = \mathbf x^{(k)} + \tau\,\mathbf A^{\mathsf T}(\mathbf b-\mathbf A\mathbf x^{(k)})\]</p>
+
+  <p>페이지 5의 SIRT 갱신식과 나란히 놓으면, SIRT는 바로 이 경사하강법에 두 대각행렬 \(\mathbf D=\mathrm{diag}(1/c_j)\), \(\mathbf R=\mathrm{diag}(1/r_i)\)를 끼운 것입니다.</p>
+
+  <p style="text-align:center">\[\mathbf x^{(k+1)} = \mathbf x^{(k)} + \tau\,\mathbf D\mathbf A^{\mathsf T}\mathbf R(\mathbf b-\mathbf A\mathbf x^{(k)})\]</p>
+
+  <p>\(\mathbf D\)는 수렴 속도만 조정할 뿐 멈추는 점을 바꾸지 않지만, \(\mathbf R\)은 다릅니다. \(\mathbf D,\mathbf R\)가 둘 다 항등행렬이면 보통의 경사하강법(Landweber 반복)이고, 이때 고정점은 원래의 \(\lVert\mathbf A\mathbf x-\mathbf b\rVert^{2}\)를 최소로 하는 점입니다. 그런데 SIRT처럼 \(\mathbf R=\mathrm{diag}(1/r_i)\)를 끼우면 고정점도 함께 바뀝니다 — SIRT가 실제로 수렴하는 곳은 \(\lVert\mathbf A\mathbf x-\mathbf b\rVert^{2}\)가 아니라 광선마다 \(1/r_i\)를 가중치로 쓴 가중 최소제곱 \(\sum_i (1/r_i)(b_i-(\mathbf A\mathbf x)_i)^{2}\)의 해입니다. 광선·화소의 크기 차이에 맞춰 눈금을 조정하는 대가로, 풀고 있는 목표 자체도 그만큼 바뀌는 셈입니다(통계적 가중치로 목표를 더 적극적으로 바꾸는 방법은 페이지 9에서 봅니다).</p>
+
+  <h3>짝이 맞지 않을 때의 수렴</h3>
+
+  <p>1장 페이지 6에서 역투영에 쓰는 행렬 \(\mathbf B\)가 \(\mathbf A^{\mathsf T}\)와 다르면(Unmatched) 수렴이 보장되지 않는다고 했습니다. 정확한 조건을 여기서 봅니다. 일반적인 갱신식 \(\mathbf x^{(k+1)}=\mathbf x^{(k)}+\tau\mathbf B(\mathbf b-\mathbf A\mathbf x^{(k)})\)이 멈추는 점(고정점)은 \(\mathbf B(\mathbf b-\mathbf A\mathbf x^{*})=\mathbf 0\), 즉 \(\mathbf B\mathbf A\mathbf x^{*}=\mathbf B\mathbf b\)를 만족하는 점입니다.</p>
+
+  <p>\(\mathbf B=\mathbf A^{\mathsf T}\)(Matched)이면 이 식이 바로 최소제곱의 정규방정식 \(\mathbf A^{\mathsf T}\mathbf A\mathbf x^{*}=\mathbf A^{\mathsf T}\mathbf b\)이므로, 고정점은 정확히 우리가 원하는 최소제곱 해입니다. 그런데 \(\mathbf B\ne\mathbf A^{\mathsf T}\)이면 고정점은(\(\mathbf B\mathbf A\)가 가역이라면) \((\mathbf B\mathbf A)^{-1}\mathbf B\mathbf b\)로, 일반적으로 다른 점입니다 — 짝이 맞지 않으면 수렴하더라도 풀려던 최소제곱 문제의 답이 아닌 다른 점으로 수렴할 수 있습니다.</p>
+
+  <p>게다가 수렴 자체도 깨질 수 있습니다. matched인 경우 \(\mathbf A^{\mathsf T}\mathbf A\)는 고유값(<a href="ch03.html#s5">3장 페이지 5</a>)이 모두 0 이상인 대칭행렬이어서, \(\lambda_{\max}\)를 그 가장 큰 고유값이라 할 때 \(0<\tau<2/\lambda_{\max}(\mathbf A^{\mathsf T}\mathbf A)\)이면 수렴합니다(1장 페이지 2의 \(2\times2\) 화소 예에서는 \(\lambda_{\max}(\mathbf A^{\mathsf T}\mathbf A)\approx6.83\)이어서 \(\tau<0.293\) 정도가 필요합니다 — 페이지 3의 ART가 행마다 \(\lVert\mathbf a_i\rVert^{2}\)로 미리 나누어 \(\tau\)의 범위가 행렬 크기와 무관하게 \((0,2)\)로 고정되는 것과 대조적입니다). unmatched, 즉 \(\mathbf B\ne\mathbf A^{\mathsf T}\)이면 \(\mathbf B\mathbf A\)가 대칭이 아니어서 고유값이 음의 실수부를 가질 수 있고, 그런 고유값이 하나라도 있으면 \(\tau\)를 아무리 작게 잡아도 그 방향의 성분이 점점 커집니다. 고유값과 수렴 속도를 엄밀하게 다루는 도구는 <a href="ch03.html#s10">3장 페이지 10</a>과 <a href="ch03.html#s11">3장 페이지 11</a>에서 봅니다.</p>
+</section>
+
+<!-- ─ 페이지 8 -->
+<section class="screen" data-title="잡음과 반 수렴, 반복 횟수에 따른 변화">
+  <p class="kicker">2장 · 페이지 8</p>
+  <h2>잡음이 있을 때의 반 수렴</h2>
+
+  <p>잡음이 없는 데이터라면 반복을 많이 할수록 참값에 더 가까워집니다. 그런데 측정값에는 항상 잡음이 섞여 있고(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>의 \(\sigma_p\approx e^{p/2}/\sqrt{N_0}\)), ART·SIRT는 그 잡음까지 데이터처럼 취급해 맞추려고 합니다. 그래서 반복 횟수와 참값과의 오차 사이에는 아래와 같은 관계가 생깁니다. 48×48 화소·각도 40개·검출기 61개(광선 2,440개)의 작은 Shepp-Logan 예제에, 광선마다 \(\sigma_p\)만큼의 잡음을 더해 ART(\(\tau=1\))로 반복한 결과입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 660 230" role="img" aria-label="ART 반복 횟수에 따른 참값과의 오차(rmse) 곡선. 26번째 반복에 불일치 원칙이 멈추는 자리, 41번째 반복에 실제 최저 오차 자리가 점선으로 표시된다">
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M60 190 H610"/><path d="M60 30 V190"/>
+      </g>
+      <path id="w8-line" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <path id="w8-disc" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--warn)"/>
+      <path id="w8-min" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--fg)"/>
+      <circle id="w8-mark" r="4.5" style="fill:var(--accent)"/>
+      <g font-size="10" class="svg-muted">
+        <text x="610" y="206" text-anchor="end">반복 수(1~150)</text>
+        <text x="55" y="26" text-anchor="end">오차</text>
+      </g>
+      <g font-size="9.5" class="svg-muted" id="w8-labels"></g>
+    </svg>
+    <figcaption>세로축은 참값과의 오차(rmse, 아래로 갈수록 작음)입니다. 주황 점선은 불일치 원칙이 멈추는 26번째 반복, 검은 점선은 실제 최저 오차인 41번째 반복입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.4rem;align-items:center;justify-content:center;font-size:.84rem;flex-wrap:wrap" id="w8-ui">
+    <span>반복 수</span>
+    <button type="button" data-it="1">1</button>
+    <button type="button" data-it="5">5</button>
+    <button type="button" data-it="10">10</button>
+    <button type="button" data-it="20">20</button>
+    <button type="button" data-it="26">26(불일치 정지)</button>
+    <button type="button" data-it="41">41(최저 오차)</button>
+    <button type="button" data-it="60">60</button>
+    <button type="button" data-it="100">100</button>
+    <button type="button" data-it="150">150</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w8-note"></p>
+
+  <p>초반에는 오차가 빠르게 줄어듭니다(다만 아래 영상에서 보듯 이 예제는 각도 수가 많지 않아, 줄어드는 모습이 영상에서 눈으로 뚜렷이 보이지는 않습니다). 반복이 길어지면 1장 페이지 8에서 본 것처럼 거의 비슷한 방향을 겨냥하는 광선들 사이의 작은 차이, 즉 잡음에 민감한 방향까지 맞추기 시작해 오차가 다시 커집니다. 이 현상을 반 수렴(<span class="term" data-term="semiconv">Semiconvergence</span>)이라고 부릅니다.</p>
+
+  <h3>멈추는 시점: 불일치 원칙</h3>
+
+  <p>참값을 모르면 위 곡선을 그릴 수 없으니, 참값이 아닌 다른 기준으로 멈출 시점을 정해야 합니다. 측정 잡음의 평균적인 크기를 알고 있다면(0편 2장의 \(\sigma_p\)), 데이터와의 잔차 \(\lVert\mathbf A\mathbf x-\mathbf b\rVert\)가 그 잡음의 크기와 비슷해지는 반복에서 멈추는 방법이 있습니다. 이를 불일치 원칙(<span class="term" data-term="discrepancy">Discrepancy Principle</span>)이라고 부릅니다(V. A. Morozov, <i>On the solution of functional equations by the method of regularization</i>, Doklady Akademii Nauk SSSR 167(3), 1966, 510–512).</p>
+
+  <p style="text-align:center">\[\lVert\mathbf A\mathbf x^{(k)}-\mathbf b\rVert \ \le\ \sqrt{\textstyle\sum_i \sigma_i^{2}}\]</p>
+
+  <p>이 작은 예제에서 잡음의 기대 크기 \(\sqrt{\sum_i\sigma_i^2}\approx0.258\)이고, ART의 잔차가 이 값 아래로 내려가는 지점은 26번째 반복(참값 오차 0.1402)입니다. 실제 최저 오차 지점인 41번째 반복(0.1384)보다 조금 이르지만, 반 수렴이 본격적으로 나빠지기 전에 안전하게 멈춥니다. 조기 종료 자체가 일종의 정규화(Regularization) 역할을 하는 셈이며, 정규화를 식에 직접 넣는 더 적극적인 방법은 4장에서 다룹니다.</p>
+
+<script>
+window.art2 = (function () {
+  var D2R = Math.PI / 180;
+  var SL = [
+    ['a', 0, 0, 0.92, 0.69, 90, 2.0], ['b', 0, -0.0184, 0.874, 0.6624, 90, -0.98],
+    ['c', 0.22, 0, 0.31, 0.11, 72, -0.02], ['d', -0.22, 0, 0.41, 0.16, 108, -0.02],
+    ['e', 0, 0.35, 0.25, 0.21, 90, 0.01], ['f', 0, 0.1, 0.046, 0.046, 0, 0.01],
+    ['g', 0, -0.1, 0.046, 0.046, 0, 0.01], ['h', -0.08, -0.605, 0.046, 0.023, 0, 0.01],
+    ['i', 0, -0.605, 0.023, 0.023, 0, 0.01], ['j', 0.06, -0.605, 0.046, 0.023, 90, 0.01]
+  ];
+  function ellMu(x, y) {
+    var v = 0, i, e, c, s, u, w;
+    for (i = 0; i < SL.length; i++) {
+      e = SL[i]; c = Math.cos(e[5] * D2R); s = Math.sin(e[5] * D2R);
+      u = (x - e[1]) * c + (y - e[2]) * s; w = -(x - e[1]) * s + (y - e[2]) * c;
+      if (u * u / (e[3] * e[3]) + w * w / (e[4] * e[4]) <= 1) v += e[6];
+    }
+    return v;
+  }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gaussian(rng) {
+    var u1 = Math.max(rng(), 1e-12), u2 = rng();
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+  function buildGrid(N, half) {
+    var cell = 2 * half / N, xs = new Float64Array(N * N), ys = new Float64Array(N * N), ix, iy;
+    for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+      xs[iy * N + ix] = -half + (ix + 0.5) * cell;
+      ys[iy * N + ix] = half - (iy + 0.5) * cell;
+    }
+    return { N: N, half: half, cell: cell, xs: xs, ys: ys };
+  }
+  function buildSystemMatrix(grid, angles, dets) {
+    var N = grid.N, half = grid.half, cell = grid.cell;
+    var rows = [], k, n, theta, s, c, sn, p0x, p0y, dx, dy;
+    var lines = [], li;
+    for (li = 0; li <= N; li++) lines.push(-half + li * cell);
+    for (k = 0; k < angles.length; k++) {
+      theta = angles[k]; c = Math.cos(theta); sn = Math.sin(theta);
+      for (n = 0; n < dets.length; n++) {
+        s = dets[n]; p0x = s * c; p0y = s * sn; dx = -sn; dy = c;
+        var txlo, txhi, tylo, tyhi, tmin, tmax, ts, li2, t, x, y, ix, iy, idx, skip = false;
+        if (Math.abs(dx) > 1e-12) { txlo = (-half - p0x) / dx; txhi = (half - p0x) / dx; if (txlo > txhi) { t = txlo; txlo = txhi; txhi = t; } }
+        else { if (p0x < -half || p0x > half) skip = true; txlo = -1e9; txhi = 1e9; }
+        if (!skip) {
+          if (Math.abs(dy) > 1e-12) { tylo = (-half - p0y) / dy; tyhi = (half - p0y) / dy; if (tylo > tyhi) { t = tylo; tylo = tyhi; tyhi = t; } }
+          else { if (p0y < -half || p0y > half) skip = true; tylo = -1e9; tyhi = 1e9; }
+        }
+        if (skip) { rows.push({ cols: [], vals: [] }); continue; }
+        tmin = Math.max(txlo, tylo); tmax = Math.min(txhi, tyhi);
+        if (tmin >= tmax - 1e-12) { rows.push({ cols: [], vals: [] }); continue; }
+        ts = [tmin, tmax];
+        for (li2 = 1; li2 < N; li2++) {
+          var xk = lines[li2], yk = lines[li2];
+          if (Math.abs(dx) > 1e-12) { t = (xk - p0x) / dx; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+          if (Math.abs(dy) > 1e-12) { t = (yk - p0y) / dy; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+        }
+        ts.sort(function (a, b) { return a - b; });
+        var cols = [], vals = [], map = {};
+        for (li2 = 0; li2 < ts.length - 1; li2++) {
+          var ta = ts[li2], tb = ts[li2 + 1], len = tb - ta;
+          if (len <= 1e-12) continue;
+          var tm = (ta + tb) / 2;
+          x = p0x + tm * dx; y = p0y + tm * dy;
+          ix = Math.floor((x + half) / cell); iy = Math.floor((half - y) / cell);
+          if (ix < 0 || ix >= N || iy < 0 || iy >= N) continue;
+          idx = iy * N + ix;
+          if (map.hasOwnProperty(idx)) { vals[map[idx]] += len; } else { map[idx] = cols.length; cols.push(idx); vals.push(len); }
+        }
+        rows.push({ cols: cols, vals: vals });
+      }
+    }
+    var M = rows.length, Npix = N * N, i, j, r, Ri = new Float64Array(M), Ri2 = new Float64Array(M), Cj = new Float64Array(Npix);
+    for (i = 0; i < M; i++) {
+      r = rows[i]; var sum = 0, sum2 = 0;
+      for (j = 0; j < r.cols.length; j++) { sum += r.vals[j]; sum2 += r.vals[j] * r.vals[j]; Cj[r.cols[j]] += r.vals[j]; }
+      Ri[i] = sum; Ri2[i] = sum2;
+    }
+    return { rows: rows, M: M, Npix: Npix, Ri: Ri, Ri2: Ri2, Cj: Cj };
+  }
+  function forward(sysA, x) {
+    var M = sysA.M, rows = sysA.rows, b = new Float64Array(M), i, j, r, s;
+    for (i = 0; i < M; i++) { r = rows[i]; s = 0; for (j = 0; j < r.cols.length; j++) s += r.vals[j] * x[r.cols[j]]; b[i] = s; }
+    return b;
+  }
+  function artSweep(sysA, x, b, order, tau) {
+    var rows = sysA.rows, Ri2 = sysA.Ri2, k, i, r, j, pred, resid, factor;
+    for (k = 0; k < order.length; k++) {
+      i = order[k]; r = rows[i]; if (Ri2[i] <= 1e-12) continue;
+      pred = 0; for (j = 0; j < r.cols.length; j++) pred += r.vals[j] * x[r.cols[j]];
+      resid = b[i] - pred; factor = tau * resid / Ri2[i];
+      for (j = 0; j < r.cols.length; j++) x[r.cols[j]] += factor * r.vals[j];
+    }
+  }
+  function sirtSweep(sysA, x, b, tau) {
+    var rows = sysA.rows, M = sysA.M, Ri = sysA.Ri, Cj = sysA.Cj, Npix = sysA.Npix, i, j, r, pred, resid;
+    var delta = new Float64Array(Npix);
+    for (i = 0; i < M; i++) {
+      if (Ri[i] <= 1e-12) continue;
+      r = rows[i]; pred = 0; for (j = 0; j < r.cols.length; j++) pred += r.vals[j] * x[r.cols[j]];
+      resid = (b[i] - pred) / Ri[i];
+      for (j = 0; j < r.cols.length; j++) delta[r.cols[j]] += r.vals[j] * resid;
+    }
+    for (j = 0; j < Npix; j++) if (Cj[j] > 1e-12) x[j] += tau * delta[j] / Cj[j];
+  }
+  function rmseFn(x, xt) {
+    var i, s = 0; for (i = 0; i < x.length; i++) { var d = x[i] - xt[i]; s += d * d; }
+    return Math.sqrt(s / x.length);
+  }
+  function resNorm(sysA, x, b) {
+    var bp = forward(sysA, x), i, s = 0;
+    for (i = 0; i < b.length; i++) { var d = b[i] - bp[i]; s += d * d; }
+    return Math.sqrt(s);
+  }
+  function image(N, arr, lo, hi) {
+    var cv = document.createElement('canvas'), ctx, im, i, g;
+    cv.width = N; cv.height = N; ctx = cv.getContext('2d'); im = ctx.createImageData(N, N);
+    for (i = 0; i < N * N; i++) {
+      g = Math.round(255 * Math.max(0, Math.min(1, (arr[i] - lo) / (hi - lo))));
+      im.data[4 * i] = im.data[4 * i + 1] = im.data[4 * i + 2] = g; im.data[4 * i + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+
+  var N = 48, half = 1.0, grid = buildGrid(N, half);
+  var K = 40, Ns = 61, angles = [], dets = [], i;
+  for (i = 0; i < K; i++) angles.push(i * Math.PI / K);
+  var ds = 2.9 / (Ns - 1); for (i = 0; i < Ns; i++) dets.push(-1.45 + i * ds);
+  var sysA = buildSystemMatrix(grid, angles, dets);
+  var xTrue = new Float64Array(N * N);
+  for (i = 0; i < N * N; i++) xTrue[i] = ellMu(grid.xs[i], grid.ys[i]);
+  var bTrue = forward(sysA, xTrue);
+  var N0 = 1e5, rng = mulberry32(20261101);
+  var sigma = new Float64Array(bTrue.length), bNoisy = new Float64Array(bTrue.length);
+  for (i = 0; i < bTrue.length; i++) { sigma[i] = Math.exp(bTrue[i] / 2) / Math.sqrt(N0); bNoisy[i] = bTrue[i] + gaussian(rng) * sigma[i]; }
+  var expectedNoiseNorm = Math.sqrt(sigma.reduce(function (s, v) { return s + v * v; }, 0));
+  var order = []; for (i = 0; i < sysA.M; i++) order.push(i);
+
+  function runFull(method, maxIter, checkpoints) {
+    var x = new Float64Array(sysA.Npix), curve = [], snaps = {}, it, cpSet = {};
+    checkpoints.forEach(function (c) { cpSet[c] = true; });
+    for (it = 1; it <= maxIter; it++) {
+      if (method === 'art') artSweep(sysA, x, bNoisy, order, 1.0);
+      else sirtSweep(sysA, x, bNoisy, 1.0);
+      curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: resNorm(sysA, x, bNoisy) });
+      if (cpSet[it]) snaps[it] = x.slice();
+    }
+    return { checkpoints: checkpoints, curve: curve, snaps: snaps };
+  }
+
+  function sartSweep(x, b, tau) {
+    var rows = sysA.rows, Ri = sysA.Ri, Npix = sysA.Npix, K = sysA.M / Ns, k, n, i, j, r, pred, resid, delta, cth;
+    for (k = 0; k < K; k++) {
+      delta = new Float64Array(Npix); cth = new Float64Array(Npix);
+      for (n = 0; n < Ns; n++) {
+        i = k * Ns + n; if (Ri[i] <= 1e-12) continue;
+        r = rows[i]; pred = 0; for (j = 0; j < r.cols.length; j++) pred += r.vals[j] * x[r.cols[j]];
+        resid = (b[i] - pred) / Ri[i];
+        for (j = 0; j < r.cols.length; j++) { delta[r.cols[j]] += r.vals[j] * resid; cth[r.cols[j]] += r.vals[j]; }
+      }
+      for (j = 0; j < Npix; j++) if (cth[j] > 1e-12) x[j] += tau * delta[j] / cth[j];
+    }
+  }
+  function runSart(tau, maxIter) {
+    var x = new Float64Array(sysA.Npix), curve = [], it;
+    for (it = 1; it <= maxIter; it++) { sartSweep(x, bNoisy, tau); curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: resNorm(sysA, x, bNoisy) }); }
+    return { tau: tau, curve: curve };
+  }
+
+  return {
+    N: N, sysA: sysA, sart1: runSart(1.0, 150), sart05: runSart(0.5, 150),
+    xTrue: xTrue, expectedNoiseNorm: expectedNoiseNorm, image: image,
+    artRun: runFull('art', 150, [1, 5, 10, 20, 26, 41, 60, 100, 150]),
+    sirtRun: runFull('sirt', 300, [10, 50, 100, 150, 221, 300])
+  };
+})();
+
+(function () {
+  var A2 = window.art2, curve = A2.artRun.curve, line = document.getElementById('w8-line'),
+      discL = document.getElementById('w8-disc'), minL = document.getElementById('w8-min'),
+      mark = document.getElementById('w8-mark'), note = document.getElementById('w8-note'),
+      ui = document.getElementById('w8-ui'), labels = document.getElementById('w8-labels');
+  var n = curve.length, i, minV = Infinity, maxV = -Infinity;
+  for (i = 0; i < n; i++) { if (curve[i].rmse < minV) minV = curve[i].rmse; if (curve[i].rmse > maxV) maxV = curve[i].rmse; }
+  var pad = (maxV - minV) * 0.08;
+  function X(it) { return 60 + (it - 1) / (n - 1) * 550; }
+  function Y(v) { return 190 - (v - (minV - pad)) / (maxV - minV + 2 * pad) * 160; }
+  var d = ''; for (i = 0; i < n; i++) d += (i ? 'L' : 'M') + X(curve[i].it).toFixed(1) + ' ' + Y(curve[i].rmse).toFixed(1);
+  line.setAttribute('d', d);
+  discL.setAttribute('d', 'M' + X(26).toFixed(1) + ' 30 V190');
+  minL.setAttribute('d', 'M' + X(41).toFixed(1) + ' 30 V190');
+  labels.innerHTML = '<text x="' + X(26).toFixed(1) + '" y="24" text-anchor="middle">26</text><text x="' + X(41).toFixed(1) + '" y="206" text-anchor="middle">41</text>';
+  function setIter(it) {
+    var c = curve[it - 1];
+    mark.setAttribute('cx', X(it).toFixed(1)); mark.setAttribute('cy', Y(c.rmse).toFixed(1));
+    note.textContent = '반복 ' + it + '회 · 참값 오차(rmse) ' + c.rmse.toFixed(4) + ' · 데이터 잔차 ' + c.resid.toFixed(4) + '(기대 잡음 크기 ' + A2.expectedNoiseNorm.toFixed(3) + ')';
+  }
+  ui.addEventListener('click', function (e) { var t = e.target.closest('button[data-it]'); if (t) setIter(+t.getAttribute('data-it')); });
+  setIter(41);
+})();
+</script>
+
+  <h3>Shepp-Logan 팬텀으로 반복 횟수에 따른 변화 보기</h3>
+
+  <p>위 곡선을 실제 영상으로 봅니다. 48×48 화소, 각도 40개(0°~180°를 40등분), 검출기 61개로 이루어진 작은 예제입니다(실제 CT는 보통 수백×수백 화소, 각도 수백~수천 개를 씁니다 — 이 예제는 브라우저에서 즉시 계산할 수 있도록 축소한 것입니다). 시스템 행렬은 1장 페이지 4의 교차 길이 방법으로 미리 계산해 두었습니다(1장 페이지 3의 희소 저장을 이 작은 크기로 직접 해 본 것이며, 1장 페이지 7의 즉석 계산 방식은 아닙니다).</p>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="w9-method">
+    <span>방법</span>
+    <button type="button" data-method="art">ART</button>
+    <button type="button" data-method="sirt">SIRT</button>
+  </div>
+  <div style="display:flex;gap:.4rem;align-items:center;justify-content:center;font-size:.84rem;flex-wrap:wrap;margin-top:.3rem" id="w9-iters"></div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 230" role="img" aria-label="선택한 반복 수로 재구성한 영상과 참값 영상을 나란히 보여준다">
+      <image id="w9-img" x="14" y="24" width="190" height="190" preserveAspectRatio="none"/>
+      <image id="w9-true" x="226" y="24" width="190" height="190" preserveAspectRatio="none"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><rect x="14" y="24" width="190" height="190"/><rect x="226" y="24" width="190" height="190"/></g>
+      <g font-size="11.5" font-weight="700" class="svg-fg"><text x="14" y="16">재구성</text><text x="226" y="16">참값</text></g>
+    </svg>
+    <figcaption>밝기 범위는 1편 3장과 같은 0.98~1.05입니다. 왼쪽이 선택한 반복 수로 재구성한 영상, 오른쪽이 참값입니다.</figcaption>
+  </figure>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w9-note"></p>
+
+  <p>1회만 지나면 광선을 훑은 처음 각도(세로 방향)의 흔적이 줄무늬로 고스란히 남습니다. 몇 번 더 지나면 그 줄무늬는 사라지지만, 이 예제는 각도 수(40개)가 화소 수(48×48)에 비해 넉넉하지 않아 그 뒤로는 배경 전체에 성긴 잡음(소금-후추 무늬)이 남고, 26회·41회·150회의 영상은 눈으로 보기에 거의 구분되지 않습니다. 실제로 반 수렴에 따른 오차 증가는 크지 않아서(41회 0.1384 → 150회 0.1570), 위 곡선이 영상보다 더 믿을 만한 증거입니다. SIRT는 300회를 돌려도 아직 반 수렴이 시작되지 않았고, 그 시점의 오차(0.1325)는 ART 41회(0.1384)보다 살짝 낮습니다. 다만 그 수준에 도달하는 데 ART보다 훨씬 많은 반복이 필요했다는 점이 중요합니다(반복 1회당 계산량은 둘이 비슷합니다).</p>
+
+<script>
+(function () {
+  var A2 = window.art2, method = 'art', iterBtns = document.getElementById('w9-iters'),
+      methodBtns = document.getElementById('w9-method'), img = document.getElementById('w9-img'),
+      trueImg = document.getElementById('w9-true'), note = document.getElementById('w9-note');
+  var LO = 0.98, HI = 1.05;
+  trueImg.setAttribute('href', A2.image(A2.N, A2.xTrue, LO, HI));
+  function run() { return method === 'art' ? A2.artRun : A2.sirtRun; }
+  var curIter;
+  function buildIterButtons() {
+    var cps = run().checkpoints, html = '', i;
+    for (i = 0; i < cps.length; i++) html += '<button type="button" data-it="' + cps[i] + '">' + cps[i] + '회</button>';
+    iterBtns.innerHTML = html;
+    curIter = cps[Math.floor(cps.length / 2)];
+  }
+  function render() {
+    var r = run(), snap = r.snaps[curIter], c = r.curve[curIter - 1];
+    img.setAttribute('href', A2.image(A2.N, snap, LO, HI));
+    note.textContent = (method === 'art' ? 'ART' : 'SIRT') + ' ' + curIter + '회 통과 · 참값 오차(rmse) ' + c.rmse.toFixed(4) + ' · 데이터 잔차 ' + c.resid.toFixed(4);
+  }
+  methodBtns.addEventListener('click', function (e) { var t = e.target.closest('button[data-method]'); if (t) { method = t.getAttribute('data-method'); buildIterButtons(); render(); } });
+  iterBtns.addEventListener('click', function (e) { var t = e.target.closest('button[data-it]'); if (t) { curIter = +t.getAttribute('data-it'); render(); } });
+  buildIterButtons(); render();
+})();
+</script>
+</section>
+
+<!-- ─ 페이지 9 -->
+<section class="screen" data-title="광선마다 다른 신뢰도">
+  <p class="kicker">2장 · 페이지 9</p>
+  <h2>광선마다 다른 신뢰도: 가중 최소제곱</h2>
+
+  <div class="box note">
+    <p class="box-t">페이지 7(심화)을 건너뛰었다면</p>
+    <p>이 페이지에서 쓰는 앞 결과는 다음뿐입니다. 최소제곱 \(\lVert\mathbf A\mathbf x-\mathbf b\rVert^{2}\)의 기울기는 \(2\mathbf A^{\mathsf T}(\mathbf A\mathbf x-\mathbf b)\)이므로, 그 반대 방향으로 \(\tau\)만큼 가는 경사하강형 갱신은 \(\mathbf x\leftarrow\mathbf x+\tau\,\mathbf A^{\mathsf T}(\mathbf b-\mathbf A\mathbf x)\)입니다. 페이지 5의 SIRT 갱신식을 행렬로 쓰면 \(\mathbf x\leftarrow\mathbf x+\tau\,\mathbf D\mathbf A^{\mathsf T}\mathbf R(\mathbf b-\mathbf A\mathbf x)\)이고, \(\mathbf R=\mathrm{diag}(1/r_i)\)는 잔차에 곱하는 광선 가중, \(\mathbf D=\mathrm{diag}(1/c_j)\)는 역투영 결과에 곱하는 화소 가중입니다.</p>
+  </div>
+
+  <p>1장 페이지 9에서 "광선마다 신뢰도를 가중치로 반영할 수 있다"고 예고했습니다. <a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>에서 두꺼운 방향을 지나는 광선일수록 도달하는 광자 수가 적어 잡음이 크다고 했습니다(\(\sigma_p\approx e^{p/2}/\sqrt{N_0}\)). 지금까지의 ART·SIRT는 모든 광선의 잔차를 똑같이 취급했는데, 잡음이 큰 광선의 측정값은 덜 반영하게 할 수는 없을까요?</p>
+
+  <p>통계에서는 분산이 큰 측정값일수록 가중치를 작게 주는 것이 최선입니다(가중 최소제곱, <span class="term" data-term="wls">Weighted Least Squares</span>). 광선 \(i\)의 통계적 가중치를 \(w_i:=1/\sigma_i^{2}\)로 두고, 다음을 최소로 하는 \(\mathbf x\)를 찾습니다.</p>
+
+  <p style="text-align:center">\[\sum_i w_i\,(b_i-(\mathbf A\mathbf x)_i)^{2}\]</p>
+
+  <p>이 문제는 ART의 Kaczmarz 갱신에 그대로 끼워 넣을 수 없습니다. 식의 양변에 \(\sqrt{w_i}\)를 곱해도(\(\sqrt{w_i}\,\mathbf a_i\cdot\mathbf x=\sqrt{w_i}\,b_i\)) 페이지 2의 갱신식에서는 분자와 분모의 \(\sqrt{w_i}\)가 상쇄되어 걸음이 전혀 달라지지 않기 때문입니다. ART는 식 전체에 같은 수를 곱하는 변환에 변하지 않습니다.</p>
+
+  <p>대신 위 상자의 경사하강형 갱신(페이지 7, 심화)에 \(\mathbf W=\mathrm{diag}(w_1,\ldots,w_m)\)를 끼우면 가중치가 반영됩니다.</p>
+
+  <p style="text-align:center">\[\mathbf x^{(k+1)}=\mathbf x^{(k)}+\tau\,\mathbf A^{\mathsf T}\mathbf W(\mathbf b-\mathbf A\mathbf x^{(k)})\]</p>
+
+  <p>이 식은 가중 최소제곱의 목적함수 \((\mathbf b-\mathbf A\mathbf x)^{\mathsf T}\mathbf W(\mathbf b-\mathbf A\mathbf x)\)의 기울기 \(-2\mathbf A^{\mathsf T}\mathbf W(\mathbf b-\mathbf A\mathbf x)\)의 반대 방향으로 내려가는 갱신입니다. 갱신이 멈추는 점은 \(\mathbf A^{\mathsf T}\mathbf W\mathbf A\mathbf x^{*}=\mathbf A^{\mathsf T}\mathbf W\mathbf b\)를 만족하고, 이것이 바로 위 가중 최소제곱의 정규방정식입니다. 잡음이 큰(\(\sigma_i\)가 큰) 광선은 \(w_i\)가 작으므로 갱신에 미치는 영향도 그만큼 줄어듭니다.</p>
+
+  <p>SIRT에 같은 생각을 쓰려면 페이지 5의 갱신식에서 잔차에 곱하던 \(1/r_i\) 자리를 \(w_i\)로 바꿉니다(위 상자의 행렬 식에서 \(\mathbf R\)을 \(\mathbf W\)로 바꾸는 것입니다). \(1/r_i\)를 둔 채 \(w_i\)를 더 곱하면 \(w_i/r_i\)를 가중치로 하는 다른 문제를 풀게 됩니다.</p>
+
+  <div class="box note">
+    <p class="box-t">같은 글자 다른 뜻</p>
+    <p>이 가중치 \(w_i\)는 <a href="../../part0/ch02.html#s5">0편 2장 페이지 5</a>의 길이 가중 \(w_{ij}\)와 다릅니다. \(w_{ij}\)는 광선과 화소 사이의 기하적인 가중치(교차 길이)이고, \(w_i\)는 측정의 통계적 신뢰도입니다. 페이지 5의 \(r_i,c_j\)도 기하적인 가중치이며, \(w_i\)와는 독립적으로 함께 쓸 수 있습니다.</p>
+  </div>
+
+  <p>두 가중치는 성격이 다릅니다. \(r_i,c_j\)(페이지 5)는 광선과 화소가 얼마나 겹치는지(기하)에서 나오고, \(w_i\)는 그 광선의 측정이 얼마나 믿을 만한지(통계)에서 나옵니다. 둘을 함께 쓰면, 길이가 길어 여러 화소에 걸치는 광선과 잡음이 큰 광선을 모두 적절히 깎아서 반영할 수 있습니다.</p>
+</section>
+
+<!-- ─ 페이지 10 -->
+<section class="screen" data-title="FBP, ART, SIRT, SART 비교">
+  <p class="kicker">2장 · 페이지 10</p>
+  <h2>FBP와 ART·SIRT·SART 비교</h2>
+
+  <p>1편에서 본 해석적 방법(FBP)과 이 장의 세 반복법을 나란히 놓습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>FBP</th><th>ART</th><th>SIRT</th><th>SART</th></tr>
+      <tr><td>갱신 단위</td><td>공식 한 번</td><td>광선 하나</td><td>광선 전체</td><td>각도 하나(광선 묶음)</td></tr>
+      <tr><td>이 책의 작은 예제에서 최저 오차 지점</td><td>해당 없음</td><td>41회 통과</td><td>300회 통과해도 아직 줄어드는 중</td><td>27회 통과(\(\tau=0.5\))</td></tr>
+      <tr><td>안정적인 완화 인자</td><td>해당 없음</td><td>\(0&lt;\tau&lt;2\)</td><td>보통 \(\tau\le1\)</td><td>이 예제는 \(\tau=1\)에서 최저점 뒤 오차가 빠르게 커지고, \(\tau=0.5\)에서는 완만</td></tr>
+      <tr><td>기하 변경</td><td>공식을 다시 유도</td><td colspan="3">시스템 행렬만 바꾸면 됨</td></tr>
+      <tr><td>광선마다 다른 신뢰도</td><td>반영하기 어려움</td><td>그대로는 반영 안 됨(페이지 9)</td><td colspan="2">가중치로 반영 가능(페이지 9)</td></tr>
+    </table>
+  </div>
+
+  <p>표의 갱신 단위를 구조로 보면 차이가 더 분명합니다. FBP는 위쪽 줄을 한 번 지나면 끝나고, 반복법은 아래쪽 줄의 고리를 되풀이합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 262" role="img" aria-label="FBP와 반복법의 구조 비교. 위쪽은 측정값에서 램프 필터링과 역투영을 한 번 거쳐 영상이 나오는 한 줄 흐름이다. 아래쪽은 추정 영상을 순투영하고 측정값과의 잔차를 구해 역투영한 뒤 영상을 고치는 과정을 멈춤 조건을 만족할 때까지 되풀이하는 고리이다.">
+      <defs><marker id="p10-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-fg" font-size="12" font-weight="700"><text x="20" y="22">FBP: 공식을 한 번 통과</text><text x="16" y="116">반복법: 고리를 되풀이</text></g>
+      <g class="svg-line" fill="none" stroke-width="1.3">
+        <rect x="20" y="34" width="110" height="40" rx="6"/>
+        <rect x="200" y="34" width="110" height="40" rx="6"/>
+        <rect x="380" y="34" width="110" height="40" rx="6"/>
+        <rect x="560" y="34" width="100" height="40" rx="6"/>
+        <rect x="16" y="128" width="104" height="44" rx="6"/>
+        <rect x="152" y="128" width="104" height="44" rx="6"/>
+        <rect x="288" y="128" width="104" height="44" rx="6"/>
+        <rect x="424" y="128" width="104" height="44" rx="6"/>
+        <rect x="560" y="128" width="104" height="44" rx="6"/>
+      </g>
+      <g text-anchor="middle" font-size="12" class="svg-fg">
+        <text x="75" y="59">측정값 b</text>
+        <text x="255" y="59">램프 필터링</text>
+        <text x="435" y="59">역투영</text>
+        <text x="610" y="59">재구성 영상</text>
+        <text x="68" y="155">추정 영상 x</text>
+        <text x="204" y="155">순투영 Ax</text>
+        <text x="340" y="155">잔차 b − Ax</text>
+        <text x="476" y="155">역투영 Aᵀ</text>
+        <text x="612" y="155">x 고치기</text>
+      </g>
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.4">
+        <path d="M132 54 H198" marker-end="url(#p10-ar)"/>
+        <path d="M312 54 H378" marker-end="url(#p10-ar)"/>
+        <path d="M492 54 H558" marker-end="url(#p10-ar)"/>
+        <path d="M122 150 H150" marker-end="url(#p10-ar)"/>
+        <path d="M258 150 H286" marker-end="url(#p10-ar)"/>
+        <path d="M394 150 H422" marker-end="url(#p10-ar)"/>
+        <path d="M530 150 H558" marker-end="url(#p10-ar)"/>
+        <path d="M612 174 V204 H68 V176" marker-end="url(#p10-ar)"/>
+      </g>
+      <g text-anchor="middle" font-size="11" class="svg-muted">
+        <text x="340" y="222">멈춤 조건을 만족할 때까지 되풀이</text>
+        <text x="340" y="248">ART·SIRT·SART는 같은 고리를 돌고, 가장 큰 차이는 x를 고치는 단위입니다</text>
+      </g>
+    </svg>
+    <figcaption>위쪽은 필터링과 역투영을 한 번 거치는 해석적 방법, 아래쪽은 순투영과 역투영을 번갈아 쓰는 반복법의 공통 구조입니다. 세 반복법은 이 고리의 모양이 같고, 가장 큰 차이는 \(\mathbf x\)를 고치는 단위입니다(잔차를 나누는 가중치도 다릅니다. 페이지 2·5·6).</figcaption>
+  </figure>
+
+  <p>같은 작은 예제(페이지 8의 잡음 있는 데이터)에서 세 방법의 참값 오차를 한 화면에 겹쳐 봅니다. 가로축은 한 바퀴 수(로그 눈금), 세로축은 참값과의 오차(rmse)입니다.
+  ART와 SIRT는 \(\tau=1\), SART는 \(\tau=0.5\)와 \(\tau=1\) 두 가지입니다. 슬라이더를 움직이면 그 바퀴 수에서의 오차를 읽을 수 있습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 660 270" role="img" aria-label="ART, SIRT, SART의 한 바퀴 수에 따른 참값 오차 곡선. 가로축은 로그 눈금의 한 바퀴 수 1~150, 세로축은 rmse">
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M60 200 H600"/><path d="M60 30 V200"/></g>
+      <g id="w11-grid" fill="none" stroke-width="0.6" opacity=".35" style="stroke:var(--muted)"></g>
+      <path id="w11-sirt" fill="none" stroke-width="2" style="stroke:var(--fg)"/>
+      <path id="w11-art" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <path id="w11-s05" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <path id="w11-s1" fill="none" stroke-width="1.6" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <path id="w11-cur" stroke-width="1" opacity=".7" style="stroke:var(--fg)"/>
+      <g id="w11-dots"></g>
+      <g class="svg-muted" font-size="10" id="w11-ticks"></g>
+      <g class="svg-muted" font-size="10"><text x="600" y="232" text-anchor="end">한 바퀴 수 (로그 눈금, 1~150)</text><text x="54" y="22" text-anchor="end">rmse</text></g>
+      <g font-size="11" font-weight="700">
+        <text x="70" y="256" style="fill:var(--accent)">ART τ=1</text>
+        <text x="170" y="256" class="svg-fg">SIRT τ=1</text>
+        <text x="280" y="256" style="fill:var(--warn)">SART τ=0.5</text>
+        <text x="410" y="256" class="svg-muted">SART τ=1 (점선)</text>
+      </g>
+    </svg>
+    <figcaption>ART는 일찍 최저에 닿고 다시 올라갑니다. SIRT는 느리지만 이 구간에서는 계속 내려갑니다. SART는 \(\tau=0.5\)에서는 초반에 가장 먼저 내려가다 멈추고, \(\tau=1\)에서는 15바퀴 뒤부터 오히려 커집니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="w11-ui">
+    <label for="w11-k">한 바퀴 수</label>
+    <input id="w11-k" type="range" min="1" max="150" step="1" value="10" style="width:14rem">
+    <b id="w11-k-val">10</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w11-note"></p>
+
+  <p>10바퀴에서는 ART 0.155, SIRT 0.249, SART(\(\tau=0.5\)) 0.162로 SIRT가 가장 뒤처집니다. 41바퀴에서 ART가 최저(0.1384)에 이르고, 150바퀴에서는 ART 0.157로 다시 올라간 반면 SIRT는 0.142까지 내려와 ART의 최저에 가까워집니다.
+  SART는 \(\tau=1\)일 때 150바퀴에서 0.460까지 빠르게 커집니다. 잡음이 섞인 데이터에서 반 수렴이 매우 가파르게 나타난 것으로, 이 예제에서는 \(\tau\)를 줄여야 완만해집니다. 한 바퀴의 계산량은 세 방법이 비슷하므로(광선을 한 번씩 모두 쓰므로), 이 차이는 한 바퀴로 얻는 오차 감소의 크기 차이입니다.</p>
+
+<script>
+(function () {
+  var A2 = window.art2, N = 150, LMAX = Math.log(N) / Math.LN10, LO = 0.12, HI = 0.48;
+  var runs = { art: A2.artRun.curve, sirt: A2.sirtRun.curve, s05: A2.sart05.curve, s1: A2.sart1.curve };
+  function X(k) { return 60 + Math.log(k) / Math.LN10 / LMAX * 540; }
+  function Y(v) { return 200 - (Math.min(HI, Math.max(LO, v)) - LO) / (HI - LO) * 170; }
+  function path(c) { var d = '', k; for (k = 1; k <= N; k++) d += (k > 1 ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(c[k - 1].rmse).toFixed(1); return d; }
+  var g = '', t = '', v, k;
+  [0.15, 0.2, 0.3, 0.4].forEach(function (v) { g += '<path d="M60 ' + Y(v).toFixed(1) + ' H600"/>'; t += '<text x="54" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v.toFixed(2) + '</text>'; });
+  [1, 10, 100].forEach(function (k) { g += '<path d="M' + X(k).toFixed(1) + ' 30 V200"/>'; t += '<text x="' + X(k).toFixed(1) + '" y="214" text-anchor="middle">' + k + '</text>'; });
+  document.getElementById('w11-grid').innerHTML = g; document.getElementById('w11-ticks').innerHTML = t;
+  document.getElementById('w11-art').setAttribute('d', path(runs.art));
+  document.getElementById('w11-sirt').setAttribute('d', path(runs.sirt));
+  document.getElementById('w11-s05').setAttribute('d', path(runs.s05));
+  document.getElementById('w11-s1').setAttribute('d', path(runs.s1));
+  var kEl = document.getElementById('w11-k'), kVal = document.getElementById('w11-k-val'), note = document.getElementById('w11-note'),
+      cur = document.getElementById('w11-cur'), dots = document.getElementById('w11-dots');
+  var styles = { art: 'var(--accent)', sirt: 'var(--fg)', s05: 'var(--warn)', s1: 'var(--muted)' };
+  function update() {
+    var kk = +kEl.value, h = '', key;
+    cur.setAttribute('d', 'M' + X(kk).toFixed(1) + ' 30 V200');
+    for (key in runs) h += '<circle cx="' + X(kk).toFixed(1) + '" cy="' + Y(runs[key][kk - 1].rmse).toFixed(1) + '" r="3.8" style="fill:' + styles[key] + '"/>';
+    dots.innerHTML = h; kVal.textContent = kk;
+    function f(key) { return runs[key][kk - 1].rmse.toFixed(4); }
+    note.textContent = kk + '바퀴 · ART ' + f('art') + ' · SIRT ' + f('sirt') + ' · SART(τ=0.5) ' + f('s05') + ' · SART(τ=1) ' + f('s1');
+  }
+  kEl.addEventListener('input', update); update();
+})();
+</script>
+
+  <div class="box warn">
+    <p class="box-t">이 예제에 맞춘 값</p>
+    <p>표의 반복 횟수와 완화 인자는 48×48 화소·각도 40개·이 정도 잡음 수준에서 관찰한 값입니다. 화소 수, 각도 수, 잡음 수준이 달라지면 구체적인 숫자는 달라집니다. SART가 ART와 SIRT의 중간 성격을 보인다는 설명은 다른 설정에서 흔히 등장하지만, 이 예제에서는 SART가 가장 적은 통과로 끝나는 대신 가장 높은 오차(0.157)에 머물러 그런 중간 양상을 보이지 않았습니다. 완화 인자나 각도 수를 바꾸면 순서가 달라질 수 있습니다.</p>
+  </div>
+
+  <div class="box bad">
+    <p class="box-t">자주 하는 오해</p>
+    <p>"반복법은 해석적 방법보다 항상 느리다"는 절반만 맞습니다. 반복 한 번(통과 한 번)에 드는 계산은 FBP 한 번보다 보통 비슷하거나 조금 더 들지만, 문제가 되는 것은 그런 통과를 수십~수백 번 반복해야 한다는 점입니다(1장 페이지 7의 즉석 계산 비용). 반대로 데이터가 부족하거나 기하가 특이할 때는 반복법 쪽이 유일하게 쓸 수 있는 방법이 되기도 합니다.</p>
+  </div>
+</section>
+
+<!-- ─ 페이지 11 -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">2장 · 페이지 11</p>
+  <h2>2장 마무리</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>ART(Kaczmarz)는 식 하나(광선 하나)씩 정확히 만족하는 점으로 옮기는 사영을 반복하며, 완화 인자 \(\tau\in(0,2)\)에서 수렴합니다.</li>
+      <li>SIRT는 모든 광선의 잔차를 행·열 가중 \(r_i,c_j\)로 나누어 한꺼번에 반영하고, SART는 각도 단위로 그 중간을 취합니다.</li>
+      <li>(심화) SIRT는 최소제곱의 경사하강법 틀로 다시 볼 수 있지만, 고정점은 \(\lVert\mathbf A\mathbf x-\mathbf b\rVert^2\)가 아니라 \(1/r_i\) 가중 최소제곱의 해입니다. 역투영에 쓰는 행렬이 \(\mathbf A^{\mathsf T}\)와 다르면(unmatched) 고정점도 수렴 조건도 달라집니다.</li>
+      <li>잡음이 있는 데이터에서는 반복할수록 오차가 줄다가 다시 커지는 반 수렴이 나타나며, 불일치 원칙으로 멈출 시점을 정할 수 있습니다.</li>
+      <li>광선마다 다른 측정 신뢰도는 통계적 가중치로, 서로 다른 기하 모델은 시스템 행렬을 바꾸는 것으로 반영합니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">ART(Kaczmarz)가 한 번의 갱신에서 하는 일로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. ART는 화소를 전부 0으로 되돌리지 않고, 식 i의 방향(aᵢ)으로만 옮깁니다.">현재 추정값 \(\mathbf x^{(k)}\)의 모든 화소를 \(\tau\)배만큼 줄여 영으로 되돌린다.</li>
+      <li data-why="맞습니다. 페이지 2에서 본 것처럼, 식 aᵢ·x = bᵢ를 정확히 만족하는 점으로 옮기는 사영이 Kaczmarz(ART)의 갱신입니다.">현재 추정값을 광선 \(i\)의 식 \(\mathbf a_i\cdot\mathbf x=b_i\)를 정확히 만족하는 점으로 옮긴다.</li>
+      <li data-why="틀립니다. (AᵗA)⁻¹을 구해 한 번에 푸는 것은 1장 페이지 8에서 본 것처럼 행렬이 너무 커서 할 수 없습니다. 그래서 반복법을 씁니다.">\(\mathbf A^{\mathsf T}\mathbf A\)의 역행렬을 미리 구해 한 번만 곱해 \(\mathbf x\)를 계산한다.</li>
+      <li data-why="틀립니다. ART는 bᵢ를 화소에 그대로 복사하지 않고, 잔차(bᵢ와 예측값의 차이)만큼만 aᵢ 방향으로 옮깁니다.">측정값 \(b_i\)가 가장 큰 광선부터 차례로 그 값을 모든 화소에 그대로 복사한다.</li>
+    </ol>
+    <div class="explain">
+      <p>완화 인자 τ=1일 때의 식입니다. τ를 넣으면 페이지 3의 갱신식처럼 옮기는 거리를 줄일 수 있습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">SIRT가 ART와 다른 점으로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 이 장의 작은 예제에서는 오히려 SIRT가 ART보다 훨씬 많은 반복이 필요했습니다(페이지 5).">SIRT는 조건수가 큰 문제에서 \(\mathbf A^{\mathsf T}\mathbf A\)의 고유값과 무관하게 언제나 ART보다 적은 반복으로 수렴한다.</li>
+      <li data-why="틀립니다. 즉석 계산은 1장 페이지 7에서 본 저장 방식의 선택이고, ART·SIRT·SART 어디에도 적용할 수 있습니다.">SIRT는 시스템 행렬을 저장하지 않고 매번 \(a_{ij}\)를 즉석 계산할 때만 쓸 수 있는 전용 방법이다.</li>
+      <li data-why="틀립니다. 광선 순서는 페이지 3에서 본 것처럼 ART의 수렴 속도에 영향을 주는 요소이고, SIRT는 광선을 동시에 쓰므로 순서가 없습니다.">SIRT는 매 반복마다 \(\tau\)와 광선 순서를 함께 무작위로 바꿔야만 수렴이 보장되는 방법이다.</li>
+      <li data-why="맞습니다. 페이지 5에서 본 갱신식처럼, SIRT는 모든 잔차를 모아 rᵢ, cⱼ로 나눈 뒤 한 번에 반영합니다.">SIRT는 광선마다 갱신하지 않고, 모든 잔차를 행·열 가중 \(r_i,c_j\)로 나누어 한꺼번에 반영한다.</li>
+    </ol>
+    <div class="explain">
+      <p>행·열 가중을 모두 1로 두면(기하가 단순한 경우) SIRT는 페이지 7(심화)에서 본 보통의 경사하강법(Landweber 반복)과 같아집니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">잡음이 있는 데이터에서 ART·SIRT 반복을 계속할 때 생기는 일로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 페이지 8의 곡선처럼 참값과의 오차는 한동안 줄다가 다시 커집니다(반 수렴).">반복할수록 참값과의 오차가 항상 줄어들어, 멈추는 시점은 신경 쓰지 않아도 된다.</li>
+      <li data-why="틀립니다. 데이터 잔차는 오히려 계속 줄어듭니다. 커지는 것은 참값과의 오차입니다.">반복할수록 데이터 잔차 \(\lVert\mathbf A\mathbf x-\mathbf b\rVert\)가 점점 커져서 알고리즘이 발산한다.</li>
+      <li data-why="맞습니다. 데이터에 맞추는 잔차는 계속 좋아지지만, 그 데이터 자체에 잡음이 있어 참값과의 오차는 다시 커집니다.">데이터 잔차는 계속 줄어들지만, 참값과의 오차는 어느 지점을 지나면 다시 커진다(반 수렴).</li>
+      <li data-why="틀립니다. τ를 키우면 오히려 잡음을 더 빨리, 더 크게 반영해 반 수렴이 더 일찍, 더 심하게 나타납니다.">완화 인자 \(\tau\)를 1보다 크게 두면 이 반 수렴 현상이 완전히 사라진다.</li>
+    </ol>
+    <div class="explain">
+      <p>참값을 모르는 실제 상황에서는 이 오차 곡선을 직접 그릴 수 없어, 페이지 8의 불일치 원칙처럼 데이터 잔차만으로 멈출 시점을 가늠합니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <p>1장 페이지 2의 \(2\times2\) 화소 예(\(\boldsymbol\mu=(0.2,0.5,0.1,0.3)\), 광선 ①~⑤)에서, 대각선 광선 ⑤ 없이 광선 ①~④만 측정했다고 합시다. 1장 페이지 8에서 본 것처럼 이 네 식만으로는 \(\mathbf x=(0.2,0.5,0.1,0.3)\)과 \(\mathbf x'=(0.3,0.4,0,0.4)\)를 구별할 수 없습니다. \(\mathbf x^{(0)}=\mathbf 0\)에서 ART(\(\tau=1\))를 광선 ①→④ 순서로 한 바퀴 돌리세요.</p>
+    <ol>
+      <li>각 단계의 잔차와 갱신 후 \(\mathbf x\)를 적어, 최종 \(\mathbf x^{(1)}\)을 구하세요.</li>
+      <li>이 결과가 \(\mathbf x\), \(\mathbf x'\) 가운데 어느 쪽과도 같지 않다는 것을 확인하고, 1장 페이지 8의 영공간(Null Space) 개념으로 그 이유를 설명하세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> 1장 페이지 2의 표에서 광선 ①~④의 행만 씁니다.</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>광선</th><th>잔차</th><th>갱신 후 \(\mathbf x\)</th></tr>
+          <tr><td>①</td><td>0.700</td><td>(0.350, 0.350, 0, 0)</td></tr>
+          <tr><td>②</td><td>0.400</td><td>(0.350, 0.350, 0.200, 0.200)</td></tr>
+          <tr><td>③</td><td>−0.250</td><td>(0.225, 0.350, 0.075, 0.200)</td></tr>
+          <tr><td>④</td><td>0.250</td><td>(0.225, 0.475, 0.075, 0.325)</td></tr>
+        </table>
+      </div>
+      <p>최종 \(\mathbf x^{(1)}=(0.225,\ 0.475,\ 0.075,\ 0.325)\)입니다.</p>
+      <p><b>2번.</b> 1장 페이지 8에서 본 차이 \(\mathbf x'-\mathbf x=(0.1,-0.1,-0.1,0.1)\)의 방향을 \(\mathbf d=(1,-1,-1,1)\)이라 부르겠습니다. 광선 ①~④ 어디에도 영향을 주지 않는 영공간의 방향이며, 1장 페이지 5의 측정값 자리표시자 \(\mathbf d\)와는 다른 뜻입니다. \(\mathbf x^{(1)}\)을 \(\mathbf x\), \(\mathbf x'\)와 비교하면 다음과 같습니다.</p>
+      <p style="text-align:center">\[\begin{aligned}\mathbf x^{(1)}-\mathbf x &= (0.025,-0.025,-0.025,0.025)\\ &= 0.025\,\mathbf d,\\ \mathbf x^{(1)}-\mathbf x' &= (-0.075,0.075,0.075,-0.075)\\ &= -0.075\,\mathbf d\end{aligned}\]</p>
+      <p>두 차이가 모두 \(\mathbf d\)의 배수이므로, \(\mathbf x^{(1)}\)은 \(\mathbf x\)와 \(\mathbf x'\)를 포함해 광선 ①~④를 똑같이 만족하는 무수히 많은 점들이 이루는 직선(해집합) 위의 점입니다. 실제로 \(\mathbf x^{(1)}\)은 그 직선에서 시작점 \(\mathbf 0\)에 가장 가까운 점과 정확히 같습니다(\(\mathbf x-((\mathbf x\cdot\mathbf d)/\lVert\mathbf d\rVert^2)\mathbf d = \mathbf x+0.025\mathbf d\)). 데이터가 부족하면 ART는 "참값"이 아니라 시작점에 가장 가까운, 해집합 위의 어느 한 점으로 수렴합니다. 이 예제는 한 바퀴만에 정확히 그 점에 도착할 만큼 특별한 대칭을 가지고 있을 뿐이며, 일반적으로는 여러 바퀴를 돌려야 그 점에 가까워집니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>광선 ①~④만으로도 충분히 반복하면 참값 \(\mathbf x\)로 수렴한다고 생각하는 것입니다. 네 식은 \(\mathbf x\)와 \(\mathbf x'\)를 구별하지 못하므로, 둘 중 하나로 반드시 수렴한다는 보장이 없습니다. 수렴점은 시작점이 무엇인지에 따라 달라집니다.</li>
+        <li>\(\mathbf x^{(1)}-\mathbf x\)와 \(\mathbf x^{(1)}-\mathbf x'\)의 방향이 서로 다르다고 생각하는 것입니다. 둘 다 같은 방향 \(\mathbf d\)의 배수이며, 부호와 크기만 다릅니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch03.html"><span>다음 장</span>3장 — 복습: 이 편에 필요한 선형대수와 최적화</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch02">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2장 · 복습: 푸리에 해석, 이 책에 필요한 만큼만 — CT 재구성 알고리즘1 - 해석적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="네 가지 버전과 표기 규약">
+  <p class="kicker">2장 · 페이지 1</p>
+  <h1>복습: 푸리에 해석, 이 책에 필요한 만큼만</h1>
+
+  <p class="lead">4장부터는 투영값을 주파수 성분으로 나누어 다루는 계산이 계속 나옵니다. 이 장은 푸리에 해석을 처음부터 가르치지 않고, 이미 배운 내용 가운데 이 책에서 쓰는 것만 다시 꺼내 정리합니다.
+  이 책의 표기 규약(주파수 기호와 \(2\pi\)의 위치)도 이 장에서 정합니다.</p>
+
+  <p>이미 아는 주제는 건너뛰고 아래 표에서 막히는 주제의 페이지만 찾아 읽어도 됩니다. 다만 이 페이지의 표기 규약은 이후 모든 장이 따르므로 한 번 읽어 두기를 권합니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>주제</th><th style="width:7rem">읽을 페이지</th><th>뒷장에서 쓰는 곳</th></tr>
+      <tr><td>네 가지 버전, 표기 규약, 푸리에 급수와 변환, 대표 변환 쌍</td><td>페이지 1·2</td><td>4장 푸리에 슬라이스 정리</td></tr>
+      <tr><td>이동·스케일·컨볼루션 정리 등 성질</td><td>페이지 3</td><td>4장 슬라이스 정리의 예, 5장 역투영의 번짐과 필터</td></tr>
+      <tr><td>샘플링, 나이퀴스트 주파수, 에일리어싱</td><td>페이지 4</td><td>6장·9장 이산화</td></tr>
+      <tr><td>DFT, 원형 컨볼루션, 제로 패딩</td><td>페이지 5</td><td>6장·9장 이산화</td></tr>
+      <tr><td>2차원 푸리에 변환, 극좌표, 회전 성질</td><td>페이지 6</td><td>4장 푸리에 슬라이스 정리, 5장 램프 필터</td></tr>
+    </table>
+  </div>
+
+  <h3>네 가지 버전</h3>
+
+  <p>푸리에 해석은 신호를 여러 주파수의 파동으로 나누어 보는 방법입니다. 그런데 교과서마다 푸리에 급수, 푸리에 변환, DTFT, DFT처럼 이름이 다른 계산이 따로 나옵니다.
+  이들은 서로 다른 이론일까요? 실제로는 같은 생각을 신호의 종류에 맞게 고친 네 가지 버전입니다.</p>
+
+  <h3>신호의 두 가지 성질</h3>
+
+  <p>신호를 가르는 기준은 두 가지입니다. 첫째, 신호가 모든 위치 \(x\)에서 값을 갖는지(연속), 간격 \(\Delta x\)마다 하나씩만 값을 갖는지(이산)입니다. 둘째, 신호가 일정한 길이마다 반복되는지(주기), 반복되지 않는지(비주기)입니다.
+  두 기준을 조합하면 네 경우가 나오고, 경우마다 쓰는 푸리에 계산이 하나씩 있습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:7rem"></th><th>비주기</th><th>주기(주기 \(T\) 또는 샘플 \(N\)개)</th></tr>
+      <tr><td><b>연속</b> \(f(x)\)</td><td>푸리에 변환(<span class="term" data-term="ft">Fourier Transform</span>)<br>스펙트럼: 연속, 비주기</td><td>푸리에 급수(<span class="term" data-term="fs">Fourier Series</span>)<br>스펙트럼: 이산(\(\omega = k/T\)), 비주기</td></tr>
+      <tr><td><b>이산</b> \(f[n]\)</td><td>샘플 신호의 푸리에 변환(<span class="term" data-term="dtft">DTFT</span>, Discrete-Time Fourier Transform)<br>스펙트럼: 연속, 주기 \(1/\Delta x\)</td><td>이산 푸리에 변환(<span class="term" data-term="dft">DFT</span>, Discrete Fourier Transform)<br>스펙트럼: 이산, 주기 \(N\)</td></tr>
+    </table>
+  </div>
+
+  <p>표에는 규칙 하나가 보입니다. <b>한쪽이 이산이면 다른 쪽은 주기적입니다.</b> 연속 주기 신호(급수)는 스펙트럼이 이산이고, 이산 신호(DTFT)는 스펙트럼이 주기적입니다.
+  양쪽이 모두 이산이고 주기적인 DFT만 컴퓨터가 유한한 수로 다룰 수 있습니다. 그래서 이산화는 연속 푸리에 변환에서 출발해 샘플링과 DFT로 내려오는 순서를 밟습니다.</p>
+
+  <h3>이 책의 표기 규약</h3>
+
+  <p>같은 푸리에 변환도 책마다 쓰는 식이 다릅니다. 주파수를 1 cm 당 반복 횟수로 재는지 라디안으로 재는지, 그리고 \(2\pi\)를 지수에 두는지 역변환 앞에 두는지가 다릅니다.
+  이 책은 다음 규약을 씁니다.</p>
+  <p style="text-align:center">\[F(\omega) = \int_{-\infty}^{\infty} f(x)\,e^{-i2\pi\omega x}\,dx,\qquad f(x) = \int_{-\infty}^{\infty} F(\omega)\,e^{i2\pi\omega x}\,d\omega\]</p>
+  <ul>
+    <li>\(\omega\)는 <b>주파수</b>입니다. 1 cm 당 파동이 몇 번 반복되는지를 뜻하고 단위는 \(\mathrm{cm}^{-1}\)입니다. 라디안 단위의 각주파수가 아닙니다.</li>
+    <li>\(2\pi\)는 지수 안에 둡니다. 그래서 정변환과 역변환 앞에 상수가 붙지 않고, 두 식은 지수의 부호만 다릅니다.</li>
+    <li>\(i\)는 허수 단위(\(i^{2} = -1\))입니다. 전기공학 책의 \(j\)와 같습니다.</li>
+    <li>함수는 소문자(\(f,\ p\)), 그 푸리에 변환은 같은 글자의 대문자(\(F,\ P\))로 씁니다. 두 함수가 푸리에 변환 관계이면 \(f(x) \longleftrightarrow F(\omega)\)로 적습니다.</li>
+  </ul>
+
+  <p>이 규약을 고른 이유는 두 가지입니다. 첫째, 역변환과 Parseval 정리, 컨볼루션 정리, 푸리에 슬라이스 정리, FBP 공식에 \(2\pi\)나 \(1/(2\pi)\) 같은 상수가 붙지 않습니다.
+  둘째, \(\omega\)의 단위가 \(\mathrm{cm}^{-1}\)이어서 검출기 간격 \(\Delta x\)와 바로 비교됩니다. 예를 들어 나이퀴스트 주파수가 \(1/(2\Delta x)\)로 간단히 나옵니다.</p>
+
+  <p>글자 \(\omega\)는 보통 각주파수에 쓰는 글자입니다. 그런데도 이 책은 주파수를 \(\omega\)로 적습니다. 이후의 투영 푸리에 변환과 필터 표기를 그대로 잇기 위해서이고, \(f\)는 이미 함수 이름으로 쓰고 있어 주파수 기호로 쓰지 않습니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">다른 책의 표기</p>
+    <p>다른 책의 각주파수를 여기서는 \(\Omega\)로 적어 구분하면 \(\Omega = 2\pi\omega\)입니다. 흔한 규약 세 가지는 다음과 같습니다.</p>
+    <div class="table-wrap">
+      <table>
+        <tr><th style="width:9rem">규약</th><th>정변환</th><th>역변환</th></tr>
+        <tr><td>주파수(이 책)</td><td>\(\int f(x)\,e^{-i2\pi\omega x}\,dx\)</td><td>\(\int F(\omega)\,e^{i2\pi\omega x}\,d\omega\)</td></tr>
+        <tr><td>각주파수</td><td>\(\int f(x)\,e^{-i\Omega x}\,dx\)</td><td>\(\dfrac{1}{2\pi}\int F(\Omega)\,e^{i\Omega x}\,d\Omega\)</td></tr>
+        <tr><td>각주파수, 대칭형</td><td>\(\dfrac{1}{\sqrt{2\pi}}\int f(x)\,e^{-i\Omega x}\,dx\)</td><td>\(\dfrac{1}{\sqrt{2\pi}}\int F(\Omega)\,e^{i\Omega x}\,d\Omega\)</td></tr>
+      </table>
+    </div>
+    <p>각주파수 규약으로 쓴 식을 옮길 때는 \(\Omega\) 자리에 \(2\pi\omega\)를 넣고, \(d\Omega = 2\pi\,d\omega\)를 함께 바꿉니다. 이 과정에서 생기는 \(2\pi\) 인자를 빠뜨리면 결과의 크기가 \(2\pi\)배 또는 \(4\pi^{2}\)배 어긋납니다. 참고서를 읽을 때는 그 책의 지수에 \(2\pi\)가 있는지 먼저 확인하세요.</p>
+  </div>
+
+  <h3>네 버전의 정의</h3>
+
+  <p>같은 규약으로 네 버전을 쓰면 다음과 같습니다. 지금은 모두 \(e^{-i2\pi(\text{주파수})(\text{위치})}\)를 곱해 더하는 같은 모양이라는 점만 확인합니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:7rem">버전</th><th>정변환</th><th>역변환</th></tr>
+      <tr><td>푸리에 변환</td><td>\(F(\omega) = \int f(x)\,e^{-i2\pi\omega x}\,dx\)</td><td>\(f(x) = \int F(\omega)\,e^{i2\pi\omega x}\,d\omega\)</td></tr>
+      <tr><td>푸리에 급수</td><td>\(c_k = \dfrac{1}{T}\int_{0}^{T} f(x)\,e^{-i2\pi kx/T}\,dx\)</td><td>\(f(x) = \sum_{k} c_k\,e^{i2\pi kx/T}\)</td></tr>
+      <tr><td>DTFT</td><td>\(F_s(\omega) = \Delta x\,\sum_{n} f[n]\,e^{-i2\pi\omega n\Delta x}\)</td><td>\(f[n] = \int_{-1/(2\Delta x)}^{1/(2\Delta x)} F_s(\omega)\,e^{i2\pi\omega n\Delta x}\,d\omega\)</td></tr>
+      <tr><td>DFT</td><td>\(F[k] = \sum_{n=0}^{N-1} f[n]\,e^{-i2\pi kn/N}\)</td><td>\(f[n] = \dfrac{1}{N}\sum_{k=0}^{N-1} F[k]\,e^{i2\pi kn/N}\)</td></tr>
+    </table>
+  </div>
+
+  <p>DTFT의 \(f[n] = f(n\Delta x)\)는 간격 \(\Delta x\)로 뽑은 샘플이고, 아래첨자 \(s\)는 샘플(Sample)에서 왔습니다. 이후에는 \(x\) 자리에 검출기 좌표 \(s\)가 오고 \(\Delta x\) 자리에는 검출기 간격 \(\Delta s\)가 옵니다.
+  DTFT 앞의 \(\Delta x\)는 이 책이 붙인 것입니다. 이 인자가 있으면 \(\Delta x\,\sum\)가 적분 \(\int dx\)의 근사가 되어 \(F_s\)가 \(F\)와 같은 크기로 맞춰집니다. 다른 책의 DTFT에는 대개 이 인자가 없습니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="푸리에 급수와 푸리에 변환">
+  <p class="kicker">2장 · 페이지 2</p>
+  <h2>푸리에 급수와 푸리에 변환</h2>
+
+  <p>연속 신호의 두 버전을 다시 봅니다. 주기 신호를 파동의 합으로 쓰는 푸리에 급수에서 출발해, 주기를 무한히 늘린 극한으로 푸리에 변환을 얻습니다.</p>
+
+  <h3>푸리에 급수와 기저의 직교성</h3>
+
+  <p>주기 \(T\)인 함수 \(f(x)\)는 \(e^{i2\pi kx/T}\)(\(k\)는 정수)의 합으로 쓸 수 있습니다. 이 지수 함수는 \(\cos(2\pi kx/T) + i\sin(2\pi kx/T)\)이고, 길이 \(T\) 안에서 \(k\)번 반복하는 파동입니다.</p>
+  <p style="text-align:center">\[f(x) = \sum_{k=-\infty}^{\infty} c_k\,e^{i2\pi kx/T},\qquad c_k = \frac{1}{T}\int_{0}^{T} f(x)\,e^{-i2\pi kx/T}\,dx\]</p>
+  <p>계수 \(c_k\)는 \(f\)에 주파수 \(k/T\)인 파동이 얼마나 들어 있는지를 나타냅니다. 그렇다면 왜 \(c_k\)는 \(e^{-i2\pi kx/T}\)를 곱해 적분하면 나올까요? 벡터의 성분을 구하는 방법과 같은 원리입니다.</p>
+  <p>두 벡터의 내적은 같은 자리의 성분을 곱해 더한 값 \(\sum_j a_j b_j\)입니다. 함수에서는 이 합이 적분이 됩니다. 함수의 내적(<span class="term" data-term="innerfn">Inner Product</span>)은 다음과 같고, 복소수 값의 함수에서는 뒤쪽 함수에 켤레 복소수(허수부의 부호를 바꾼 값, 위에 줄을 그어 표시)를 취합니다.</p>
+  <p style="text-align:center">\[\langle f, g\rangle = \int f(x)\,\overline{g(x)}\,dx\]</p>
+  <p>적분 구간은 다루는 함수에 맞춰 정합니다. 푸리에 급수에서는 한 주기 \([0, T]\)이고, 푸리에 변환에서는 실수 전체입니다. 내적이 0인 두 함수를 서로 직교(Orthogonal)한다고 합니다.
+  푸리에 급수의 파동들은 서로 직교합니다. 한 주기에서 서로 다른 두 파동의 내적은 0이고, 같은 파동끼리의 내적은 \(T\)입니다.</p>
+  <p style="text-align:center">\[\int_{0}^{T} e^{i2\pi kx/T}\,\overline{e^{i2\pi lx/T}}\,dx = \int_{0}^{T} e^{i2\pi(k-l)x/T}\,dx = \begin{cases}T & (k = l)\\ 0 & (k \ne l)\end{cases}\]</p>
+  <p>그래서 \(f\)와 \(e^{i2\pi kx/T}\)의 내적을 구하면 \(k\)번째 항만 남고, 그 값을 \(T\)로 나눈 것이 \(c_k\)입니다. 서로 수직인 단위 벡터에 내적해 성분 하나를 뽑는 것과 같습니다.</p>
+
+  <details class="fold">
+    <summary>직교성과 계수 공식의 전개</summary>
+    <div class="fold-body">
+      <p><b>1단계. 직교성.</b> \(k \ne l\)이면 \(m = k - l\)은 0이 아닌 정수입니다. 부정적분을 이용하면 다음과 같습니다.</p>
+      <p style="text-align:center">\[\int_{0}^{T} e^{i2\pi mx/T}\,dx = \left[\frac{T}{i2\pi m}\,e^{i2\pi mx/T}\right]_{0}^{T} = \frac{T}{i2\pi m}\left(e^{i2\pi m} - 1\right) = 0\]</p>
+      <p>\(e^{i2\pi m} = \cos 2\pi m + i\sin 2\pi m = 1\)이기 때문입니다. \(k = l\)이면 피적분함수가 1이어서 적분은 \(T\)입니다.</p>
+      <p><b>2단계. 계수 뽑기.</b> \(f(x) = \sum_{l} c_l\,e^{i2\pi lx/T}\)의 양변에 \(e^{-i2\pi kx/T}\)를 곱하고 한 주기에서 적분합니다. 합과 적분의 순서를 바꾸면 다음과 같습니다.</p>
+      <p style="text-align:center">\[\int_{0}^{T} f(x)\,e^{-i2\pi kx/T}\,dx = \sum_{l} c_l\int_{0}^{T} e^{i2\pi(l-k)x/T}\,dx = c_k\,T\]</p>
+      <p>1단계에 따라 \(l = k\)인 항만 \(T\)로 남고 나머지는 0입니다. 양변을 \(T\)로 나누면 계수 공식이 됩니다.</p>
+    </div>
+  </details>
+
+  <h3>푸리에 변환</h3>
+
+  <p>신호가 반복되지 않으면 주기 \(T\)를 무한히 늘린 극한으로 생각합니다. 급수의 주파수 \(k/T\)의 간격 \(1/T\)이 0으로 줄어 주파수가 연속이 되고, 합이 적분으로 바뀝니다. 그 결과가 페이지 1의 푸리에 변환입니다.</p>
+  <p style="text-align:center">\[F(\omega) = \int_{-\infty}^{\infty} f(x)\,e^{-i2\pi\omega x}\,dx,\qquad f(x) = \int_{-\infty}^{\infty} F(\omega)\,e^{i2\pi\omega x}\,d\omega\]</p>
+  <p>\(F(\omega)\)는 \(f\)와 파동 \(e^{i2\pi\omega x}\)의 내적이므로, 주파수 \(\omega\)인 파동이 \(f\)에 얼마나 들어 있는지를 나타냅니다. 역변환은 그 파동들을 다시 더해 \(f\)를 만듭니다.</p>
+
+  <details class="fold">
+    <summary>급수에서 변환으로 가는 극한</summary>
+    <div class="fold-body">
+      <p>주파수 간격을 \(d\omega = 1/T\), \(k\)번째 주파수를 \(\omega_k = k/T\)로 둡니다. 계수에 \(T\)를 곱한 값 \(T c_k\)를 \(F(\omega_k)\)라고 부르면 다음과 같습니다.</p>
+      <p style="text-align:center">\[F(\omega_k) = T c_k = \int_{0}^{T} f(x)\,e^{-i2\pi\omega_k x}\,dx\]</p>
+      <p>급수는 \(c_k = F(\omega_k)/T = F(\omega_k)\,d\omega\)를 넣어 다음처럼 쓸 수 있습니다.</p>
+      <p style="text-align:center">\[f(x) = \sum_{k} F(\omega_k)\,e^{i2\pi\omega_k x}\,d\omega\]</p>
+      <p>\(T \to \infty\)이면 적분 구간이 실수 전체로 넓어지고(주기 구간을 원점 중심으로 잡으면 \([-T/2,\ T/2]\)), \(d\omega \to 0\)이어서 합이 적분이 됩니다. 두 식이 각각 정변환과 역변환입니다.</p>
+    </div>
+  </details>
+
+  <h3>대표 변환 쌍</h3>
+
+  <p>뒷장에서 자주 만나는 변환 쌍은 다음과 같습니다. 모두 위 정의에 넣어 계산할 수 있습니다.</p>
+  <p>표의 델타 함수 \(\delta(x)\)는 넓이를 1로 유지하면서 폭을 0으로 좁힌 봉우리로 생각하면 됩니다. 이 직관이면 이 장을 읽는 데 충분합니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:11rem">\(f(x)\)</th><th style="width:11rem">\(F(\omega)\)</th><th>메모</th></tr>
+      <tr><td>사각 함수 \(\mathrm{rect}(x)\)</td><td>\(\mathrm{sinc}(\omega) = \dfrac{\sin\pi\omega}{\pi\omega}\)</td><td>\(\mathrm{rect}(x)\)는 \(|x| &lt; 1/2\)에서 1, 나머지에서 0. \(\mathrm{sinc}(0) = 1\)</td></tr>
+      <tr><td>가우시안 \(e^{-\pi x^{2}}\)</td><td>\(e^{-\pi\omega^{2}}\)</td><td>모양이 그대로인 쌍</td></tr>
+      <tr><td>델타 함수 \(\delta(x)\)</td><td>\(1\)</td><td>모든 주파수가 같은 크기</td></tr>
+      <tr><td>상수 \(1\)</td><td>\(\delta(\omega)\)</td><td>주파수 0에만 성분</td></tr>
+      <tr><td>\(\cos(2\pi\omega_0 x)\)</td><td>\(\tfrac12\left[\delta(\omega-\omega_0) + \delta(\omega+\omega_0)\right]\)</td><td>\(\pm\omega_0\)에 성분 둘</td></tr>
+    </table>
+  </div>
+
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 220" role="img" aria-label="왼쪽은 폭 1인 사각 함수, 오른쪽은 그 푸리에 변환인 sinc 함수로 정수 주파수에서 0이 됨">
+      <defs>
+        <marker id="f3-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M30 160 H290" marker-end="url(#f3-mu)"/>
+        <path d="M160 190 V30" marker-end="url(#f3-mu)"/>
+        <path d="M330 160 H630" marker-end="url(#f3-mu)"/>
+        <path d="M480 190 V30" marker-end="url(#f3-mu)"/>
+      </g>
+      <path d="M40 160 H120 V60 H200 V160 H280" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <path d="M340.0 160.0 L343.5 162.5 L347.0 164.9 L350.5 167.0 L354.0 168.4 L357.5 169.1 L361.0 168.9 L364.5 167.8 L368.0 165.8 L371.5 163.2 L375.0 160.0 L378.5 156.6 L382.0 153.3 L385.5 150.5 L389.0 148.4 L392.5 147.3 L396.0 147.4 L399.5 148.8 L403.0 151.5 L406.5 155.3 L410.0 160.0 L413.5 165.2 L417.0 170.4 L420.5 175.1 L424.0 178.9 L427.5 181.2 L431.0 181.6 L434.5 179.8 L438.0 175.6 L441.5 168.9 L445.0 160.0 L448.5 149.1 L452.0 136.6 L455.5 123.2 L459.0 109.5 L462.5 96.3 L466.0 84.3 L469.5 74.2 L473.0 66.5 L476.5 61.6 L480.0 60.0 L483.5 61.6 L487.0 66.5 L490.5 74.2 L494.0 84.3 L497.5 96.3 L501.0 109.5 L504.5 123.2 L508.0 136.6 L511.5 149.1 L515.0 160.0 L518.5 168.9 L522.0 175.6 L525.5 179.8 L529.0 181.6 L532.5 181.2 L536.0 178.9 L539.5 175.1 L543.0 170.4 L546.5 165.2 L550.0 160.0 L553.5 155.3 L557.0 151.5 L560.5 148.8 L564.0 147.4 L567.5 147.3 L571.0 148.4 L574.5 150.5 L578.0 153.3 L581.5 156.6 L585.0 160.0 L588.5 163.2 L592.0 165.8 L595.5 167.8 L599.0 168.9 L602.5 169.1 L606.0 168.4 L609.5 167.0 L613.0 164.9 L616.5 162.5 L620.0 160.0" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <g font-size="11" class="svg-muted" text-anchor="middle">
+        <text x="120" y="176">−1/2</text><text x="200" y="176">1/2</text>
+        <text x="445" y="176">−1</text><text x="515" y="176">1</text>
+        <text x="410" y="146">−2</text><text x="550" y="146">2</text>
+        <text x="284" y="178">x</text><text x="624" y="178">ω</text>
+      </g>
+      <g font-size="12" class="svg-fg">
+        <text x="166" y="56">1</text><text x="486" y="56">1</text>
+        <text x="40" y="24" font-weight="700">rect(x)</text>
+        <text x="340" y="24" font-weight="700">sinc(ω)</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽은 폭 1(cm)인 사각 함수이고, 오른쪽은 그 푸리에 변환 \(\mathrm{sinc}(\omega)\)입니다. 가로축 \(\omega\)의 단위는 \(\mathrm{cm}^{-1}\)이고, \(\omega\)가 0이 아닌 정수일 때 값이 0입니다.</figcaption>
+  </figure>
+
+  <p>사각 함수의 폭을 넓히면 sinc의 폭은 좁아집니다. 공간에서 넓게 퍼진 함수일수록 주파수에서는 좁게 모이고, 반대도 마찬가지입니다. 스케일 성질이 이 관계를 식으로 나타냅니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="성질 치트시트">
+  <p class="kicker">2장 · 페이지 3</p>
+  <h2>성질 치트시트</h2>
+
+  <p>뒷장의 유도에서는 푸리에 변환을 정의대로 계산하기보다 성질을 이용해 식을 바꾸는 일이 많습니다. 자주 쓰는 성질을 연속(푸리에 변환)과 이산(DFT)으로 나란히 정리합니다.</p>
+
+  <h3>컨볼루션</h3>
+
+  <p>표에 나오는 연산 가운데 컨볼루션(<span class="term" data-term="conv">Convolution</span>)을 먼저 정의합니다. 두 함수의 컨볼루션은 기호 \(*\)로 쓰고, 한 함수를 뒤집어 \(x\)만큼 옮긴 뒤 다른 함수와 곱해 적분한 값입니다.</p>
+  <p style="text-align:center">\[(f * g)(x) = \int_{-\infty}^{\infty} f(t)\,g(x - t)\,dt\]</p>
+  <p>\(g\)가 좁은 봉우리이면 \(f * g\)는 \(f\)를 그 봉우리 폭만큼 흐린 함수가 됩니다.
+  이 책에서 \(*\)는 컨볼루션에만 쓰고, 켤레 복소수는 \(\overline{F}\)처럼 윗줄로 씁니다.</p>
+
+  <h3>성질 대응표</h3>
+
+  <p>표에서 \(f(x) \longleftrightarrow F(\omega)\), \(g(x) \longleftrightarrow G(\omega)\)이고, 이산 쪽은 길이 \(N\)인 \(f[n] \longleftrightarrow F[k]\)입니다. \(a\)는 실수 상수, \(m\)은 정수입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:7rem">성질</th><th>연속: 푸리에 변환</th><th>이산: DFT</th></tr>
+      <tr><td>선형</td><td>\(af + g \longleftrightarrow aF + G\)</td><td>같음</td></tr>
+      <tr><td>이동</td><td>\(f(x-a) \longleftrightarrow e^{-i2\pi\omega a}F(\omega)\)</td><td>\(f[(n-m) \bmod N] \longleftrightarrow e^{-i2\pi km/N}F[k]\)</td></tr>
+      <tr><td>변조</td><td>\(e^{i2\pi\omega_0 x}f(x) \longleftrightarrow F(\omega - \omega_0)\)</td><td>\(e^{i2\pi k_0 n/N}f[n] \longleftrightarrow F[(k-k_0) \bmod N]\)</td></tr>
+      <tr><td>스케일</td><td>\(f(ax) \longleftrightarrow \dfrac{1}{|a|}F\!\left(\dfrac{\omega}{a}\right)\)</td><td>간단한 대응 없음(샘플 간격을 바꾸려면 다시 샘플링)</td></tr>
+      <tr><td>미분·차분</td><td>\(f'(x) \longleftrightarrow i2\pi\omega\,F(\omega)\)</td><td>\(f[n] - f[(n-1) \bmod N] \longleftrightarrow \left(1 - e^{-i2\pi k/N}\right)F[k]\)</td></tr>
+      <tr><td>컨볼루션</td><td>\(f * g \longleftrightarrow F\,G\)</td><td>원형 컨볼루션 \(f \circledast g \longleftrightarrow F[k]\,G[k]\)</td></tr>
+      <tr><td>곱</td><td>\(f\,g \longleftrightarrow F * G\)</td><td>\(f[n]\,g[n] \longleftrightarrow \tfrac{1}{N}(F \circledast G)[k]\)</td></tr>
+      <tr><td>원점 값</td><td>\(F(0) = \int f(x)\,dx\)</td><td>\(F[0] = \sum_{n} f[n]\)</td></tr>
+      <tr><td>Parseval</td><td>\(\int |f(x)|^{2}dx = \int |F(\omega)|^{2}d\omega\)</td><td>\(\sum_{n} |f[n]|^{2} = \tfrac{1}{N}\sum_{k} |F[k]|^{2}\)</td></tr>
+      <tr><td>실수 신호</td><td>\(F(-\omega) = \overline{F(\omega)}\)</td><td>\(F[N-k] = \overline{F[k]}\)</td></tr>
+    </table>
+  </div>
+
+  <p>DFT 쪽의 \(\bmod N\)과 원형 컨볼루션 \(\circledast\)는 DFT가 수열을 길이 \(N\)마다 반복된다고 보기 때문에 생깁니다.
+  샘플 신호의 푸리에 변환(DTFT)은 대부분 연속 열과 같은 모양이고, 컨볼루션은 원형이 아닌 보통의 이산 컨볼루션이 곱이 됩니다. 이 책의 DTFT 정의(앞에 \(\Delta x\)를 붙인 정의)에서는 \(\Delta x\,\sum_m f[m]\,g[n-m] \longleftrightarrow F_s(\omega)\,G_s(\omega)\)입니다. 앞의 \(\Delta x\)는 \(\int dt\)를 근사하는 인자입니다. Parseval 정리도 같은 인자를 붙여 \(\Delta x\,\sum_n |f[n]|^{2} = \int_{-1/(2\Delta x)}^{1/(2\Delta x)} |F_s(\omega)|^{2}\,d\omega\)입니다.</p>
+
+  <p>뒷장에서 가장 많이 쓰는 것은 세 가지입니다.</p>
+  <ul>
+    <li><b>컨볼루션 정리</b>: 공간의 컨볼루션은 주파수의 곱입니다. 필터를 곱하는 것과 커널로 컨볼루션하는 것이 같은 계산이 되고, FBP가 이 사실로 두 가지 형태를 갖습니다.</li>
+    <li><b>원점 값</b>: \(F(0)\)은 \(f\)의 전체 넓이입니다. 주파수 0의 성분을 직류(DC) 성분이라고 부르며, FBP의 램프 필터(<span class="term" data-term="ramp">Ramp Filter</span>, 주파수 응답 \(|\omega|\))는 이 성분을 0으로 만듭니다.</li>
+    <li><b>실수 신호의 대칭</b>: 투영값처럼 실수인 신호는 음의 주파수 쪽이 양의 주파수 쪽의 켤레입니다. 그래서 크기 \(|F(\omega)|\)는 좌우 대칭입니다.</li>
+  </ul>
+
+  <details class="fold">
+    <summary>이동 성질과 컨볼루션 정리의 전개</summary>
+    <div class="fold-body">
+      <p><b>이동.</b> \(f(x-a)\)의 변환에서 \(u = x - a\)로 치환하면 \(dx = du\)이고 \(x = u + a\)입니다.</p>
+      <p style="text-align:center">\[\begin{aligned}\int f(x-a)\,e^{-i2\pi\omega x}\,dx &= \int f(u)\,e^{-i2\pi\omega(u+a)}\,du\\ &= e^{-i2\pi\omega a}\int f(u)\,e^{-i2\pi\omega u}\,du = e^{-i2\pi\omega a}F(\omega)\end{aligned}\]</p>
+      <p><b>컨볼루션 정리.</b> 정의를 넣고 적분 순서를 바꿉니다.</p>
+      <p style="text-align:center">\[\int (f*g)(x)\,e^{-i2\pi\omega x}\,dx = \int f(t)\left[\int g(x-t)\,e^{-i2\pi\omega x}\,dx\right]dt\]</p>
+      <p>대괄호 안은 \(g\)를 \(t\)만큼 옮긴 함수의 변환이므로, 이동 성질에 따라 \(e^{-i2\pi\omega t}G(\omega)\)입니다. 남은 적분은 \(F(\omega)\)입니다.</p>
+      <p style="text-align:center">\[\int f(t)\,e^{-i2\pi\omega t}\,G(\omega)\,dt = F(\omega)\,G(\omega)\]</p>
+      <p><b>스케일.</b> \(a &gt; 0\)이면 \(u = ax\)로 치환해 \(dx = du/a\)이고, 지수는 \(-i2\pi(\omega/a)u\)가 되어 \(\tfrac{1}{a}F(\omega/a)\)를 얻습니다. \(a &lt; 0\)이면 적분 구간의 위아래가 바뀌어 부호가 하나 더 붙으므로 \(1/|a|\)가 됩니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="샘플링과 에일리어싱">
+  <p class="kicker">2장 · 페이지 4</p>
+  <h2>샘플링과 에일리어싱</h2>
+
+  <p>검출기는 투영을 연속 함수로 주지 않고 검출기 칸마다 값 하나씩, 즉 간격 \(\Delta x\)마다 샘플 하나를 줍니다. 샘플 \(f[n] = f(n\Delta x)\)만 남았을 때 원래 함수의 스펙트럼은 어떻게 보일까요?</p>
+
+  <h3>샘플 신호의 스펙트럼</h3>
+
+  <p>페이지 1의 정의대로 샘플 신호의 푸리에 변환을 구하면, 원래 스펙트럼 \(F\)가 간격 \(1/\Delta x\)마다 반복해 겹친 모양이 됩니다.</p>
+  <p style="text-align:center">\[F_s(\omega) = \Delta x\,\sum_{n} f[n]\,e^{-i2\pi\omega n\Delta x} = \sum_{k=-\infty}^{\infty} F\!\left(\omega - \frac{k}{\Delta x}\right)\]</p>
+  <p>\(1/\Delta x\)는 1 cm 당 샘플 수이며 샘플링 주파수라고 합니다. 페이지 1의 규칙대로, 공간에서 이산이 되자 주파수에서 주기적이 되었습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 240" role="img" aria-label="샘플링한 신호의 스펙트럼. 위는 원래 스펙트럼이 좁아 반복된 사본이 겹치지 않는 경우, 아래는 넓어서 사본이 겹치는 경우">
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M20 95 H620"/><path d="M20 205 H620"/>
+        <path d="M240 20 V215" stroke-dasharray="3 3"/><path d="M400 20 V215" stroke-dasharray="3 3"/>
+      </g>
+      <g stroke-width="2" style="stroke:var(--accent)" fill="var(--accent)" fill-opacity=".25">
+        <path d="M105 95 L160 40 L215 95"/>
+        <path d="M265 95 L320 40 L375 95"/>
+        <path d="M425 95 L480 40 L535 95"/>
+        <path d="M50 205 L160 150 L270 205"/>
+        <path d="M210 205 L320 150 L430 205"/>
+        <path d="M370 205 L480 150 L590 205"/>
+      </g>
+      <g font-size="11" class="svg-muted" text-anchor="middle">
+        <text x="160" y="110">−1/Δx</text><text x="320" y="110">0</text><text x="480" y="110">1/Δx</text>
+        <text x="160" y="222">−1/Δx</text><text x="320" y="222">0</text><text x="480" y="222">1/Δx</text>
+        <text x="240" y="16">−1/(2Δx)</text><text x="400" y="16">1/(2Δx)</text>
+      </g>
+      <g font-size="12" class="svg-fg">
+        <text x="24" y="40" font-weight="700">겹치지 않음</text>
+        <text x="24" y="150" font-weight="700">겹침(에일리어싱)</text>
+        <text x="560" y="88">ω</text><text x="600" y="198">ω</text>
+      </g>
+    </svg>
+    <figcaption>가운데 삼각형이 원래 스펙트럼 \(F\)이고, 양옆은 \(1/\Delta x\)마다 반복된 사본입니다. 점선은 \(\pm 1/(2\Delta x)\)입니다. 위는 \(F\)가 점선 안에 있어 사본이 겹치지 않고, 아래는 \(F\)가 점선 밖으로 넘어 사본과 겹칩니다.</figcaption>
+  </figure>
+
+  <h3>나이퀴스트 조건</h3>
+
+  <p>사본이 겹치지 않으면 \(-1/(2\Delta x)\)와 \(1/(2\Delta x)\) 사이만 잘라 원래 스펙트럼 \(F\)를 그대로 되찾을 수 있습니다. 그러려면 \(f\)에 \(1/(2\Delta x)\)보다 높은 주파수가 없어야 합니다.
+  이 경계 \(1/(2\Delta x)\)를 나이퀴스트 주파수(<span class="term" data-term="nyquist">Nyquist Frequency</span>)라고 합니다. \(f\)의 가장 높은 주파수가 \(\omega_{\max}\)이면 조건은 다음과 같습니다.</p>
+  <p style="text-align:center">\[\omega_{\max} \le \frac{1}{2\Delta x}\quad\Longleftrightarrow\quad \Delta x \le \frac{1}{2\,\omega_{\max}}\]</p>
+  <p>가장 빠른 파동 한 주기에 샘플이 2개 이상 있어야 한다는 뜻입니다. 다만 주파수가 나이퀴스트 주파수와 정확히 같은 사인파는 샘플이 모두 0이 될 수 있어서, 엄밀하게는 경계에 성분이 없어야 합니다. 이 조건을 만족하면 샘플만으로 원래 함수가 정확히 정해지고, \(f(x) = \sum_n f[n]\,\mathrm{sinc}\!\left((x - n\Delta x)/\Delta x\right)\)로 복원됩니다(샘플링 정리).
+  주파수가 일정 범위 안에만 있는 함수를 대역 제한(Band-limited) 함수라고 합니다.</p>
+
+  <h3>에일리어싱</h3>
+
+  <p>조건을 어기면 사본끼리 겹쳐서, 나이퀴스트 주파수를 넘는 성분이 낮은 주파수 자리에 섞여 들어갑니다. 이 현상을 에일리어싱(<span class="term" data-term="aliasing">Aliasing</span>)이라고 합니다.
+  예를 들어 \(\Delta x = 1\) cm로 \(\cos(2\pi\times0.7x)\)를 샘플링하면 샘플 값이 \(\cos(2\pi\times0.3x)\)의 샘플과 똑같습니다. \(0.7 - 1 = -0.3\)이고 코사인은 부호를 바꿔도 같기 때문입니다.
+  샘플만 봐서는 두 파동을 구별할 수 없으므로, 에일리어싱은 샘플링한 뒤에는 되돌릴 수 없습니다.</p>
+
+  <p>아래 슬라이더로 파동의 주파수를 바꿔 보세요. 샘플 간격은 0.25 cm로 고정되어 있어 나이퀴스트 주파수는 \(2\ \mathrm{cm}^{-1}\)입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 200" role="img" aria-label="연속 코사인 파동과 0.25 cm 간격의 샘플, 그리고 샘플을 지나는 가장 낮은 주파수의 파동">
+      <g class="svg-line" stroke-width="1"><path d="M40 100 H610"/><path d="M40 30 V170"/></g>
+      <path id="al-true" fill="none" stroke-width="1.4" style="stroke:var(--muted)"/>
+      <path id="al-seen" fill="none" stroke-width="2" stroke-dasharray="6 4" style="stroke:var(--warn)"/>
+      <g id="al-dots" style="fill:var(--accent)"></g>
+      <g class="svg-muted" font-size="10" text-anchor="middle">
+        <text x="40" y="186">0</text><text x="175" y="186">1</text><text x="310" y="186">2</text>
+        <text x="445" y="186">3</text><text x="580" y="186">4</text><text x="610" y="186">x (cm)</text>
+      </g>
+    </svg>
+    <figcaption>회색 실선이 원래 파동 \(\cos(2\pi\omega_0 x)\), 점이 0.25 cm 간격의 샘플, 주황 점선이 같은 샘플을 지나는 가장 낮은 주파수의 파동입니다. 두 선이 다르면 샘플에는 점선의 주파수로 보입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="al-w">파동의 주파수 \(\omega_0\) (cm⁻¹)</label>
+    <input id="al-w" type="range" min="0.2" max="4" step="0.1" value="0.6" style="width:14rem">
+    <b id="al-w-val">0.6</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="al-note"></p>
+
+<script>
+(function () {
+  var w = document.getElementById('al-w'), val = document.getElementById('al-w-val'),
+      note = document.getElementById('al-note'), dots = document.getElementById('al-dots'),
+      tru = document.getElementById('al-true'), seen = document.getElementById('al-seen');
+  var D = 0.25;
+  function X(x) { return 40 + x * 135; }
+  function Y(v) { return 100 - v * 60; }
+  function wave(f) {
+    var d = [], x;
+    for (x = 0; x <= 4.2001; x += 0.005) { d.push((d.length ? 'L' : 'M') + X(x).toFixed(1) + ' ' + Y(Math.cos(2 * Math.PI * f * x)).toFixed(1)); }
+    return d.join(' ');
+  }
+  function draw() {
+    var f = +w.value, a = Math.abs(f - Math.round(f * D) / D), n, h = '';
+    tru.setAttribute('d', wave(f));
+    seen.setAttribute('d', wave(a));
+    for (n = 0; n * D <= 4.2001; n++) {
+      h += '<circle cx="' + X(n * D).toFixed(1) + '" cy="' + Y(Math.cos(2 * Math.PI * f * n * D)).toFixed(1) + '" r="3.6"/>';
+    }
+    dots.innerHTML = h;
+    val.textContent = f.toFixed(1);
+    note.textContent = f <= 2 + 1e-9
+      ? '나이퀴스트 주파수 2 이하입니다. 샘플에도 ' + f.toFixed(1) + ' cm⁻¹ 로 보입니다.'
+      : '나이퀴스트 주파수 2 를 넘었습니다. 샘플에는 ' + a.toFixed(1) + ' cm⁻¹ 로 보입니다(에일리어싱).';
+  }
+  w.addEventListener('input', draw);
+  draw();
+})();
+</script>
+
+  <details class="fold">
+    <summary>반복 스펙트럼 식의 전개</summary>
+    <div class="fold-body">
+      <p><b>1단계. 샘플링을 곱으로 쓰기.</b> 간격 \(\Delta x\)의 델타 함수 열 \(\sum_n \delta(x - n\Delta x)\)를 \(f\)에 곱하면 샘플 위치에만 값이 남습니다. 이 함수를 \(f_s(x) = \Delta x\,\sum_n f(n\Delta x)\,\delta(x - n\Delta x)\)로 둡니다. 델타 함수의 넓이가 1이므로 \(f_s\)의 푸리에 변환은 정의에서 바로 \(\Delta x\,\sum_n f[n]\,e^{-i2\pi\omega n\Delta x} = F_s(\omega)\)입니다.</p>
+      <p><b>2단계. 델타 함수 열의 변환.</b> 간격 \(\Delta x\)의 델타 함수 열은 주기 \(\Delta x\)인 함수이고, 페이지 2의 계수 공식을 한 주기 \([-\Delta x/2,\ \Delta x/2]\)에서 적용하면 모든 \(k\)에서 \(c_k = 1/\Delta x\)입니다. 따라서 그 푸리에 변환은 간격 \(1/\Delta x\)의 델타 함수 열입니다.</p>
+      <p style="text-align:center">\[\Delta x\,\sum_{n}\delta(x - n\Delta x) \longleftrightarrow \sum_{k}\delta\!\left(\omega - \frac{k}{\Delta x}\right)\]</p>
+      <p><b>3단계. 곱은 컨볼루션.</b> 페이지 3의 표에서 곱의 변환은 변환끼리의 컨볼루션입니다. \(F\)를 \(\delta(\omega - k/\Delta x)\)와 컨볼루션하면 \(F\)를 \(k/\Delta x\)만큼 옮긴 \(F(\omega - k/\Delta x)\)가 됩니다. 이것을 모든 \(k\)에 대해 더한 것이 반복 스펙트럼 식입니다.</p>
+    </div>
+  </details>
+
+  <p>검출기 간격 \(\Delta x\)가 투영의 나이퀴스트 주파수를 정하고, 그보다 높은 주파수는 재구성에 쓸 수 없습니다. 각도 방향의 샘플링도 같은 원리를 따릅니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 -->
+<section class="screen" data-title="DFT와 원형 컨볼루션">
+  <p class="kicker">2장 · 페이지 5</p>
+  <h2>DFT와 원형 컨볼루션</h2>
+
+  <p>샘플 신호의 스펙트럼 \(F_s(\omega)\)는 여전히 연속 함수여서 컴퓨터에 그대로 담을 수 없습니다. 실제로 계산하는 것은 그 스펙트럼을 주파수에서도 샘플링한 값입니다.</p>
+
+  <h3>DTFT의 주파수 샘플링</h3>
+
+  <p>샘플이 \(n = 0, 1, \dots, N-1\)의 \(N\)개만 있다고 합시다. \(F_s(\omega)\)를 한 주기 \(1/\Delta x\) 안에서 간격 \(1/(N\Delta x)\)로 \(N\)번 샘플링하면 다음과 같습니다.</p>
+  <p style="text-align:center">\[F_s\!\left(\frac{k}{N\Delta x}\right) = \Delta x\,\sum_{n=0}^{N-1} f[n]\,e^{-i2\pi kn/N} = \Delta x\,F[k]\]</p>
+  <p>여기서 \(F[k]\)가 이산 푸리에 변환(DFT)입니다. \(\Delta x\)를 뺀 순수한 숫자 계산이어서 표준 정의에는 \(\Delta x\)가 없습니다.
+  DFT의 \(k\)번째 값은 주파수 \(k/(N\Delta x)\)에 해당하고, 신호가 샘플 구간 밖에서 0이고 에일리어싱이 없으면 \(\Delta x\,F[k] \approx F\!\left(k/(N\Delta x)\right)\)입니다(\(k &gt; N/2\)는 아래 상자). 주파수 간격 \(1/(N\Delta x)\)는 샘플을 늘려 신호 길이 \(N\Delta x\)가 길어질수록 촘촘해집니다.</p>
+  <p>역변환에서 \(1/N\)이 붙는 이유는 페이지 2의 직교성과 같습니다. \(\sum_{n=0}^{N-1} e^{i2\pi(k-l)n/N}\)은 \(k = l\)이면 \(N\), 아니면 0이어서, 이산 파동들도 서로 직교합니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">DFT 번호와 음의 주파수</p>
+    <p>DFT는 \(k\)에 대해 주기 \(N\)이어서 \(F[k] = F[k - N]\)입니다. 그래서 \(k\)가 \(N/2\)보다 크면 \(k\)번째 값은 음의 주파수 \((k - N)/(N\Delta x)\)에 해당합니다.
+    예를 들어 \(N = 8\)이면 \(k = 0, 1, 2, 3, 4, 5, 6, 7\)은 주파수 \(0, 1, 2, 3, \pm4, -3, -2, -1\)(단위 \(1/(8\Delta x)\))입니다. \(k = N/2\)는 나이퀴스트 주파수입니다. 주파수에 따라 값을 곱하는 필터를 만들 때 이 순서를 지켜야 합니다.</p>
+  </div>
+
+  <h3>원형 컨볼루션</h3>
+
+  <p>DFT는 \(N\)개의 샘플을 길이 \(N\)마다 반복되는 수열의 한 주기로 봅니다. 그래서 두 DFT를 곱해 역변환하면, 끝을 넘어간 값이 앞으로 돌아와 더해지는 원형 컨볼루션(<span class="term" data-term="circconv">Circular Convolution</span>)이 됩니다. 기호는 \(\circledast\)로 씁니다.</p>
+  <p style="text-align:center">\[(f \circledast g)[n] = \sum_{m=0}^{N-1} f[m]\,g[(n-m) \bmod N]\]</p>
+  <p>\(f = (1, 2, 3)\)과 \(g = (1, 1)\)로 비교해 봅니다. 보통의(선형) 컨볼루션은 길이 \(3 + 2 - 1 = 4\)인 수열입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:12rem">계산</th><th>결과</th><th>설명</th></tr>
+      <tr><td>선형 컨볼루션</td><td>\((1,\ 3,\ 5,\ 3)\)</td><td>\(1\times1,\ 2\times1 + 1\times1,\ 3\times1 + 2\times1,\ 3\times1\)</td></tr>
+      <tr><td>\(N = 3\) 원형 컨볼루션</td><td>\((4,\ 3,\ 5)\)</td><td>네 번째 값 3이 맨 앞으로 돌아와 \(1 + 3 = 4\)</td></tr>
+      <tr><td>\(N = 4\) 원형 컨볼루션</td><td>\((1,\ 3,\ 5,\ 3)\)</td><td>0을 채워 길이를 4로 늘리면 선형 컨볼루션과 같음</td></tr>
+    </table>
+  </div>
+
+  <p>마지막 줄처럼 수열 끝에 0을 붙여 길이를 늘리는 것을 제로 패딩(<span class="term" data-term="zeropad">Zero Padding</span>)이라고 합니다. 길이 \(L\)과 \(M\)인 두 수열이면 \(N \ge L + M - 1\)로 채울 때 돌아와 더해지는 값이 0이 되어, 원형 컨볼루션이 선형 컨볼루션과 같아집니다.</p>
+
+  <h3>FFT의 위치</h3>
+
+  <p>DFT를 정의대로 계산하면 \(F[k]\) 하나에 곱셈이 \(N\)번, 전체에 \(N^{2}\)번 필요합니다. 고속 푸리에 변환(<span class="term" data-term="fft">FFT</span>, Fast Fourier Transform)은 같은 DFT 값을 \(N\log_2 N\)에 비례하는 계산으로 구하는 알고리즘입니다.
+  \(N = 1024\)이면 정의대로는 약 100만 번, FFT로는 약 1만 번입니다. FFT는 다른 변환이 아니라 DFT를 빨리 계산하는 방법이므로, 결과와 성질은 DFT 그대로입니다.</p>
+  <p>지금까지를 모으면 FFT로 선형 컨볼루션을 계산하는 순서는 다음과 같습니다. 투영을 이산으로 필터링하는 계산이 이 순서를 따릅니다.</p>
+  <ol>
+    <li>두 수열의 길이 \(L,\ M\)을 확인하고 \(N \ge L + M - 1\)을 고릅니다. FFT가 빠른 길이(2의 거듭제곱 등)로 올려 잡는 경우가 많습니다.</li>
+    <li>두 수열 끝에 0을 채워 길이를 \(N\)으로 맞춥니다.</li>
+    <li>두 수열을 각각 FFT 하고, \(k\)마다 \(F[k]\,G[k]\)를 곱합니다.</li>
+    <li>곱을 역 FFT 하고, 앞의 \(L + M - 1\)개(또는 필요한 구간)만 남깁니다.</li>
+  </ol>
+
+  <details class="fold">
+    <summary>제로 패딩과 주파수 분해능</summary>
+    <div class="fold-body">
+      <p>제로 패딩은 DFT의 주파수 간격 \(1/(N\Delta x)\)를 촘촘하게 만듭니다. 그래서 스펙트럼 그래프가 매끄러워 보입니다. 하지만 새로 생긴 값은 같은 \(F_s(\omega)\)를 더 촘촘히 샘플링한 것일 뿐이어서, 원래 측정한 길이로 구별할 수 없던 두 주파수를 구별하게 해 주지는 않습니다.
+      주파수 분해능은 실제로 측정한 신호의 길이로 정해지고, 제로 패딩의 역할은 원형 컨볼루션의 겹침을 막는 것과 주파수 샘플을 보간하는 것입니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 6 -->
+<section class="screen" data-title="2차원 푸리에 변환과 극좌표">
+  <p class="kicker">2장 · 페이지 6</p>
+  <h2>2차원 푸리에 변환과 극좌표</h2>
+
+  <p>CT 영상 \(\mu(x, y)\)는 2차원 함수입니다. 푸리에 슬라이스 정리는 1차원 투영의 변환과 영상의 2차원 변환을 잇는 정리이므로, 2차원 푸리에 변환과 그 극좌표 표현을 정리해 둡니다. 이 페이지에서는 일반적인 2차원 함수를 \(f(x, y)\)로 씁니다.</p>
+
+  <h3>정의</h3>
+
+  <p>주파수도 두 방향 \((\omega_x,\ \omega_y)\)를 가지며, 정의는 1차원의 지수를 두 방향의 합으로 바꾼 것입니다.</p>
+  <p style="text-align:center">\[\begin{aligned}F(\omega_x, \omega_y) &= \iint f(x, y)\,e^{-i2\pi(\omega_x x + \omega_y y)}\,dx\,dy,\\ f(x, y) &= \iint F(\omega_x, \omega_y)\,e^{i2\pi(\omega_x x + \omega_y y)}\,d\omega_x\,d\omega_y\end{aligned}\]</p>
+  <p>지수가 \(e^{-i2\pi\omega_x x}\,e^{-i2\pi\omega_y y}\)로 나뉘므로, \(x\) 방향으로 1차원 변환을 한 뒤 \(y\) 방향으로 다시 하면 됩니다. 2차원 DFT도 행마다 1차원 DFT를 하고 열마다 다시 하는 방식으로 계산합니다. 페이지 3의 성질도 두 방향에 각각 그대로 성립합니다.</p>
+
+  <h3>극좌표로 본 주파수</h3>
+
+  <p>주파수 평면의 점 \((\omega_x,\ \omega_y)\)를 1장의 극좌표로 나타내 \(\omega_x = \omega\cos\theta,\ \omega_y = \omega\sin\theta\)로 둡니다. 그러면 지수 안의 식은 다음과 같습니다.</p>
+  <p style="text-align:center">\[\omega_x x + \omega_y y = \omega\,(x\cos\theta + y\sin\theta) = \omega\,x'\]</p>
+  <p>\(x' = x\cos\theta + y\sin\theta\)는 1장 페이지 1의 회전 좌표, 즉 축을 \(\theta\)만큼 돌린 \(x'\) 축 방향의 좌표입니다. 따라서 기저 파동 \(e^{i2\pi\omega x'}\)은 \(x'\) 축 방향으로만 진동하고, \(x'\) 축에 수직인 방향으로는 값이 같은 줄무늬입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="왼쪽은 θ 방향으로 진동하는 평면파의 줄무늬와 x′ 축, 오른쪽은 주파수 평면에서 원점을 지나 θ 방향으로 놓인 직선과 그 위의 점 (ω cosθ, ω sinθ)">
+      <defs>
+        <marker id="f7-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="f7-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M50 125 H280" marker-end="url(#f7-mu)"/>
+        <path d="M160 230 V20" marker-end="url(#f7-mu)"/>
+        <path d="M370 125 H600" marker-end="url(#f7-mu)"/>
+        <path d="M480 230 V20" marker-end="url(#f7-mu)"/>
+      </g>
+      <g fill="none" stroke-width="1.2" style="stroke:var(--warn)" opacity=".75">
+        <path d="M77.9 102.9 L138.1 207.1"/>
+        <path d="M87.9 80.0 L162.9 209.9"/>
+        <path d="M101.4 63.5 L184.0 206.5"/>
+        <path d="M117.5 51.4 L202.5 198.6"/>
+        <path d="M136.0 43.5 L218.6 186.5"/>
+        <path d="M157.1 40.0 L232.1 169.9"/>
+        <path d="M181.9 42.9 L242.1 147.1"/>
+      </g>
+      <path d="M160 125 L242.3 77.5" fill="none" stroke-width="2.4" style="stroke:var(--accent)" marker-end="url(#f7-ac)"/>
+      <path d="M385 179.8 L575 70.2" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <path d="M210 125 A50 50 0 0 0 203.3 100" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path d="M520 125 A40 40 0 0 0 514.6 105" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <circle cx="549.3" cy="85" r="4.5" style="fill:var(--accent)"/>
+      <g font-size="12" class="svg-fg">
+        <text x="246" y="72" font-weight="700">x′</text>
+        <text x="540" y="72" text-anchor="end">(ω cosθ, ω sinθ)</text>
+        <text x="20" y="14" font-weight="700">공간: 기저 파동의 줄무늬</text>
+        <text x="370" y="14" font-weight="700">주파수 평면</text>
+      </g>
+      <g font-size="11" class="svg-muted">
+        <text x="214" y="118">θ</text><text x="524" y="118">θ</text>
+        <text x="272" y="142">x</text><text x="166" y="36">y</text>
+        <text x="590" y="142">ω<tspan font-size="8" dy="3">x</tspan></text><text x="486" y="28">ω<tspan font-size="8" dy="3">y</tspan></text>
+      </g>
+    </svg>
+    <figcaption>왼쪽은 공간에서 기저 파동 \(e^{i2\pi\omega x'}\)의 값이 같은 선(주황)이며, \(x'\) 축(\(\theta\) 방향)에 수직인 줄무늬입니다. 오른쪽은 주파수 평면에서 이 파동의 위치 \((\omega\cos\theta,\ \omega\sin\theta)\)입니다. \(\omega\)가 클수록 줄무늬 간격 \(1/\omega\)가 좁아지고 점은 원점에서 멀어집니다.</figcaption>
+  </figure>
+
+  <p>주파수 평면에서 원점을 지나 각 \(\theta\) 방향으로 놓인 직선 위의 값들은 모두 \(\theta\) 방향으로 진동하는 파동의 성분입니다. 푸리에 슬라이스 정리는 바로 이 직선 위의 값을 말합니다.
+  이 장의 규약에서 투영 \(p(\theta, s)\)를 \(s\)에 대해 1차원 푸리에 변환한 것은 \(P_\theta(\omega) = \int p(\theta, s)\,e^{-i2\pi\omega s}\,ds\)입니다.
+  이 \(P_\theta(\omega)\)가 직선 위의 값 \(F(\omega\cos\theta,\ \omega\sin\theta)\)와 같다는 것이 정리의 내용이고, 이 식에는 상수가 붙지 않습니다.</p>
+
+  <h3>주파수 평면의 점과 줄무늬</h3>
+
+  <p>파동 \(e^{i2\pi(\omega_x x + \omega_y y)}\)의 값은 \(\omega_x x + \omega_y y\)가 같은 곳, 곧 직선 위에서 같습니다. 그래서 이 파동은 영상 평면 전체에 걸친 줄무늬이며, 이런 파동을 평면파(Plane Wave)라고 합니다.
+  수 두 개 \((\omega_x, \omega_y)\)가 줄무늬 하나를 정합니다.</p>
+  <ul>
+    <li><b>방향.</b> 값은 벡터 \((\omega_x, \omega_y)\) 방향으로 변하고, 줄은 그 방향에 수직으로 놓입니다.</li>
+    <li><b>간격.</b> 줄 간격은 \(1/\sqrt{\omega_x^{2} + \omega_y^{2}}\) cm입니다. 원점에서 먼 점일수록 줄이 촘촘합니다.</li>
+  </ul>
+
+  <p>주파수 평면의 점 하나가 줄무늬 하나이고, 그 점의 값 \(F(\omega_x, \omega_y)\)는 영상 \(f\)에 그 줄무늬가 얼마나 들어 있는지를 나타냅니다. 주파수의 단위는 \(\mathrm{cm}^{-1}\)입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 230" role="img" aria-label="세 줄무늬 A, B, C 와 주파수 평면의 세 점. A 는 x 방향으로 변하는 간격 1 cm 세로 줄무늬로 점 (1, 0), B 는 y 방향으로 변하는 간격 2 cm 가로 줄무늬로 점 (0, 0.5), C 는 45도 방향으로 변하는 간격 0.71 cm 비스듬한 줄무늬로 점 (1, 1). 원점 대칭인 빈 원은 같은 줄무늬">
+<defs><marker id="f7s-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker><marker id="f7s-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker><linearGradient id="f7s-gA" gradientUnits="userSpaceOnUse" spreadMethod="repeat" x1="80.0" y1="109.0" x2="112.5" y2="109.0"><stop offset="0.000" style="stop-color:var(--fg)" stop-opacity="0.800"/><stop offset="0.083" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="0.167" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.250" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.333" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.417" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.500" style="stop-color:var(--fg)" stop-opacity="0.000"/><stop offset="0.583" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.667" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.750" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.833" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.917" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="1.000" style="stop-color:var(--fg)" stop-opacity="0.800"/></linearGradient><linearGradient id="f7s-gB" gradientUnits="userSpaceOnUse" spreadMethod="repeat" x1="225.0" y1="109.0" x2="225.0" y2="44.0"><stop offset="0.000" style="stop-color:var(--fg)" stop-opacity="0.800"/><stop offset="0.083" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="0.167" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.250" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.333" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.417" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.500" style="stop-color:var(--fg)" stop-opacity="0.000"/><stop offset="0.583" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.667" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.750" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.833" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.917" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="1.000" style="stop-color:var(--fg)" stop-opacity="0.800"/></linearGradient><linearGradient id="f7s-gC" gradientUnits="userSpaceOnUse" spreadMethod="repeat" x1="370.0" y1="109.0" x2="386.2" y2="92.8"><stop offset="0.000" style="stop-color:var(--fg)" stop-opacity="0.800"/><stop offset="0.083" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="0.167" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.250" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.333" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.417" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.500" style="stop-color:var(--fg)" stop-opacity="0.000"/><stop offset="0.583" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.667" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.750" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.833" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.917" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="1.000" style="stop-color:var(--fg)" stop-opacity="0.800"/></linearGradient></defs>
+<rect x="15" y="44" width="130" height="130" fill="url(#f7s-gA)"/>
+<rect x="15" y="44" width="130" height="130" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+<path d="M80.0 109.0 L118.0 109.0" fill="none" stroke-width="2.6" style="stroke:var(--accent)" marker-end="url(#f7s-ac)"/>
+<circle cx="80.0" cy="109.0" r="2.6" style="fill:var(--accent)"/>
+<text x="80" y="194" text-anchor="middle" font-size="12" font-weight="700" class="svg-fg">A: (ω<tspan font-size="8.5" dy="3">x</tspan><tspan dy="-3">, ω</tspan><tspan font-size="8.5" dy="3">y</tspan><tspan dy="-3">) = (1, 0)</tspan></text>
+<text x="80" y="211" text-anchor="middle" font-size="11.5" class="svg-muted">줄 간격 1 cm</text>
+<rect x="160" y="44" width="130" height="130" fill="url(#f7s-gB)"/>
+<rect x="160" y="44" width="130" height="130" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+<path d="M225.0 109.0 L225.0 71.0" fill="none" stroke-width="2.6" style="stroke:var(--accent)" marker-end="url(#f7s-ac)"/>
+<circle cx="225.0" cy="109.0" r="2.6" style="fill:var(--accent)"/>
+<text x="225" y="194" text-anchor="middle" font-size="12" font-weight="700" class="svg-fg">B: (ω<tspan font-size="8.5" dy="3">x</tspan><tspan dy="-3">, ω</tspan><tspan font-size="8.5" dy="3">y</tspan><tspan dy="-3">) = (0, 0.5)</tspan></text>
+<text x="225" y="211" text-anchor="middle" font-size="11.5" class="svg-muted">줄 간격 2 cm</text>
+<rect x="305" y="44" width="130" height="130" fill="url(#f7s-gC)"/>
+<rect x="305" y="44" width="130" height="130" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+<path d="M370.0 109.0 L396.9 82.1" fill="none" stroke-width="2.6" style="stroke:var(--accent)" marker-end="url(#f7s-ac)"/>
+<circle cx="370.0" cy="109.0" r="2.6" style="fill:var(--accent)"/>
+<text x="370" y="194" text-anchor="middle" font-size="12" font-weight="700" class="svg-fg">C: (ω<tspan font-size="8.5" dy="3">x</tspan><tspan dy="-3">, ω</tspan><tspan font-size="8.5" dy="3">y</tspan><tspan dy="-3">) = (1, 1)</tspan></text>
+<text x="370" y="211" text-anchor="middle" font-size="11.5" class="svg-muted">줄 간격 0.71 cm</text>
+<text x="15" y="34" font-size="12" font-weight="700" class="svg-fg">영상 평면의 줄무늬(가로·세로 4 cm)</text>
+<path d="M466 109 H634" fill="none" stroke-width="1" style="stroke:var(--muted)" marker-end="url(#f7s-mu)"/>
+<path d="M548 191 V23" fill="none" stroke-width="1" style="stroke:var(--muted)" marker-end="url(#f7s-mu)"/>
+<path d="M496 106 V112" stroke-width="1" style="stroke:var(--muted)"/>
+<path d="M545 161 H551" stroke-width="1" style="stroke:var(--muted)"/>
+<path d="M600 106 V112" stroke-width="1" style="stroke:var(--muted)"/>
+<path d="M545 57 H551" stroke-width="1" style="stroke:var(--muted)"/>
+<g font-size="10" class="svg-muted"><text x="600" y="124" text-anchor="middle">1</text><text x="496" y="124" text-anchor="middle">−1</text><text x="541" y="61" text-anchor="end">1</text><text x="541" y="165" text-anchor="end">−1</text><text x="638" y="123" text-anchor="end">ω<tspan font-size="8" dy="3">x</tspan></text><text x="556" y="29">ω<tspan font-size="8" dy="3">y</tspan></text></g>
+<path d="M548 109 L598.4 58.6" fill="none" stroke-width="1.2" stroke-dasharray="3 3" style="stroke:var(--accent)"/>
+<circle cx="600.0" cy="109.0" r="4.5" style="fill:var(--accent)"/>
+<circle cx="496.0" cy="109.0" r="4" fill="none" stroke-width="1.4" style="stroke:var(--accent)"/>
+<text x="606.0" y="101.0" font-size="12" font-weight="700" class="svg-fg">A</text>
+<circle cx="548.0" cy="83.0" r="4.5" style="fill:var(--accent)"/>
+<circle cx="548.0" cy="135.0" r="4" fill="none" stroke-width="1.4" style="stroke:var(--accent)"/>
+<text x="555.0" y="77.0" font-size="12" font-weight="700" class="svg-fg">B</text>
+<circle cx="600.0" cy="57.0" r="4.5" style="fill:var(--accent)"/>
+<circle cx="496.0" cy="161.0" r="4" fill="none" stroke-width="1.4" style="stroke:var(--accent)"/>
+<text x="607.0" y="51.0" font-size="12" font-weight="700" class="svg-fg">C</text>
+<text x="468" y="34" font-size="12" font-weight="700" class="svg-fg">주파수 평면</text>
+</svg>
+    <figcaption>왼쪽 세 줄무늬는 \(\cos\bigl(2\pi(\omega_x x + \omega_y y)\bigr)\)이며, 짙은 줄이 \(+1\), 옅은 줄이 \(-1\)입니다. 파란 화살표는 값이 변하는 방향, 곧 벡터 \((\omega_x, \omega_y)\)의 방향입니다.
+    오른쪽 주파수 평면의 채운 점 A, B, C가 각 줄무늬입니다. 원점에 대해 반대편에 있는 빈 원은 같은 줄무늬를 나타내며, 실수 값의 영상에서는 두 점이 짝을 이뤄 코사인 줄무늬 하나를 만듭니다.</figcaption>
+  </figure>
+
+  <p>원점 \((0, 0)\)은 줄이 없는 상수 성분이고, \(F(0, 0) = \iint f\,dx\,dy\)는 영상 전체의 합입니다.
+  그림의 C는 \(\theta = 45^{\circ}\), \(\omega = \sqrt2\)이고 줄 간격은 \(1/\omega \approx 0.71\) cm입니다.</p>
+
+
+  <h3>극좌표로 쓴 역변환</h3>
+
+  <p>역변환의 적분을 주파수 평면의 극좌표로 바꾸면, 1장 페이지 2의 넓이 요소 \(dx\,dy = r\,dr\,d\theta\)에서 \(r\) 자리에 \(\omega\)가 와서 \(d\omega_x\,d\omega_y = \omega\,d\omega\,d\theta\)가 됩니다.</p>
+  <p style="text-align:center">\[f(x, y) = \int_{0}^{2\pi}\!\!\int_{0}^{\infty} F(\omega\cos\theta,\ \omega\sin\theta)\,e^{i2\pi\omega(x\cos\theta + y\sin\theta)}\,\omega\,d\omega\,d\theta\]</p>
+  <p>여기서는 \(\omega \ge 0,\ 0 \le \theta &lt; 2\pi\)로 잡았습니다. FBP를 유도할 때는 같은 적분을 \(0 \le \theta &lt; \pi\)와 음수를 포함한 \(\omega\)로 다시 나누며, 그때 곱해지는 인자가 \(|\omega|\)가 됩니다. 이 인자가 FBP의 램프 필터로 이어집니다.</p>
+
+  <h3>회전 성질</h3>
+
+  <p>영상을 원점을 중심으로 반시계 방향으로 \(\phi\)만큼 돌리면, 2차원 푸리에 변환도 같은 방향으로 \(\phi\)만큼 돌아갑니다. 지수 안의 \(\omega_x x + \omega_y y\)는 공간 좌표와 주파수 좌표를 같은 각만큼 함께 돌려도 값이 그대로이기 때문입니다.
+  그래서 푸리에 슬라이스 정리는 한 각도(예: \(\theta = 0\))에서 보이면 다른 각도에도 그대로 성립합니다.</p>
+
+  <details class="fold">
+    <summary>회전 성질의 전개</summary>
+    <div class="fold-body">
+      <p>1장의 회전 좌표 식으로 \(g(x, y) = f(x\cos\phi + y\sin\phi,\ -x\sin\phi + y\cos\phi)\)를 정의합니다. 점 \((x, y)\)에 \(f\)의 \((x', y')\) 값을 놓은 것이고, \(\phi = 90^{\circ}\)이면 \(g(x, y) = f(y, -x)\)여서 \(f\)의 \((1, 0)\)에 있던 값이 \(g\)의 \((0, 1)\)로 옵니다. 즉 \(g\)는 \(f\)를 반시계 방향으로 \(\phi\) 돌린 영상입니다.</p>
+      <p>\(G\)를 구할 때 \(u = x\cos\phi + y\sin\phi,\ v = -x\sin\phi + y\cos\phi\)로 치환합니다. 이 변환의 행렬식은 \(\cos^{2}\phi + \sin^{2}\phi = 1\)이어서 \(dx\,dy = du\,dv\)입니다. 역변환 \(x = u\cos\phi - v\sin\phi,\ y = u\sin\phi + v\cos\phi\)를 지수에 넣으면 다음과 같습니다.</p>
+      <p style="text-align:center">\[\omega_x x + \omega_y y = u\,(\omega_x\cos\phi + \omega_y\sin\phi) + v\,(-\omega_x\sin\phi + \omega_y\cos\phi)\]</p>
+      <p>따라서 \(G(\omega_x, \omega_y) = F(\omega_x\cos\phi + \omega_y\sin\phi,\ -\omega_x\sin\phi + \omega_y\cos\phi)\)입니다. \(g\)와 \(f\)의 관계와 같은 꼴이므로 \(G\)는 \(F\)를 반시계 방향으로 \(\phi\) 돌린 것입니다.</p>
+    </div>
+  </details>
+
+  <div class="box warn">
+    <p class="box-t">이산 격자에서의 회전</p>
+    <p>2차원 DFT에서는 회전 성질이 근사로만 맞습니다. 정사각형 격자는 \(90^{\circ}\)의 배수로 돌릴 때만 격자점이 격자점으로 가고, 그 밖의 각도에서는 회전한 영상을 보간해야 합니다.
+    또 DFT는 영상을 가로와 세로로 반복된다고 보므로, 영상 가장자리의 값이 반대편 가장자리와 이어져 주파수 평면에 \(\omega_x\) 축과 \(\omega_y\) 축 방향의 성분이 덧붙을 수 있습니다. 연속 식에서 성립한 회전 성질을 이산 계산에서 그대로 기대하면 안 됩니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 7 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">2장 · 페이지 7</p>
+  <h2>2장 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>이 책의 푸리에 변환은 \(F(\omega) = \int f(x)\,e^{-i2\pi\omega x}\,dx\)이고, \(\omega\)는 \(\mathrm{cm}^{-1}\) 단위의 주파수입니다. 역변환과 Parseval 정리, FBP 공식에 상수가 붙지 않습니다.</li>
+      <li>푸리에 해석에는 연속/이산 × 주기/비주기의 네 버전이 있고, 한쪽이 이산이면 다른 쪽은 주기적입니다.</li>
+      <li>간격 \(\Delta x\)로 샘플링하면 스펙트럼이 \(1/\Delta x\)마다 반복되므로, \(1/(2\Delta x)\)를 넘는 성분은 낮은 주파수로 섞여 들어갑니다(에일리어싱).</li>
+      <li>DFT는 DTFT를 주파수에서 샘플링한 것이고, DFT끼리의 곱은 원형 컨볼루션입니다. 제로 패딩으로 \(N \ge L + M - 1\)을 맞추면 선형 컨볼루션이 됩니다.</li>
+      <li>2차원 주파수를 극좌표로 쓰면 지수가 \(\omega x'\)이 되고 넓이 요소에 \(\omega\)가 곱해집니다. 이 인자가 5장의 램프 필터 \(|\omega|\)로 이어집니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="qn">마무리 퀴즈 1</p>
+    <p class="q">검출기 간격 \(\Delta x = 0.5\) cm로 샘플 \(N = 8\)개를 얻어 DFT를 했습니다. \(k = 6\)번째 값은 어느 주파수의 성분일까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. k = 6 은 N/2 = 4 보다 크므로 음의 주파수 (6 − 8)/(8 × 0.5) = −0.5 cm⁻¹ 입니다.">\(-0.5\ \mathrm{cm}^{-1}\)</li>
+      <li data-why="틀립니다. 6/(NΔx) = 1.5 로 계산한 값입니다. 나이퀴스트 주파수 1/(2Δx) = 1 보다 큰 주파수는 DFT 에 따로 담기지 않고, k = 6 은 k − 8 = −2 번째와 같습니다.">\(1.5\ \mathrm{cm}^{-1}\)</li>
+      <li data-why="틀립니다. 6/N = 0.75 로 Δx 를 빠뜨린 값입니다. 주파수 간격은 1/N 이 아니라 1/(NΔx) 입니다.">\(0.75\ \mathrm{cm}^{-1}\)</li>
+      <li data-why="틀립니다. 크기는 맞지만 부호가 틀렸습니다. k 의 뒤쪽 절반은 음의 주파수입니다. 실수 신호라면 +0.5 의 값과 켤레 관계입니다.">\(0.5\ \mathrm{cm}^{-1}\)</li>
+    </ol>
+    <div class="explain">
+      <p>계산 라이브러리 가운데에는 이 순서를 바꿔 \(\omega = 0\)을 가운데에 두는 함수를 따로 제공하는 것이 많습니다. 그림을 그릴 때는 가운데 정렬이 보기 좋지만, 필터를 곱할 때는 어느 순서인지 반드시 확인합니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="qn">마무리 퀴즈 2</p>
+    <p class="q">\(\cos(2\pi\times0.7x)\)를 간격 \(\Delta x = 1\) cm로 샘플링했습니다. 샘플에는 이 파동이 어느 주파수로 보일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 나이퀴스트 주파수가 1/(2Δx) = 0.5 이므로 0.7 은 그대로 담기지 않습니다.">\(0.7\ \mathrm{cm}^{-1}\)</li>
+      <li data-why="맞습니다. 스펙트럼이 1/Δx = 1 마다 반복되어 0.7 − 1 = −0.3 이 되고, 코사인은 부호가 바뀌어도 같으므로 0.3 으로 보입니다.">\(0.3\ \mathrm{cm}^{-1}\)</li>
+      <li data-why="틀립니다. 0.7 + 1 = 1.7 도 같은 샘플을 주는 주파수지만, 샘플을 지나는 가장 낮은 주파수가 아닙니다. 샘플은 나이퀴스트 이하인 0.3 으로 해석됩니다.">\(1.7\ \mathrm{cm}^{-1}\)</li>
+      <li data-why="틀립니다. 정수 배인 1 cm⁻¹ 이면 샘플이 모두 같은 값이 되어 0 으로 보입니다. 0.7 은 정수가 아니므로 샘플 값이 변합니다.">\(0\ \mathrm{cm}^{-1}\)</li>
+    </ol>
+    <div class="explain">
+      <p>CT 에서는 검출기 칸은 한 점이 아니라 폭이 있어서, 칸 안의 값을 평균하는 효과가 높은 주파수를 어느 정도 줄여 줍니다. 그래도 그 효과만으로 에일리어싱이 완전히 막히지는 않습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="qn">마무리 퀴즈 3</p>
+    <p class="q">투영 \(p(s)\)에 램프 필터 \(|\omega|\)를 적용한 결과를 \(q(s)\)라고 하면, \(\int q(s)\,ds\)는 얼마일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 필터를 적용하기 전의 넓이입니다. 넓이는 주파수 0 의 값이고, 램프 필터는 주파수 0 에서 0 을 곱합니다.">\(\int p(s)\,ds\)</li>
+      <li data-why="틀립니다. 필터 값이 높은 주파수에서 크다고 해서 넓이가 커지지는 않습니다. 넓이는 주파수 0 의 값 하나로 정해집니다.">\(\int p(s)\,ds\)의 2배</li>
+      <li data-why="틀립니다. |ω| 가 끝없이 커지는 것은 높은 주파수 쪽 이야기이고, 넓이는 주파수 0 의 값 하나로 정해집니다.">무한대</li>
+      <li data-why="맞습니다. q, p의 푸리에 변환을 Q, P라 하면 원점 값 성질에서 ∫q ds = Q(0) = P(0) × |0| = 0 입니다. 그래서 q 에는 음수인 부분이 반드시 있습니다.">0</li>
+    </ol>
+    <div class="explain">
+      <p>FBP에서 필터를 적용한 투영을 그려 보면 물체 양쪽 바깥에 음수로 파인 부분이 보입니다. 역투영할 때 이 음수가 주변의 번짐을 상쇄합니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>폭이 2 cm이고 \(x = 1\)을 중심으로 하는 사각 함수 \(g(x) = \mathrm{rect}\!\left(\dfrac{x-1}{2}\right)\)의 푸리에 변환 \(G(\omega)\)를 페이지 2의 변환 쌍과 페이지 3의 성질로 구하세요. \(G(0)\)의 값과, \(|G(\omega)|\)가 처음 0이 되는 양의 주파수도 쓰세요.</li>
+      <li>\(a = (1,\ 0,\ 2)\)와 \(b = (1,\ 2,\ 1)\)의 선형 컨볼루션과 \(N = 3\) 원형 컨볼루션을 손으로 구하세요. 두 결과가 같아지려면 \(N\)을 최소 얼마로 해야 하는지도 쓰세요.</li>
+      <li>어떤 투영이 \(4\ \mathrm{cm}^{-1}\)보다 높은 주파수를 갖지 않습니다. 에일리어싱이 없으려면 검출기 간격 \(\Delta x\)가 최대 얼마여야 할까요? \(\Delta x = 0.2\) cm로 샘플링하면 \(3\ \mathrm{cm}^{-1}\)인 코사인 성분은 어느 주파수로 보일까요?</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> \(\mathrm{rect}(x) \longleftrightarrow \mathrm{sinc}(\omega)\)에서 출발합니다. 스케일 성질에 \(a = 1/2\)을 넣으면 \(\mathrm{rect}(x/2) \longleftrightarrow 2\,\mathrm{sinc}(2\omega)\)입니다. 이동 성질에 \(a = 1\)을 넣으면 다음과 같습니다.</p>
+      <p style="text-align:center">\[G(\omega) = 2\,\mathrm{sinc}(2\omega)\,e^{-i2\pi\omega}\]</p>
+      <p>\(G(0) = 2\)이고, 원점 값 성질대로 \(g\)의 넓이(폭 2 × 높이 1)와 같습니다. \(|G(\omega)| = 2\,|\mathrm{sinc}(2\omega)|\)는 \(2\omega\)가 0이 아닌 정수일 때 0이므로 처음 0이 되는 양의 주파수는 \(\omega = 1/2\ \mathrm{cm}^{-1}\)입니다. 폭 1인 사각 함수(첫 0이 \(\omega = 1\))보다 폭이 두 배여서 첫 0의 위치는 절반이 되었습니다.</p>
+      <p><b>2번.</b> 선형 컨볼루션은 길이 \(3 + 3 - 1 = 5\)입니다.</p>
+      <p style="text-align:center">\[(1\times1,\ \ 1\times2 + 0\times1,\ \ 1\times1 + 0\times2 + 2\times1,\ \ 0\times1 + 2\times2,\ \ 2\times1) = (1,\ 2,\ 3,\ 4,\ 2)\]</p>
+      <p>\(N = 3\) 원형 컨볼루션은 넷째·다섯째 값 4와 2가 첫째·둘째 자리로 돌아와 더해져 \((1+4,\ 2+2,\ 3) = (5,\ 4,\ 3)\)입니다. 정의 \(\sum_m a[m]\,b[(n-m) \bmod 3]\)으로 직접 계산해도 \(n = 0\)에서 \(1\times1 + 0\times1 + 2\times2 = 5\)로 같습니다. 두 결과가 같으려면 \(N \ge 5\)입니다.</p>
+      <p><b>3번.</b> \(\omega_{\max} = 4\)이므로 \(\Delta x \le 1/(2\times4) = 0.125\) cm입니다. \(\Delta x = 0.2\) cm이면 나이퀴스트 주파수는 \(1/(2\times0.2) = 2.5\ \mathrm{cm}^{-1}\)이고, 스펙트럼은 \(1/\Delta x = 5\)마다 반복됩니다. \(3 - 5 = -2\)이므로 \(3\ \mathrm{cm}^{-1}\) 성분은 \(2\ \mathrm{cm}^{-1}\)로 보입니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 스케일 성질의 \(1/|a|\)를 빠뜨려 \(\mathrm{sinc}(2\omega)\)만 쓰는 것입니다. \(G(0)\)이 넓이 2와 맞는지 확인하면 잡을 수 있습니다.</li>
+        <li>1번에서 이동 성질의 부호를 바꿔 \(e^{+i2\pi\omega}\)로 쓰는 것입니다. 오른쪽으로 옮기면 정변환의 지수와 같은 부호인 \(e^{-i2\pi\omega a}\)가 붙습니다.</li>
+        <li>1번에서 \(\mathrm{rect}(x/2)\)의 변환을 \(\tfrac12\mathrm{sinc}(\omega/2)\)로 쓰는 것입니다. \(f(ax)\)의 \(a\)는 \(1/2\)이고, 공간에서 넓어지면 주파수에서는 좁아집니다.</li>
+        <li>2번에서 원형 컨볼루션의 길이를 5로 쓰는 것입니다. 원형 컨볼루션의 결과는 항상 길이 \(N\)입니다.</li>
+        <li>3번에서 \(3 - 2.5 = 0.5\)처럼 나이퀴스트 주파수를 기준으로 빼는 것입니다. 반복 간격은 샘플링 주파수 \(1/\Delta x = 5\)이므로 \(3 - 5\)를 계산합니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch03.html"><span>다음 장</span>3장 — 찍은 데이터는 어떤 모양일까요? Radon 변환과 sinogram</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

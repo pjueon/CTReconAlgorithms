@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch01">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1장 · CT가 뭐예요? — CT 재구성 알고리즘0 - 기초편</title>
+<script src="../assets/theme.js"></script><link rel="stylesheet" href="../assets/base.css">
+<link rel="stylesheet" href="../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../assets/math.css">
+<link rel="stylesheet" href="../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="이 장에서 할 일">
+  <p class="kicker">1장 · 페이지 1</p>
+  <h1>CT가 뭐예요?</h1>
+
+  <p class="lead">CT 영상을 본 적이 있나요? 이 장에서는 그 영상 속 숫자 하나가 무엇을 뜻하는지,
+  X선이 몸을 지나며 얼마나 약해지는지를 차근차근 알아봅니다.</p>
+
+  <p>CT(Computed Tomography)는 여러 방향에서 찍은 X선 영상들을 컴퓨터로 계산해, 물체(또는 사람의 몸)의 단면 영상을 만들어 내는 기술입니다.
+  사과를 가로로 잘라 안쪽 단면을 들여다보면 씨와 과육이 놓인 모습이 보이는 것처럼,
+  CT는 몸속 한 단면의 모습을 영상으로 보여 줍니다.</p>
+
+  <p>이 단면 영상은 바둑판처럼 작은 칸들로 나뉘어 있습니다.
+  칸 하나를 화소(<span class="term" data-term="pixel">Pixel</span>)라고 합니다.
+  화소마다 숫자가 하나씩 들어 있고, 그 숫자를 밝기로 바꾸어 그린 것이 우리가 보는 흑백 영상입니다.</p>
+
+  <p>그렇다면 이 흑백 영상의 명암, 즉 각 화소의 값은 무엇을 뜻할까요?
+  답은 그 칸의 물질이 X선을 얼마나 약하게 만드느냐입니다.
+  이 물리량을 감쇠계수(<span class="term" data-term="mu">Attenuation Coefficient</span>, \(\mu\))라고 합니다.
+  예를 들어 뼈처럼 X선을 많이 약하게 만드는 물질은 밝게, 공기처럼 X선을 거의 그대로 통과시키는 물질은 검게 그려집니다.
+  정확한 정의는 곧 나오니, 지금은 "X선을 약하게 만드는 정도"라고만 이해해도 충분합니다. 실제 장비는 이 값을 CT 넘버로 바꾸어 보여 주기도 합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 580 250" role="img" aria-label="6 곱하기 6 격자의 감쇠계수 값과 그 값을 밝기로 바꾼 그림">
+      <rect x="330" y="20" width="216" height="216" fill="#000"/>
+      <rect x="366" y="56" width="144" height="144" fill="#6b6b6b"/>
+      <rect x="402" y="92" width="72" height="72" fill="#f2f2f2"/>
+      <g class="svg-line" stroke-width="1">
+        <path d="M20 20 H236 M20 56 H236 M20 92 H236 M20 128 H236 M20 164 H236 M20 200 H236 M20 236 H236"/>
+        <path d="M20 20 V236 M56 20 V236 M92 20 V236 M128 20 V236 M164 20 V236 M200 20 V236 M236 20 V236"/>
+        <path d="M330 20 H546 M330 236 H546 M330 20 V236 M546 20 V236"/>
+      </g>
+      <g class="svg-fg" font-size="11" text-anchor="middle">
+        <text x="38" y="42">0.00</text><text x="74" y="42">0.00</text><text x="110" y="42">0.00</text><text x="146" y="42">0.00</text><text x="182" y="42">0.00</text><text x="218" y="42">0.00</text>
+        <text x="38" y="78">0.00</text><text x="74" y="78">0.19</text><text x="110" y="78">0.19</text><text x="146" y="78">0.19</text><text x="182" y="78">0.19</text><text x="218" y="78">0.00</text>
+        <text x="38" y="114">0.00</text><text x="74" y="114">0.19</text><text x="110" y="114">0.45</text><text x="146" y="114">0.45</text><text x="182" y="114">0.19</text><text x="218" y="114">0.00</text>
+        <text x="38" y="150">0.00</text><text x="74" y="150">0.19</text><text x="110" y="150">0.45</text><text x="146" y="150">0.45</text><text x="182" y="150">0.19</text><text x="218" y="150">0.00</text>
+        <text x="38" y="186">0.00</text><text x="74" y="186">0.19</text><text x="110" y="186">0.19</text><text x="146" y="186">0.19</text><text x="182" y="186">0.19</text><text x="218" y="186">0.00</text>
+        <text x="38" y="222">0.00</text><text x="74" y="222">0.00</text><text x="110" y="222">0.00</text><text x="146" y="222">0.00</text><text x="182" y="222">0.00</text><text x="218" y="222">0.00</text>
+      </g>
+      <g class="svg-muted" font-size="11" text-anchor="middle">
+        <text x="128" y="14">화소마다 놓인 숫자</text>
+        <text x="438" y="14">숫자를 밝기로 바꾼 그림</text>
+        <text x="283" y="132" font-size="18">→</text>
+      </g>
+    </svg>
+    <figcaption>공기로 둘러싸인 물기둥 가운데에 뼈가 들어 있는 단면을 6×6 칸으로 아주 거칠게 나눈 예시입니다.
+    왼쪽은 화소마다 놓인 숫자(감쇠계수의 대략적인 값)이고, 오른쪽은 숫자가 클수록 밝게 칠한 그림입니다.</figcaption>
+  </figure>
+
+  <p>이 책은 CT 영상을 만드는 방법, 곧 재구성(Reconstruction)을 배우는 책입니다.
+  영상을 만들려면 화소 값이 무엇인지부터 알아야 하므로, 1장은 X선의 물리에서 출발합니다.</p>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>X선이 물질을 지날 때 왜 약해지는지 그림으로 먼저 느껴 봅니다.</li>
+      <li>약해지는 정도를 감쇠계수 \(\mu\)로 정의하고, 물질별 값의 크기를 익힙니다.</li>
+      <li>지수 감쇠 법칙(Beer–Lambert Law)을 얻습니다.</li>
+      <li>물질이 여러 겹일 때 식이 어떻게 바뀌는지 살펴봅니다.</li>
+      <li>이 책이 쓰는 모델의 전제(단색광, 산란 없음)와 현실의 차이를 확인합니다(페이지 6, 심화).</li>
+      <li>\(\mu\)를 물 기준으로 바꾼 눈금인 CT 넘버(HU)를 배웁니다.</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지(6)는 처음 읽을 때 건너뛰어도 됩니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="X선이 물질을 지날 때">
+  <p class="kicker">1장 · 페이지 2</p>
+  <h2>X선은 어떻게 약해질까요?</h2>
+
+  <p>가느다란 X선 한 줄기, 곧 광선(<span class="term" data-term="ray">Ray</span>)을 물체에 쏜다고 생각해 봅시다. 이 책에서 "광선"은 앞으로 모두 이렇게 X선 한 줄기를 뜻합니다.
+  X선은 광자(<span class="term" data-term="photon">Photon</span>)라는 작은 입자의 흐름입니다.
+  광자 하나가 물질 속을 지나가다 원자와 부딪히면, 광자는 흡수되거나 방향이 꺾입니다.
+  어느 쪽이든 그 광자는 원래 방향으로 곧게 나아가지 못합니다.</p>
+
+  <p>반대편에는 검출기(Detector)가 놓여 있습니다. 이 책의 모델에서 검출기는 곧게 도착한 광자만 센다고 봅니다.
+  그래서 검출기가 읽는 세기(Intensity)는 곧게 통과한 광자 수에 비례합니다.
+  이렇게 물질이 광자 수를 줄이는 일을 감쇠(<span class="term" data-term="attenuation">Attenuation</span>)라고 합니다.</p>
+
+  <p>감쇠가 어떻게 쌓이는지 간단한 예로 살펴봅시다.
+  아래 그림처럼 균일한 물질로 만든 얇은 판 네 장을 X선이 지나가는 길에 나란히 세워 놓았다고 합시다.
+  이 판 하나를 지날 때마다 들어온 광자의 20%가 줄어든다고 하겠습니다.
+  광자 100개가 들어오면 첫 번째 판을 지난 뒤에는 80개가 남습니다.
+  두 번째 판을 지나면 80개의 20%인 16개가 줄어 64개가 남습니다.
+  이처럼 판을 하나 지날 때마다 그 시점에 남아 있는 광자의 20% 씩 줄어듭니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 690 290" role="img" aria-label="X선이 같은 판 네 장을 지나며 광자 수가 100, 80, 64, 51, 41로 줄어드는 막대 그림. 판 하나를 지날 때마다 20% 씩 줄어든다">
+      <g class="svg-line" stroke-width="1.2">
+        <path d="M30 36 V200 H600"/>
+        <rect x="126" y="118" width="28" height="134" stroke-dasharray="4 3"/>
+        <rect x="246" y="118" width="28" height="134" stroke-dasharray="4 3"/>
+        <rect x="366" y="118" width="28" height="134" stroke-dasharray="4 3"/>
+        <rect x="486" y="118" width="28" height="134" stroke-dasharray="4 3"/>
+      </g>
+      <g class="svg-fg" fill-opacity=".10"><rect x="126" y="118" width="28" height="134"/><rect x="246" y="118" width="28" height="134"/><rect x="366" y="118" width="28" height="134"/><rect x="486" y="118" width="28" height="134"/></g>
+      <g class="svg-fg" fill-opacity=".45">
+        <rect x="58" y="90.0" width="44" height="110.0"/>
+        <rect x="178" y="112.0" width="44" height="88.0"/>
+        <rect x="298" y="129.6" width="44" height="70.4"/>
+        <rect x="418" y="143.9" width="44" height="56.1"/>
+        <rect x="538" y="154.9" width="44" height="45.1"/>
+      </g>
+      <g class="svg-fg" font-size="12" font-weight="700" text-anchor="middle">
+        <text x="80" y="84.0">100</text>
+        <text x="200" y="106.0">80</text>
+        <text x="320" y="123.6">64</text>
+        <text x="440" y="137.9">51</text>
+        <text x="560" y="148.9">41</text>
+      </g>
+      <path class="svg-line" stroke-width="2.4" style="stroke:var(--fg)" d="M20 232 H618"/>
+      <g class="svg-fg"><path d="M628 232 L614 225 V239 Z"/></g>
+      <g class="svg-line" stroke-width="1.4"><rect x="632" y="204" width="14" height="56"/></g>
+      <g class="svg-fg" fill-opacity=".35"><rect x="632" y="204" width="14" height="56"/></g>
+      <g class="svg-line" stroke-width="1.6">
+        <path d="M88.0 68.0 Q140.0 34.0 192.0 90.0"/>
+        <path d="M208.0 90.0 Q260.0 56.0 312.0 107.6"/>
+        <path d="M328.0 107.6 Q380.0 73.6 432.0 121.9"/>
+        <path d="M448.0 121.9 Q500.0 87.9 552.0 132.9"/>
+      </g>
+      <g class="svg-fg">
+        <path d="M192.0 90.0 L183.6 86.7 L189.4 81.4 Z"/>
+        <path d="M312.0 107.6 L303.5 104.7 L309.0 99.1 Z"/>
+        <path d="M432.0 121.9 L423.4 119.3 L428.7 113.5 Z"/>
+        <path d="M552.0 132.9 L543.3 130.6 L548.4 124.6 Z"/>
+      </g>
+      <g class="svg-fg" font-size="12" font-weight="700" text-anchor="middle">
+        <text x="140.0" y="51.5">−20%</text>
+        <text x="260.0" y="72.4">−20%</text>
+        <text x="380.0" y="89.2">−20%</text>
+        <text x="500.0" y="102.7">−20%</text>
+      </g>
+      <g class="svg-fg" font-size="12" text-anchor="middle">
+        <text x="140" y="176">판 1</text>
+        <text x="260" y="176">판 2</text>
+        <text x="380" y="176">판 3</text>
+        <text x="500" y="176">판 4</text>
+      </g>
+      <g class="svg-muted" font-size="11" text-anchor="middle">
+        <text x="320" y="226">X선</text>
+        <text x="639" y="278">검출기</text>
+      </g>
+      <g class="svg-muted" font-size="11">
+        <text x="36" y="22">남은 X선 광자 수 (처음 100개 기준)</text>
+        <text x="22" y="252">입사</text>
+      </g>
+    </svg>
+    <figcaption>X선이 같은 판 네 장을 차례로 지납니다.
+    막대와 그 위의 숫자는 그 자리에서 남은 광자 수이고, 처음 100개를 기준으로 했습니다. 51과 41은 반올림한 값입니다.</figcaption>
+  </figure>
+
+  <p>이 계산의 바탕에는 두 가지 성질이 있습니다.
+  첫째, 광자 하나가 얇은 판에서 빠질 확률은 판의 두께에 비례합니다(이 예에서는 판의 두께가 모두 같아 확률도 같게 두었습니다).
+  둘째, 이 확률은 앞에서 몇 개가 살아남았는지와 상관이 없습니다.
+  그래서 줄어드는 양은 처음 개수가 아니라 그때그때 남은 개수에 비례합니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">자주 하는 오해</p>
+    <p>"판 하나에서 20%가 줄어드니 네 장이면 80%가 줄어든다"라고 계산하면 틀립니다.
+    실제로 남는 광자의 양은 \(0.8^{4} \approx 0.41\)이어서 약 59%가 줄어듭니다.
+    줄어드는 양은 더하는 것이 아니라 남은 비율을 곱하는 것입니다.
+    그렇게 해야 판이 아무리 많아도 남는 광자 수가 음수가 되지 않습니다.</p>
+  </div>
+
+  <p>이 설명에는 가정이 하나 더 숨어 있습니다.
+  모든 광자의 에너지가 같아서 물질이 어느 광자에게나 같은 확률로 작용한다는 것입니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="감쇠계수 μ">
+  <p class="kicker">1장 · 페이지 3</p>
+  <h2>선형 감쇠계수 μ: 얇은 판에서 광자가 줄어드는 비율</h2>
+
+  <p>페이지 2에서 본 것처럼, 아주 얇은 판에서 광자가 줄어드는 비율은 판의 두께에 비례합니다.
+  이 관계를 식으로 나타내 봅시다. 광선을 따라 잰 거리를 \(\ell\), 아주 얇은 두께를 \(\Delta\ell\)이라 하면 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\text{줄어드는 비율} \approx \mu\,\Delta\ell\]</p>
+
+  <p>이 비례상수 \(\mu\)를 선형 감쇠계수(<span class="term" data-term="mu">Linear Attenuation Coefficient</span>)라고 합니다.
+  \(\mu\)가 클수록 같은 두께에서 더 많이 줄어듭니다.
+  식 안의 기호는 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:7rem">기호</th><th>뜻</th><th>단위</th></tr>
+      <tr><td>\(\ell\)</td><td>광선을 따라 잰 거리</td><td>cm</td></tr>
+      <tr><td>\(\Delta\ell\)</td><td>아주 얇은 판의 두께</td><td>cm</td></tr>
+      <tr><td>\(\mu\)</td><td>단위 길이당 줄어드는 비율</td><td>\(\mathrm{cm}^{-1}\)</td></tr>
+    </table>
+  </div>
+
+  <p>줄어드는 비율은 단위가 없는 숫자이고 \(\Delta\ell\)은 길이이므로, \(\mu\)의 단위는 길이의 역수입니다.
+  물의 \(\mu\)가 \(0.19\ \mathrm{cm}^{-1}\)이라는 말은 두께 \(\Delta\ell\)인 아주 얇은 판에서 광자가 \(0.19\,\Delta\ell\)의 비율로 줄어든다는 뜻입니다.
+  예를 들어 두께 0.1 cm의 물에서는 \(0.19 \times 0.1 = 0.019\)이므로 약 1.9%가 줄어듭니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">얇은 판에서만 맞는 근사</p>
+    <p>\(\mu\,\Delta\ell\)이 줄어드는 비율이라는 식은 \(\Delta\ell\)이 아주 작을 때의 근사입니다.
+    1 cm 같은 두꺼운 판에 그대로 쓰면 오차가 커집니다. 물에서 이 식은 19%를 주지만 정확한 값은 약 17.3%입니다. 두꺼운 판의 정확한 식은 다음 페이지에서 얻습니다.</p>
+  </div>
+
+  <p>한 물체 안에서도 물질마다 \(\mu\)가 다르므로, \(\mu\)는 위치에 따라 달라지는 값입니다.
+  그래서 위치 \((x, y)\)의 함수 \(\mu(x, y)\)로 씁니다.
+  지금은 물체의 단면 한 장, 곧 2차원 문제만 생각합시다.</p>
+
+  <p>\(\mu(x, y)\)는 단면의 위치마다 감쇠계수를 하나씩 정해 주는 함수이므로, 이것이 곧 CT 영상 한 장입니다.
+  실제 영상은 \(\mu(x, y)\)를 칸(화소)마다 대표하는 값 하나로 나타낸 것이고,
+  재구성의 목표가 바로 \(\mu(x, y)\)를 구하는 것입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:8rem">물질</th><th>\(\mu\) (\(\mathrm{cm}^{-1}\), 대략)</th><th>감각</th></tr>
+      <tr><td>공기</td><td>0.0002</td><td>거의 0이어서 X선이 그대로 지납니다</td></tr>
+      <tr><td>지방</td><td>0.17</td><td>물보다 약간 작습니다</td></tr>
+      <tr><td>물</td><td>0.19</td><td>다른 물질과 견주는 기준값입니다</td></tr>
+      <tr><td>연부조직(근육 등)</td><td>0.20</td><td>물보다 약간 큽니다</td></tr>
+      <tr><td>뼈</td><td>0.23 ~ 0.55</td><td>해면뼈는 물보다 약간 크고 치밀뼈는 물의 2배를 넘기도 합니다</td></tr>
+    </table>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">표의 값을 읽는 법</p>
+    <p>표의 값은 의료 CT에서 흔히 쓰는 에너지(약 70 keV 부근)에서의 대략적인 크기입니다.
+    \(\mu\)는 X선 에너지에 따라 크게 달라지므로, 정확한 값이 필요하면 NIST의 X선 감쇠 데이터 표를 확인하세요.
+    이 책에서는 값의 크기 감각만 씁니다.
+    또한 \(\mu\)는 밀도와 대체로 비례하지만, 물질을 이루는 원소의 종류에도 영향을 받으므로 밀도와 같지 않습니다.
+    다른 책에서는 단위 질량당 값인 질량감쇠계수 \(\mu/\rho\) (\(\mathrm{cm}^{2}/\mathrm{g}\)) 를 표로 싣는 경우가 많습니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="지수 감쇠 법칙">
+  <p class="kicker">1장 · 페이지 4</p>
+  <h2>지수 감쇠 법칙</h2>
+
+  <p>두께 \(L\)인 균일한 물질을 X선이 지날 때, 남는 세기는 다음과 같습니다.
+  이 식을 비어–람베르트 법칙(<span class="term" data-term="beer">Beer–Lambert Law</span>), 또는 지수 감쇠 법칙이라고 합니다.</p>
+
+  <p style="text-align:center">\[I = I_0\, e^{-\mu L}\]</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:7rem">기호</th><th>뜻</th></tr>
+      <tr><td>\(I_0\)</td><td>물질에 들어가기 전의 세기(입사 세기)</td></tr>
+      <tr><td>\(I\)</td><td>두께 \(L\)을 지난 뒤 검출기가 읽는 세기</td></tr>
+      <tr><td>\(\mu\)</td><td>물질의 선형 감쇠계수 (\(\mathrm{cm}^{-1}\))</td></tr>
+      <tr><td>\(L\)</td><td>물질의 두께 (cm)</td></tr>
+      <tr><td>\(e\)</td><td>자연상수, 약 2.718</td></tr>
+    </table>
+  </div>
+
+  <p>이 식은 X선이 단색광이고 산란이 없다는 가정 위에 있습니다.
+  단색광(<span class="term" data-term="mono">Monochromatic</span>)은 모든 광자의 에너지가 같은 X선이고, 산란(<span class="term" data-term="scatter">Scatter</span>)은 물질 속에서 광자의 방향이 꺾이는 일입니다.
+  이 가정이 실제와 어떻게 다른지는 페이지 6(심화)에서 다룹니다.</p>
+
+  <p>이 식은 페이지 2의 직관과 같은 내용입니다. 두께가 \(\Delta\ell\) 늘어날 때마다 남은 양에 같은 비율 \(1 - \mu\,\Delta\ell\)이 곱해지고, 이것을 계속 곱한 결과가 지수 함수입니다. 페이지 2에서 \(0.8\)을 네 번 곱하던 계산에서, 판을 무한히 얇게 쪼개 곱하는 횟수를 무한히 늘린 것이 이 식입니다.
+  예를 들어 물 10 cm를 지나면 \(\mu L = 0.19 \times 10 = 1.9\)이므로 \(I/I_0 = e^{-1.9} \approx 0.15\)입니다.
+  입사한 광자의 15%만 남습니다. 20 cm 면 \(e^{-3.8} \approx 0.022\)로 2% 남짓입니다.</p>
+
+  <p>세기가 절반이 되는 두께를 반가층(<span class="term" data-term="hvl">Half-Value Layer</span>)이라 합니다.
+  \(e^{-\mu L} = \tfrac{1}{2}\)를 풀면 \(L = \ln 2 / \mu\)이고, 물에서는 약 3.65 cm입니다.
+  반가층을 지날 때마다 세기가 반씩 줄어드는 것이 지수 감쇠의 특징입니다.</p>
+
+  <p>아래 그래프의 슬라이더로 \(\mu\)와 두께를 바꿔 보세요.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 240" role="img" aria-label="두께에 따라 남는 세기 비율이 지수적으로 줄어드는 곡선">
+      <g class="svg-line" stroke-width="1.2">
+        <path d="M50 200 H600"/><path d="M50 30 V200"/>
+        <path d="M50 120 H600" stroke-dasharray="2 4"/>
+      </g>
+      <path id="bl-curve" class="svg-line" stroke-width="1.8"/>
+      <path id="bl-guide" class="svg-line" stroke-width="1" stroke-dasharray="3 3"/>
+      <g id="bl-dot" class="svg-fg"></g>
+      <g class="svg-muted" font-size="10" text-anchor="middle">
+        <text x="50" y="214">0</text><text x="230" y="214">10</text>
+        <text x="410" y="214">20</text><text x="590" y="214">30</text>
+        <text x="325" y="230">두께 (cm)</text>
+      </g>
+      <g class="svg-muted" font-size="10" text-anchor="end">
+        <text x="44" y="204">0</text><text x="44" y="124">50%</text><text x="44" y="44">100%</text>
+      </g>
+    </svg>
+    <figcaption>세로축은 남는 세기의 비율, 가로축은 두께입니다. 점은 슬라이더로 고른 두께의 위치입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="bl-mu">감쇠계수 μ</label>
+    <input id="bl-mu" type="range" min="0.02" max="0.60" step="0.01" value="0.19" style="width:11rem">
+    <b id="bl-mu-val">0.19</b>
+    <label for="bl-len">두께 L (cm)</label>
+    <input id="bl-len" type="range" min="0" max="30" step="0.5" value="10" style="width:11rem">
+    <b id="bl-len-val">10.0</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="bl-note"></p>
+
+<script>
+(function () {
+  var mu = document.getElementById('bl-mu'), len = document.getElementById('bl-len'),
+      muv = document.getElementById('bl-mu-val'), lenv = document.getElementById('bl-len-val'),
+      note = document.getElementById('bl-note'), dot = document.getElementById('bl-dot'),
+      curve = document.getElementById('bl-curve'), guide = document.getElementById('bl-guide');
+  function X(l) { return 50 + l * 18; }
+  function Y(v) { return 200 - v * 160; }
+  function draw() {
+    var m = +mu.value, L = +len.value, d = [], l, v, frac;
+    for (l = 0; l <= 30.001; l += 0.5) {
+      d.push((d.length ? 'L' : 'M') + X(l).toFixed(1) + ' ' + Y(Math.exp(-m * l)).toFixed(1));
+    }
+    curve.setAttribute('d', d.join(' '));
+    v = Math.exp(-m * L);
+    guide.setAttribute('d', 'M' + X(L).toFixed(1) + ' 200 V' + Y(v).toFixed(1) + ' H50');
+    dot.innerHTML = '<circle cx="' + X(L).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="4.5"/>';
+    muv.textContent = m.toFixed(2);
+    lenv.textContent = L.toFixed(1);
+    frac = v * 100;
+    note.textContent = '남는 세기 ' + frac.toFixed(frac < 1 ? 2 : 1) + '%, 반가층 ' + (Math.LN2 / m).toFixed(2) + ' cm';
+  }
+  mu.addEventListener('input', draw);
+  len.addEventListener('input', draw);
+  draw();
+})();
+</script>
+
+  <p>이 식을 얻는 과정은 아래에 접어 두었습니다. 결과만 필요하면 건너뛰어도 됩니다. 다음 페이지부터는 결과만 씁니다.</p>
+
+  <details class="fold">
+    <summary>지수 감쇠 법칙의 유도</summary>
+    <div class="fold-body">
+      <p><b>1단계. 얇은 판에서 줄어드는 양.</b>
+      위치 \(\ell\) 에서의 세기를 \(I(\ell)\)이라 합니다.
+      두께 \(\Delta\ell\)인 얇은 판에서는 지금 남은 양 \(I(\ell)\)의 \(\mu\,\Delta\ell\) 배가 줄어듭니다.
+      세기의 변화량은 줄어드는 방향이므로 음수입니다.</p>
+      <p style="text-align:center">\[\Delta I = -\mu\, I(\ell)\,\Delta\ell\]</p>
+
+      <p><b>2단계. 극한으로 보내 미분방정식 만들기.</b>
+      양변을 \(\Delta\ell\)로 나누고 \(\Delta\ell \to 0\)으로 보냅니다.
+      좌변은 \(I\)의 \(\ell\)에 대한 미분이 됩니다.</p>
+      <p style="text-align:center">\[\frac{dI}{d\ell} = -\mu\, I\]</p>
+
+      <p><b>3단계. 변수 분리.</b>
+      \(I > 0\)이므로 양변을 \(I\)로 나누고 \(d\ell\)을 곱해 \(I\)가 든 항과 \(\ell\)이 든 항을 나눕니다.</p>
+      <p style="text-align:center">\[\frac{1}{I}\,dI = -\mu\, d\ell\]</p>
+
+      <p><b>4단계. 양변 적분.</b>
+      \(\ell\)이 0에서 \(L\)까지 갈 때 세기는 \(I_0\)에서 \(I(L)\)까지 변합니다.
+      균일한 물질이므로 \(\mu\)는 상수여서 적분 밖으로 나옵니다.
+      적분 변수가 상한과 겹치지 않도록 적분 안의 변수에는 프라임을 붙였습니다.</p>
+      <p style="text-align:center">\[\int_{I_0}^{I(L)} \frac{dI'}{I'} = -\mu \int_{0}^{L} d\ell'\]</p>
+
+      <p><b>5단계. 적분 계산.</b>
+      좌변은 \(1/I'\)의 부정적분인 \(\ln I'\)에 상한과 하한을 넣은 것이고, 우변은 \(-\mu L\)입니다.</p>
+      <p style="text-align:center">\[\ln I(L) - \ln I_0 = -\mu L \quad\Longrightarrow\quad \ln\frac{I(L)}{I_0} = -\mu L\]</p>
+
+      <p><b>6단계. 지수로 되돌리기.</b>
+      양변을 \(e\)의 지수로 올리면 로그가 사라집니다.</p>
+      <p style="text-align:center">\[\frac{I(L)}{I_0} = e^{-\mu L} \quad\Longrightarrow\quad I = I_0\, e^{-\mu L}\]</p>
+
+      <p><b>7단계. 검산.</b>
+      \(L = 0\)이면 \(I = I_0\)이어서 아무것도 지나지 않았을 때 세기가 그대로입니다.
+      또 \(I(\ell) = I_0 e^{-\mu\ell}\)을 \(\ell\)로 미분하면 \(-\mu I_0 e^{-\mu\ell} = -\mu I(\ell)\)이어서 2단계의 식과 일치합니다.</p>
+
+      <p><b>다른 길. 얇은 판을 이어 붙이기.</b>
+      두께 \(L\)을 \(n\) 개의 같은 판으로 나누면 판 하나의 두께는 \(\Delta\ell = L/n\)입니다.
+      판 하나를 지날 때마다 남은 양에 \(1 - \mu L/n\)이 곱해지므로, \(n\) 개의 판을 지난 뒤에는 다음과 같습니다.</p>
+      <p style="text-align:center">\[I = I_0\left(1 - \frac{\mu L}{n}\right)^{n}\]</p>
+      <p>\(n \to \infty\)로 보내면 \(\left(1 + \tfrac{a}{n}\right)^{n} \to e^{a}\)라는 극한(\(e\)의 정의에서 나오는 극한)에서 \(a = -\mu L\)을 넣어 같은 결과 \(I_0 e^{-\mu L}\)을 얻습니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 -->
+<section class="screen" data-title="여러 겹의 물질">
+  <p class="kicker">1장 · 페이지 5</p>
+  <h2>여러 겹의 물질</h2>
+
+  <p>몸은 균일한 덩어리가 아닙니다. 광선 하나는 물, 뼈, 다시 물처럼 서로 다른 물질을 차례로 지납니다.
+  각 구간의 \(\mu_k \Delta\ell_k\)를 더한 값이 지수에 들어갑니다.</p>
+
+  <p style="text-align:center">\[I = I_0\, e^{-(\mu_1\Delta\ell_1 + \mu_2\Delta\ell_2 + \cdots + \mu_n\Delta\ell_n)}\]</p>
+
+  <p>\(k\) 번째 구간의 감쇠계수가 \(\mu_k\), 두께가 \(\Delta\ell_k\)입니다.
+  각 구간은 자기 앞에 남은 세기에 \(e^{-\mu_k\Delta\ell_k}\)를 곱하고, 지수끼리 곱하면 지수가 더해지기 때문입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 206" role="img" aria-label="물 5cm, 뼈 1cm, 물 4cm를 차례로 지나며 남는 비율이 39%, 25%, 12%로 줄고, 남는 비율에 마이너스 로그를 취한 값은 구간별 값의 합 2.16이 되는 그림">
+      <g class="svg-line" stroke-width="1.4">
+        <rect x="100" y="40" width="250" height="50"/>
+        <rect x="350" y="40" width="50" height="50"/>
+        <rect x="400" y="40" width="200" height="50"/>
+        <path d="M20 65 H100" stroke-dasharray="5 3"/>
+        <path d="M600 65 H625" stroke-dasharray="5 3"/>
+      </g>
+      <g class="svg-fg" fill-opacity=".18"><rect x="350" y="40" width="50" height="50"/></g>
+      <g class="svg-fg" font-size="12" font-weight="700" text-anchor="middle">
+        <text x="225" y="62">물 5 cm</text><text x="375" y="62">뼈 1 cm</text><text x="500" y="62">물 4 cm</text>
+      </g>
+      <g class="svg-muted" font-size="11" text-anchor="middle">
+        <text x="225" y="78">μ = 0.19</text><text x="375" y="78">0.45</text><text x="500" y="78">0.19</text>
+        <text x="60" y="55">입사 100%</text>
+        <text x="60" y="108">구간별 μ × 길이</text><text x="225" y="108">0.19 × 5 = 0.95</text><text x="375" y="108">0.45 × 1 = 0.45</text><text x="500" y="108">0.19 × 4 = 0.76</text>
+        <text x="350" y="138">지난 뒤 남는 비율</text>
+        <text x="350" y="156">39%</text><text x="400" y="156">25%</text><text x="600" y="156">12%</text>
+        <text x="350" y="170">e<tspan dy="-4" font-size="8">−0.95</tspan></text><text x="400" y="170">e<tspan dy="-4" font-size="8">−1.40</tspan></text><text x="600" y="170">e<tspan dy="-4" font-size="8">−2.16</tspan></text>
+              </g>
+      <text x="350" y="196" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">−ln 0.115 = 0.95 + 0.45 + 0.76 = 2.16</text>
+    </svg>
+    <figcaption>광선 하나가 세 구간을 차례로 지납니다. 남는 비율은 구간마다 곱해지고(반올림한 값), 마지막 줄의 \(-\ln(I/I_0)\)는 구간별 \(\mu_k\Delta\ell_k\)의 합입니다.
+    구간 아래 숫자는 감쇠계수 × 길이이고, 남는 비율 밑의 지수는 그 값을 입구부터 차례로 더한 합(0.95, 0.95 + 0.45 = 1.40, 1.40 + 0.76 = 2.16)입니다.</figcaption>
+  </figure>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:5rem">구간</th><th>\(\mu_k\)</th><th>\(\Delta\ell_k\) (cm)</th><th>\(\mu_k\Delta\ell_k\)</th><th>지수의 누적합</th><th>남는 비율</th></tr>
+      <tr><td>물</td><td>0.19</td><td>5</td><td>0.95</td><td>0.95</td><td>\(e^{-0.95} \approx 0.387\)</td></tr>
+      <tr><td>뼈</td><td>0.45</td><td>1</td><td>0.45</td><td>1.40</td><td>\(e^{-1.40} \approx 0.247\)</td></tr>
+      <tr><td>물</td><td>0.19</td><td>4</td><td>0.76</td><td>2.16</td><td>\(e^{-2.16} \approx 0.115\)</td></tr>
+    </table>
+  </div>
+
+  <p>세 구간을 따로 곱해도 같은 값이 나옵니다.
+  \(0.387 \times 0.638 \times 0.468 \approx 0.115\)이고, 각 인수는 구간 하나가 남기는 비율 \(e^{-0.95},\ e^{-0.45},\ e^{-0.76}\)입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">측정값의 로그와 합</p>
+    <p>검출기가 읽는 \(I/I_0\)는 구간마다의 비율을 곱한 값입니다.
+    양변에 로그를 취하고 부호를 바꾸면 \(-\ln(I/I_0) = \mu_1\Delta\ell_1 + \mu_2\Delta\ell_2 + \cdots\)이어서, 측정값이 각 구간 \(\mu\)의 합이 됩니다.
+    이 합은 \(\mu\)에 대해 1차식(선형)입니다. \(I\) 자체는 \(\mu\)에 대해 지수 꼴(비선형)이지만 \(-\ln(I/I_0)\)는 선형이고, 재구성을 선형 문제로 다룰 수 있는 것은 이 성질 덕분입니다.</p>
+  </div>
+
+  <p>지금까지는 구간마다 \(\mu\)가 일정하다고 했습니다.
+  하지만 실제 몸속에서 \(\mu\)는 위치에 따라 계속 달라집니다.
+  이때도 광선을 아주 얇은 구간으로 나누면 구간 안에서는 \(\mu\)를 하나의 값으로 볼 수 있어, 위의 식을 그대로 쓸 수 있습니다.
+  구간을 얇게 나눌수록 지수 안의 합은 적분에 가까워집니다.</p>
+  <p style="text-align:center">\[\sum_k \mu_k\Delta\ell_k \;\longrightarrow\; \int_0^L \mu(\ell)\,d\ell\]</p>
+
+  <p>광선을 따라 \(\mu\)를 적분한 이 값을 선적분(Line Integral)이라고 합니다.
+  선적분은 구간별 합을, \(\mu\)가 연속적으로 변하는 경우로 일반화한 것입니다.
+  따라서 \(\mu\)가 연속으로 변하는 물체에서는 다음 식이 성립합니다.</p>
+
+  <p style="text-align:center">\[I = I_0\, \exp\!\left(-\int_{0}^{L} \mu(\ell)\, d\ell\right)\]</p>
+
+  <p>\(\exp(a)\)는 \(e^{a}\)와 같은 표기이고, \(L\)은 광선이 물체를 지나는 전체 길이입니다.</p>
+
+  <details class="fold">
+    <summary>합이 적분이 되는 과정</summary>
+    <div class="fold-body">
+      <p>이 부분은 건너뛰어도 됩니다. 뒤에서는 결과만 씁니다.</p>
+      <p><b>1단계. 구간 나누기.</b>
+      광선이 지나는 구간 \([0, L]\)을 같은 길이 \(\Delta\ell = L/n\)인 \(n\) 개로 나눕니다.
+      \(k\) 번째 구간은 \(\ell_{k-1} = (k-1)\Delta\ell\)에서 \(\ell_k = k\,\Delta\ell\) 까지입니다.</p>
+      <p><b>2단계. 구간마다 \(\mu\)를 하나로 보기.</b>
+      구간이 충분히 얇으면 그 안에서 \(\mu\)가 거의 일정하므로 구간 끝값 \(\mu(\ell_k)\)로 대표합니다.
+      그러면 \(\mu_k = \mu(\ell_k)\)이고 지수에 들어가는 합은 다음과 같습니다.</p>
+      <p style="text-align:center">\[\sum_{k=1}^{n} \mu(\ell_k)\,\Delta\ell\]</p>
+      <p><b>3단계. 극한.</b>
+      이 합은 \(\mu(\ell)\)이 조각마다 연속일 때 구간을 잘게 할수록(\(n \to \infty\)) 리만 합의 극한, 곧 정적분에 가까워집니다.</p>
+      <p style="text-align:center">\[\lim_{n\to\infty}\sum_{k=1}^{n} \mu(\ell_k)\,\Delta\ell = \int_{0}^{L}\mu(\ell)\,d\ell\]</p>
+      <p><b>4단계. 지수 함수의 연속성.</b>
+      \(e^{(\cdot)}\)는 연속 함수이므로 지수 안의 극한을 밖으로 꺼낼 수 있고, 결과는 위의 \(I = I_0 \exp(-\int_0^L \mu(\ell)\,d\ell)\)입니다.</p>
+    </div>
+  </details>
+
+  <div class="box warn">
+    <p class="box-t">한 줄기 측정의 한계</p>
+    <p>측정값은 \(\mu\)의 합 하나뿐입니다.
+    합이 같기만 하면 물질이 놓인 순서가 달라도 같은 값이 읽힙니다.
+    예를 들어 뼈가 앞쪽에 있든 뒤쪽에 있든 측정값은 같습니다.
+    한 방향의 측정만으로는 물질의 위치를 알 수 없으므로 여러 방향에서 측정해야 합니다. 이 점이 재구성을 어려운 문제로 만듭니다. 자세한 구도는 2장에서 다룹니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 6 -->
+<section class="screen" data-title="모델의 전제">
+  <p class="kicker">1장 · 페이지 6 · 심화</p>
+  <h2>모델의 전제: 현실의 CT와 무엇이 다를까요?</h2>
+
+  <p>지금까지 얻은 지수 감쇠 모델은 다음 두 가지를 전제로 합니다.</p>
+  <ul>
+    <li>X선의 에너지가 하나로 일정합니다. 이런 X선을 단색광(<span class="term" data-term="mono">Monochromatic</span>)이라고 합니다. 모든 광자의 에너지가 같으므로 물질은 모든 광자에게 같은 \(\mu\)로 작용합니다.</li>
+    <li>산란이 없습니다. 광자는 곧게 나아가다 물질에서 빠지거나 그대로 검출기에 도착하고, 방향이 꺾인 광자는 검출기에 들어오지 않습니다.</li>
+  </ul>
+
+  <p>현실의 장치는 이 두 전제와 다릅니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:8rem">전제</th><th>현실</th></tr>
+      <tr><td>에너지가 하나</td><td>X선관이 내는 X선에는 여러 에너지가 섞여 있습니다. 이 에너지의 분포를 스펙트럼(Spectrum)이라고 합니다.</td></tr>
+      <tr><td>산란 없음</td><td>물질 속에서 광자의 방향이 꺾이는 일을 산란(<span class="term" data-term="scatter">Scatter</span>)이라고 하며, 방향이 꺾인 광자 중 일부도 검출기에 도착해 신호에 더해집니다.</td></tr>
+    </table>
+  </div>
+
+  <p>\(\mu\)는 에너지에 따라 달라지므로, 에너지가 섞여 있으면 앞의 식처럼 하나의 \(\mu\)로 감쇠를 나타낼 수 없어 식이 정확하지 않습니다.
+  또 산란한 광자가 검출기에 더해지면 검출기가 읽는 세기가 모델이 말하는 값과 어긋납니다.
+  그래서 앞에서 얻은 모델은 현실을 근사한 것입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">이 책의 범위</p>
+    <p>이 책은 X선이 단색광이고 산란 없이 곧게 나아간다는 가정 위에서 진행합니다.
+    실제 장치에서 이 가정이 구체적으로 어떻게 어긋나는지와 그 차이를 바로잡는 방법은 이 책에서 다루지 않습니다.</p>
+  </div>
+
+  <details class="fold">
+    <summary>에너지가 하나가 아닐 때: 스펙트럼과 다색광의 식</summary>
+    <div class="fold-body">
+      <p>여러 에너지가 섞인 X선을 다색광(<span class="term" data-term="poly">Polychromatic</span>)이라고 합니다. 다색광에서는 검출기가 읽는 세기가 에너지마다의 지수 감쇠를 더한 값이어서 \(p = -\ln(I/I_0)\)가 더 이상 \(\mu\)의 선적분이 되지 않습니다.</p>
+
+      <p><b>1단계. 스펙트럼.</b> 에너지 \(E\)인 X선이 입사 세기 중 얼마를 차지하는지 나타낸 함수를 \(S(E)\)라고 하고, 전체 입사 세기는 \(I_0 = \int S(E)\,dE\)입니다. 이 \(S(E)\)가 스펙트럼입니다. 단색광이면 한 에너지 \(E_0\)에만 값이 있어서 \(S(E) = I_0\,\delta(E - E_0)\)입니다.</p>
+
+      <p><b>2단계. 에너지마다 지수 감쇠.</b> 물질의 감쇠계수는 에너지에 따라 달라지므로 \(\mu(E;\,x, y)\)로 씁니다. 에너지 \(E\)인 성분만 보면 앞에서 얻은 지수 감쇠 법칙이 그대로 성립해서, 광선 \(L\)을 지난 뒤 남는 세기는 \(S(E)\,e^{-\int_L \mu(E)\,d\ell}\)입니다. 검출기는 모든 에너지를 한꺼번에 받아 더하므로 읽는 세기는 다음과 같습니다.</p>
+      <p style="text-align:center">\[I = \int S(E)\,\exp\!\Bigl(-\int_L \mu(E;\,x(\ell), y(\ell))\,d\ell\Bigr)\,dE\]</p>
+      <p>실제 검출기는 에너지마다 반응하는 정도도 달라서 \(S(E)\) 자리에 그 반응을 곱한 함수를 쓰기도 하지만, 여기서는 생략합니다.</p>
+
+      <p><b>3단계. 로그 변환.</b> \(w(E) = S(E)/I_0\)로 두면 \(\int w\,dE = 1\)이고, 로그 변환한 값은 다음과 같습니다.</p>
+      <p style="text-align:center">\[p = -\ln\frac{I}{I_0} = -\ln\int w(E)\,\exp\!\Bigl(-\int_L \mu(E)\,d\ell\Bigr)\,dE\]</p>
+      <p>단색광이면 \(w(E) = \delta(E - E_0)\)여서 \(p = \int_L \mu(E_0)\,d\ell\)로 돌아옵니다. 에너지가 섞이면 지수 안의 선적분이 에너지마다 달라서 로그가 지수를 풀어 주지 못하고, \(p\)는 선적분이 아니게 됩니다.</p>
+
+      <p><b>예.</b> 에너지가 두 개이고 세기가 반반이며 \(\mu\)가 \(0.4\ \mathrm{cm}^{-1}\), \(0.2\ \mathrm{cm}^{-1}\)인 균일한 물질을 생각합니다. 두께 \(L\)에서 \(I/I_0 = (e^{-0.4L} + e^{-0.2L})/2\)입니다. 평균 \(\mu = 0.3\)인 단색광이라면 \(p = 0.3L\)이므로 \(p/L\)이 두께와 상관없이 \(0.3\)이어야 합니다.</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>두께 \(L\) (cm)</th><th>1</th><th>2</th><th>5</th><th>10</th></tr>
+          <tr><td>다색광의 \(p\)</td><td>0.295</td><td>0.580</td><td>1.380</td><td>2.566</td></tr>
+          <tr><td>단색광(\(\mu = 0.3\))의 \(p = 0.3L\)</td><td>0.300</td><td>0.600</td><td>1.500</td><td>3.000</td></tr>
+          <tr><td>다색광의 \(p/L\)</td><td>0.295</td><td>0.290</td><td>0.276</td><td>0.257</td></tr>
+        </table>
+      </div>
+      <p>두께가 늘수록 \(p/L\)이 \(0.3\)에서 점점 멀어집니다. \(\mu\)가 큰 낮은 에너지 성분이 먼저 줄어서 남은 X선의 평균 에너지가 높아지고, 그래서 두꺼운 곳에서는 \(\mu\)가 작게 작용하기 때문입니다. 이 현상을 빔 경화(Beam Hardening)라고 합니다. \(p\)가 길이에 비례하지 않으므로 이 책의 선적분 모델이 어긋나며, 이 차이를 바로잡는 방법은 이 책에서 다루지 않습니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 7 -->
+<section class="screen" data-title="CT 넘버(HU)">
+  <p class="kicker">1장 · 페이지 7</p>
+  <h2>영상의 숫자는 μ 그대로일까요? CT 넘버(HU)</h2>
+
+  <p>페이지 4에서 이 책은 X선의 에너지가 하나로 일정하다고 가정했습니다.
+  이 가정을 두더라도 \(\mu\)의 값은 어떤 에너지의 X선을 쓰느냐, 어떤 장치로 찍느냐에 따라 달라집니다.
+  같은 물이라도 에너지가 바뀌면 \(\mu\)가 바뀌므로, 숫자를 그대로 주고받으면 비교하기 어렵습니다.
+  그래서 물을 0, 공기를 \(-1000\)으로 고정한 상대 눈금을 쓰면 장치와 에너지에 따른 차이를 상당 부분 줄일 수 있습니다(완전히 없애지는 못합니다. 물과 뼈는 원소 구성이 달라서 에너지가 바뀔 때 \(\mu\)가 변하는 비율이 서로 다르므로, 같은 뼈라도 X선관 전압(관전압)을 바꾸면 HU가 달라집니다).
+  이 눈금의 값을 CT 넘버(<span class="term" data-term="hu">Hounsfield Unit</span>, HU)라고 합니다.</p>
+
+  <p style="text-align:center">\[\mathrm{HU} = 1000 \times \frac{\mu - \mu_{\text{water}}}{\mu_{\text{water}} - \mu_{\text{air}}}\]</p>
+
+  <p>\(\mu\)는 눈금을 매길 물질의 감쇠계수이고, \(\mu_{\text{water}}\), \(\mu_{\text{air}}\)는 같은 조건에서 잰 물과 공기의 감쇠계수입니다.
+  두 기준점이 식에 맞는지 확인해 봅시다.</p>
+  <ul>
+    <li>\(\mu = \mu_{\text{water}}\)이면 분자가 0이므로 \(\mathrm{HU} = 0\)입니다.</li>
+    <li>\(\mu = \mu_{\text{air}}\)이면 분자가 \(\mu_{\text{air}} - \mu_{\text{water}} = -(\mu_{\text{water}} - \mu_{\text{air}})\)이므로 \(\mathrm{HU} = -1000\)입니다.</li>
+  </ul>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:9rem">물질</th><th>HU (대략)</th></tr>
+      <tr><td>공기</td><td>\(-1000\)</td></tr>
+      <tr><td>지방</td><td>\(-120 \sim -80\)</td></tr>
+      <tr><td>물</td><td>0</td></tr>
+      <tr><td>연부조직</td><td>\(+30 \sim +60\)</td></tr>
+      <tr><td>해면뼈</td><td>\(+200 \sim +400\)</td></tr>
+      <tr><td>치밀뼈</td><td>\(+1000\) 이상</td></tr>
+    </table>
+  </div>
+
+  <p>공기의 \(\mu\)는 물의 약 1/1000이므로, \(\mu_{\text{air}} \approx 0\)으로 놓으면 식이 간단해집니다.</p>
+
+  <p style="text-align:center">\[\mathrm{HU} \approx 1000 \times \left(\frac{\mu}{\mu_{\text{water}}} - 1\right)\]</p>
+
+  <p>예를 들어 지방 \(\mu = 0.17\)이고 \(\mu_{\text{water}} = 0.19\)이면 \(\mathrm{HU} \approx 1000 \times (0.17/0.19 - 1) \approx -105\)입니다.
+  연부조직 \(\mu = 0.20\)이면 \(\mathrm{HU} \approx +53\)입니다.
+  둘 다 표의 범위와 맞습니다. 1 HU는 물 \(\mu\)의 0.1%에 해당합니다.</p>
+
+  <div class="box note">
+    <p class="box-t">상대 눈금인 HU</p>
+    <p>HU는 \(\mu\) 자체가 아니라, 물에 대한 비율로 바꾼 값입니다.
+    \(\mu\)와 HU는 서로 바꿀 수 있지만, 바꾸려면 그 장치의 \(\mu_{\text{water}}\)를 알아야 합니다.
+    이 책에서 재구성의 목표는 \(\mu(x, y)\)를 구하는 것이고, HU 로의 변환은 그 뒤에 눈금만 바꾸는 단계로 봅니다.</p>
+  </div>
+
+  <details class="fold">
+    <summary>HU에서 감쇠계수로 되돌리기</summary>
+    <div class="fold-body">
+      <p>이 부분은 건너뛰어도 됩니다.</p>
+      <p><b>1단계.</b> \(\mu_{\text{air}} \approx 0\)으로 놓은 식에서 시작합니다.</p>
+      <p style="text-align:center">\[\mathrm{HU} = 1000 \times \left(\frac{\mu}{\mu_{\text{water}}} - 1\right)\]</p>
+      <p><b>2단계.</b> 양변을 1000으로 나눕니다.</p>
+      <p style="text-align:center">\[\frac{\mathrm{HU}}{1000} = \frac{\mu}{\mu_{\text{water}}} - 1\]</p>
+      <p><b>3단계.</b> 양변에 1을 더합니다.</p>
+      <p style="text-align:center">\[1 + \frac{\mathrm{HU}}{1000} = \frac{\mu}{\mu_{\text{water}}}\]</p>
+      <p><b>4단계.</b> 양변에 \(\mu_{\text{water}}\)를 곱합니다.</p>
+      <p style="text-align:center">\[\mu = \mu_{\text{water}}\left(1 + \frac{\mathrm{HU}}{1000}\right)\]</p>
+      <p><b>5단계. 검산.</b>
+      \(\mathrm{HU} = 0\)이면 \(\mu = \mu_{\text{water}}\)이고, \(\mathrm{HU} = -1000\)이면 \(\mu = 0\)으로 공기 근사와 맞습니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 8 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">1장 · 페이지 8</p>
+  <h2>1장 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>CT 영상의 화소 값은 그 위치의 선형 감쇠계수 \(\mu(x, y)\)에 대응합니다. \(\mu\)의 단위는 \(\mathrm{cm}^{-1}\)입니다.</li>
+      <li>얇은 판에서 줄어드는 비율은 \(\mu\,\Delta\ell\)이고, 균일한 물질 전체에서는 \(I = I_0 e^{-\mu L}\) (지수 감쇠 법칙)입니다.</li>
+      <li>여러 겹이면 \(\mu_k\Delta\ell_k\)의 합이 지수로 들어가고, 구간이 얇아지면 그 합은 선적분 \(\int \mu\,d\ell\)이 됩니다.</li>
+      <li>(심화) 이 모델은 X선이 단색광이고 산란 없이 곧게 나아간다고 가정합니다. 현실은 이와 다르지만, 이 책은 이 가정 위에서 진행합니다.</li>
+      <li>CT 넘버는 \(\mathrm{HU} = 1000 \times (\mu - \mu_{\text{water}})/(\mu_{\text{water}} - \mu_{\text{air}})\)로, 물은 0, 공기는 \(-1000\)입니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="q">물(μ = 0.19 cm⁻¹) 5 cm를 지나면 입사 세기의 약 39%가 남습니다. 같은 물 10 cm를 지나면 얼마가 남을까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. 5 cm를 두 번 지나는 것과 같으므로 0.39를 두 번 곱해 약 0.15입니다.">약 15%</li>
+      <li data-why="틀립니다. 두께가 두 배가 되면 남는 비율은 절반이 되는 것이 아니라 제곱이 됩니다.">약 19.5%</li>
+      <li data-why="틀립니다. 5 cm에서 61%가 줄어든다고 10 cm에서 122%가 줄어드는 것이 아니라, 남은 양의 61%가 다시 줄어듭니다.">약 0%</li>
+      <li data-why="틀립니다. 두께가 늘면 남는 비율은 줄어듭니다. 0.39에 2를 곱하면 오히려 커지는 오류입니다.">약 78%</li>
+    </ol>
+    <div class="explain">
+      <p>두께에 따라 세기가 지수로 줄어드는 것은 실제 장치에서 검출기의 동적 범위(Dynamic Range, 구별해 읽을 수 있는 가장 약한 신호와 가장 강한 신호의 폭)로 나타납니다.
+      몸통의 가장 두꺼운 방향에서는 남는 세기가 입사의 1% 미만까지 떨어지고, 가장 얇은 방향은 거의 그대로이므로 검출기는 이 큰 차이를 모두 읽어야 합니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">감쇠계수가 물의 2배인 물질의 CT 넘버는 약 얼마일까요? (공기의 감쇠계수는 0으로 근사합니다.)</p>
+    <ol class="options">
+      <li data-why="틀립니다. 비율 2에 1000을 곱하면 2000이지만, 식에서 먼저 물의 몫인 1을 빼야 물이 0 HU가 됩니다.">약 +2000 HU</li>
+      <li data-why="맞습니다. μ = 2 × μ_water를 식에 넣으면 1000 × (2 − 1) = 1000입니다.">약 +1000 HU</li>
+      <li data-why="틀립니다. μ가 2배이면 μ/μ_water − 1 = 1이므로 HU는 +1000입니다. +500은 μ가 1.5배일 때입니다.">약 +500 HU</li>
+      <li data-why="틀립니다. 0 HU는 물과 같은 μ일 때입니다. 이 물질은 물보다 μ가 큽니다.">0 HU</li>
+    </ol>
+    <div class="explain">
+      <p>같은 뼈라도 X선관 전압(관전압)을 바꾸면 HU가 달라집니다.
+      HU는 물을 기준으로 맞춘 눈금이지만, 물과 뼈는 원소 구성이 달라서 에너지가 바뀔 때 μ가 변하는 비율이 서로 다르기 때문에 이 차이까지 없애지는 못합니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">(심화) 이 책의 지수 감쇠 모델이 전제하는 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 물질마다 μ가 다르다는 것이 페이지 3과 페이지 5의 출발점입니다.">모든 물질의 μ가 같습니다.</li>
+      <li data-why="틀립니다. 방향이 꺾인 광자가 검출기에 들어오는 것은 이 모델이 없다고 보는 일입니다.">광자가 방향을 바꾸어 검출기에 많이 들어옵니다.</li>
+      <li data-why="맞습니다. 이 모델은 X선의 에너지가 하나로 일정하고 산란 없이 곧게 나아간다고 가정합니다.">X선의 에너지가 하나이고 산란이 없습니다.</li>
+      <li data-why="틀립니다. 물체가 한 가지 물질이라고 가정하지 않습니다. 페이지 5에서 여러 물질을 차례로 지나는 경우를 다루었습니다.">물체가 한 가지 물질로만 이루어져 있습니다.</li>
+    </ol>
+    <div class="explain">
+      <p>실제 X선관은 여러 에너지가 섞인 X선을 내고 산란한 광자도 검출기에 닿으므로, 이 모델은 현실을 근사한 것입니다.
+      이 차이를 자세히 다루는 일은 이 책의 범위 밖입니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <p>\(\mu_{\text{water}} = 0.19\ \mathrm{cm}^{-1}\)로 두고, 물 8 cm와 \(\mu = 0.40\ \mathrm{cm}^{-1}\)인 뼈 2 cm를 차례로 지나는 X선을 생각합니다.</p>
+    <ol>
+      <li>입사 세기의 몇 %가 남는지 구하세요.</li>
+      <li>이 뼈의 CT 넘버를 \(\mu_{\text{air}} \approx 0\)으로 근사해 구하세요.</li>
+      <li>물 8 cm만 있을 때 남는 비율을 구하고, 물을 16 cm로 늘리면 그 값이 어떻게 변하는지 말하세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> 두 구간의 \(\mu_k\Delta\ell_k\)를 더합니다. 물은 \(0.19 \times 8 = 1.52\), 뼈는 \(0.40 \times 2 = 0.80\)이므로 합은 \(2.32\)입니다.
+      남는 비율은 \(e^{-2.32} \approx 0.098\)이어서 약 9.8%입니다.
+      각 구간의 비율 \(e^{-1.52} \approx 0.219\)와 \(e^{-0.80} \approx 0.449\)를 곱해도 \(0.219 \times 0.449 \approx 0.098\)로 같습니다.</p>
+      <p><b>2번.</b> \(\mu/\mu_{\text{water}} = 0.40/0.19 \approx 2.105\)이므로 괄호 안은 \(2.105 - 1 = 1.105\)입니다.
+      따라서 \(\mathrm{HU} \approx 1000 \times 1.105 \approx +1105\)이고, 치밀뼈 범위에 들어갑니다.</p>
+      <p><b>3번.</b> 물 8 cm는 \(e^{-1.52} \approx 0.219\)로 약 22%가 남습니다.
+      16 cm 면 지수가 두 배인 \(3.04\)이므로 \(e^{-3.04} \approx 0.048\)이고, 약 4.8%로 앞의 값의 제곱(\(0.219^2 \approx 0.048\))입니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>줄어드는 비율을 구간마다 더해 계산하는 것입니다. 남는 비율을 곱하거나 지수를 더해야 합니다.</li>
+        <li>HU를 구할 때 \(\mu/\mu_{\text{water}} \times 1000\)으로 끝내고 1을 빼지 않는 것입니다. 물이 0이 되려면 1을 빼야 합니다.</li>
+        <li>두께가 두 배가 되면 남는 비율이 절반이라고 생각하는 것입니다. 실제로는 제곱입니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch02.html"><span>다음 장</span>2장 — 검출기가 읽은 숫자, 식으로 적어 보기: 투영과 선적분</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../assets/katex/katex.min.js"></script>
+<script src="../assets/katex/auto-render.min.js"></script>
+<script src="../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../assets/book.js"></script>
+</body>
+</html>

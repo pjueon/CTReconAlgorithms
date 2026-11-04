@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch10">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10장 · 심화 수학: 함수공간과 범함수의 미분 — CT 재구성 알고리즘2 - 대수적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="연속 표기와 이산 표기">
+  <p class="kicker">10장 · 페이지 1 · 심화</p>
+  <h1>심화 수학: 함수공간과 범함수의 미분</h1>
+
+  <p class="lead">지금까지 2편은 영상과 측정값을 벡터 \(\mathbf{x}\), \(\mathbf{b}\)로 쓰고 시스템 행렬 \(\mathbf{A}\)로 계산했습니다.
+  그런데 논문을 읽다 보면 같은 내용을 \(f\in L^2\), \(\mathcal{A}f=p\), \(J[f]\) 같은 표기로 적은 글을 자주 만납니다.
+  이 장은 이 연속 표기를 지금까지 쓴 이산 표기와 짝지어 읽는 법을 다룹니다.</p>
+
+  <p>이 장은 건너뛰어도 전체 흐름에 지장이 없습니다. 2편의 본문(1~8장)은 전부 이산 표기(화소 벡터, 행렬 \(\mathbf{A}\))로 완결됩니다.
+  지금 건너뛰었다면, 나중에 논문에서 함수 공간이나 수반 연산자 같은 말을 만났을 때 돌아와도 됩니다.</p>
+
+  <p>이 장은 이 책이 1편부터 써 온 기호(\(\mu\), \(\mathcal{P}\), \(\mathcal{B}\))를 그대로 이어 쓰면서, 논문이 흔히 쓰는 더 일반적인
+  이름과의 대응을 짚습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>이 책</th><th>논문에서 흔히</th><th>뜻</th></tr>
+      <tr><td>\(\mu(x,y)\)</td><td>\(f\)</td><td>재구성하려는 연속 영상</td></tr>
+      <tr><td>\(\mathcal{P}\)(<a href="../../part0/ch02.html#s5">0편 2장 페이지 5</a>)</td><td>\(\mathcal{A}\)</td><td>영상을 측정값으로 보내는 연산자(투영)</td></tr>
+      <tr><td>\(\mathcal{B}=\mathcal{P}^{\mathsf T}\)(<a href="../../part1/detail/ch04.html#s6">1편 4장 페이지 6</a>)</td><td>\(\mathcal{A}^{*}\)</td><td>\(\mathcal{P}\)의 수반 연산(역투영)</td></tr>
+      <tr><td>\(p(\theta,s)\)</td><td>\(p\)</td><td>연속 측정값(sinogram)</td></tr>
+      <tr><td>\(\mathbf{A},\mathbf{x},\mathbf{b}\)(<a href="ch01.html#s2">1장 페이지 2</a>)</td><td>\(A,x,b\)</td><td>화소 기저로 이산화한 행렬·벡터</td></tr>
+    </table>
+  </div>
+
+  <p>오른쪽 열의 별표(\(\mathcal{A}^{*}\))는 많은 논문이 수반을 나타내는 방식입니다. 이 책은 별표를 <a href="../../part1/detail/ch02.html#s2">1편 2장 페이지 2</a>에서 컨볼루션에 이미 썼으므로
+  (<a href="../../part1/detail/ch04.html#s6">1편 4장 페이지 6</a>의 "다른 책의 표기"와 같은 이유), 이 장에서도 수반을 \(\mathcal{P}^{\mathsf T}\)처럼
+  전치와 같은 위첨자로 씁니다. 자세한 사정은 페이지 6에서 다시 짚습니다.</p>
+
+  <div class="box note">
+    <p class="box-t">이 장에서 뜻이 달라지는 기호</p>
+    <p>이 장은 앞 장과 같은 글자를 다른 대상에 씁니다. 아래 표에 한 번에 모았으므로 이후 페이지에서는 따로 설명하지 않습니다.</p>
+    <div class="table-wrap">
+      <table>
+        <tr><th>기호</th><th>앞 장에서의 뜻</th><th>이 장에서의 뜻</th></tr>
+        <tr><td>\(\nabla\mu\), \(\nabla J[\mu]\)</td><td>\(\nabla\)는 벡터의 기울기(<a href="ch03.html#s7">3장 페이지 7</a>)</td><td>\(\nabla\mu\)는 영상의 공간 기울기로, 점마다 정해지는 2차원 벡터(<a href="ch04.html#s4">4장 페이지 4</a>의 이산 기울기 쌍의 연속판)입니다. \(\nabla J[\mu]\)는 범함수의 기울기로, 영상 한 장 크기의 함수 하나입니다(페이지 8)</td></tr>
+        <tr><td>\(t\)</td><td>\(t_{i,j}\): 화소 기울기 크기(<a href="ch07.html#s3">7장 페이지 3</a>). \(t_k\): FISTA의 모멘텀 수열(<a href="ch09.html#s3">9장 페이지 3</a>)</td><td>페이지 7: Gâteaux 미분에서 \(0\)으로 보내는 작은 실수. 페이지 9: \(c(t)\)의 \(t=\lvert\nabla\mu\rvert\)</td></tr>
+        <tr><td>\(\eta\)</td><td>선 탐색의 걸음 길이(<a href="ch07.html#s4">7장 페이지 4</a>)</td><td>Gâteaux 미분의 방향이 되는 함수(페이지 7)</td></tr>
+        <tr><td>\(\varphi\)</td><td>화소 \(j\)의 기저 \(\varphi_j\)(<a href="ch01.html#s1">1장 페이지 1</a>)</td><td>페이지 4~: 같은 기저. 페이지 5의 그림에서는 입력 방향의 각도. 페이지 9~10에서는 벡터장(흐름)</td></tr>
+        <tr><td>\(c\)</td><td>\(c_j\): 화소 \(j\)의 가중치 합(<a href="ch02.html#s5">2장 페이지 5</a>). \(c(t)\): 평활화 TV의 계수(7장 페이지 3)</td><td>페이지 3: 스칼라 상수와 칸 평균 \(c_j\)</td></tr>
+        <tr><td>\(L\)</td><td>립시츠 상수(<a href="ch09.html#s3">9장 페이지 3</a>)</td><td>페이지 8: 범함수 \(L(\eta)\). 페이지 9: 적분 안의 함수 \(L(\mu,\nabla\mu)\)</td></tr>
+        <tr><td>\(q\)</td><td>쌍대 변수(<a href="ch09.html#s5">9장 페이지 5</a>)</td><td>측정값 공간(sinogram)의 임의의 원소</td></tr>
+        <tr><td>\(x,\ y\)</td><td>굵은 \(\mathbf{x}\)는 화소 벡터</td><td>굵지 않은 \(x,y\)는 영상 위의 좌표</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>이산화가 문제 자체의 조건이 아니라 계산을 위한 선택임을 봅니다(페이지 2).</li>
+      <li>함수를 벡터로 보고, 내적·노름을 가진 \(L^2\) 공간과 완비된 힐베르트 공간을 봅니다(페이지 3~4).</li>
+      <li>\(\mathcal{P}\)를 선형 연산자로 보고, 유계성과 수반을 정의합니다(페이지 5~6).</li>
+      <li>범함수와 그 미분(Gâteaux 미분, 리즈 표현(Riesz Representation))을 정의하고, 3장의 기울기와 잇습니다(페이지 7~8).</li>
+      <li>변분법으로 평활화 TV의 연속 기울기를 유도해 7장의 이산 공식과 맞춰 봅니다(페이지 9).</li>
+      <li>TV가 실제로 사는 함수 공간을 한 줄로 소개합니다(페이지 10).</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지는 처음 읽을 때 건너뛰어도 됩니다. 이 장은 모든 페이지에 "심화"가 붙어 있으므로 장 전체를 건너뛸 수 있고, 뒤의 11장은 이 장의 결과를 가져다 쓸 때마다 어느 페이지의 결과인지 밝힙니다.</p>
+  </div>
+</section>
+
+<!-- ─ 페이지 2 -->
+<section class="screen" data-title="이산화의 위치">
+  <p class="kicker">10장 · 페이지 2 · 심화</p>
+  <h2>연속 문제와 이산화의 위치</h2>
+
+  <p><a href="ch01.html#s1">1장 페이지 1</a>은 "화소 기저가 가장 단순한 선택일 뿐"이라고 밝히고, 연속 정식화는 이 장으로 미뤘습니다.
+  대수적 재구성이 실제로 풀고 있는 문제를 연속 공간에서 다시 적으면 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\mu^{*} = \operatorname*{arg\,min}_{\mu}\ J[\mu], \qquad J[\mu] = \lVert\mathcal{P}\mu-p\rVert^2 (+\ \text{정규화})\]</p>
+
+  <p>이 식에는 \(\mu\)가 유한한 개수의 숫자여야 한다는 조건이 어디에도 없습니다. \(\mu\)는 시야 안에서 정의된 연속 함수이고,
+  \(\mathcal{P}\)는 그 함수를 측정값으로 보내는 연산자입니다. 이산화(화소 기저를 골라 \(\mu\approx\sum_j\mu_j\varphi_j\)로 근사하고
+  \(\mathcal{P}\)를 행렬 \(\mathbf{A}\)로 바꾸는 것)는 이 문제를 <b>실제로 계산하기 위한</b> 수단이며, 문제의 정의에 들어 있는
+  요구사항이 아닙니다.</p>
+
+  <h3>두 가지 순서</h3>
+
+  <p>연속 문제에서 이산 계산으로 가는 길은 두 가지로 나뉩니다.</p>
+
+  <ul>
+    <li><b>이산화한 뒤 최적화.</b> 먼저 유한 차원 부분공간(화소 기저)을 고르고, 그 안에서 이산 목적함수 \(J(\mathbf{x})\)를 최적화합니다.
+    1장이 택한 길이 이것입니다.</li>
+    <li><b>최적화한 뒤 이산화.</b> 먼저 연속 문제의 최적성 조건(이 장 뒤쪽에서 보는 범함수의 기울기 \(\nabla J[\mu]=0\))을 구하고,
+    그 식을 수치적으로 풀기 위해 나중에 이산화합니다.</li>
+  </ul>
+
+  <p>두 길이 같은 답을 준다고 미리 가정할 수는 없습니다. 기저를 어떻게 고르느냐, 연산자를 어떻게 이산화하느냐에 따라 답이 달라질 수 있습니다.
+  이 둘이 어긋나는 구체적인 모습은 <a href="ch11.html#s8">11장 페이지 8</a>에서 다시 봅니다. 지금은 "이산화는 선택"이라는 사실만 확인합니다.</p>
+
+  <p>실제 계산은 결국 이산화를 거칩니다. 그래도 그 전에 문제 자체를 연속 공간에서 정확히 적어 두면, 어떤 이산화를 고르든 같은 기준(이 \(J[\mu]\))으로 비교할 수 있습니다.</p>
+</section>
+
+<!-- ─ 페이지 3 -->
+<section class="screen" data-title="벡터로서의 함수: L² 공간">
+  <p class="kicker">10장 · 페이지 3 · 심화</p>
+  <h2>벡터로서의 함수: L² 공간</h2>
+
+  <p>3장은 영상을 벡터 \(\mathbf{x}\in\mathbb{R}^n\)으로 다뤘습니다. 벡터공간이 되려면 두 가지만 있으면 됩니다 — 더하기와 실수
+  곱하기입니다. 함수도 이 두 연산을 그대로 가집니다. 함수 \(\mu,\nu\)와 실수 \(c\)에 대해 \((\mu+\nu)(x,y):=\mu(x,y)+\nu(x,y)\),
+  \((c\mu)(x,y):=c\,\mu(x,y)\)로 정의하면 되기 때문입니다. 그러므로 함수들의 모임도 벡터공간입니다 — 다만 성분이 \(n\)개가 아니라
+  정의역의 모든 점마다 하나씩 있는, 무한 차원 벡터공간입니다.</p>
+
+  <p>모든 함수를 다 받지는 않습니다. 이 책이 쓰는 함수공간은 제곱해서 적분한 값이 유한한 함수들의 모임입니다.</p>
+
+  <p style="text-align:center">\[L^2(\Omega) := \Bigl\{\mu:\Omega\to\mathbb{R}\ \Bigm|\ \iint_\Omega \mu(x,y)^2\,dx\,dy &lt; \infty\Bigr\}\]</p>
+
+  <p>\(\Omega\)는 영상이 사는 영역입니다 — <a href="../../part1/detail/ch05.html#s11">1편 5장 페이지 11</a>이 정의한 시야(반지름
+  \(R\)인 원판)로 생각해도 됩니다. CT 영상의 화소 값은 유한하고 시야도 유한한 넓이이므로, 실제 영상은 당연히 \(L^2(\Omega)\)에
+  들어갑니다.</p>
+
+  <p>\(L^2\)에는 내적과 노름이 있습니다. <a href="../../part1/detail/ch04.html#s6">1편 4장 페이지 6</a>에서 이미 쓴 식을 그대로
+  옮겨 적습니다.</p>
+
+  <p style="text-align:center">\[\langle\mu,\nu\rangle := \iint_\Omega \mu(x,y)\,\nu(x,y)\,dx\,dy, \qquad \lVert\mu\rVert := \sqrt{\langle\mu,\mu\rangle}\]</p>
+
+  <p><a href="../../part1/detail/ch02.html#s2">1편 2장 페이지 2</a>의 함수의 내적
+  <span class="term" data-term="innerfn">\(\langle f,g\rangle=\int f(x)\,\overline{g(x)}\,dx\)</span>은 복소수 값의 함수까지 다루려고
+  뒤쪽에 켤레를 두었습니다. CT의 영상·sinogram은 실수 값이므로 켤레가 필요 없고, 위 식처럼 그대로 곱해 적분합니다.</p>
+
+  <p>3장의 유한 차원 벡터 \(\mathbf{x}\in\mathbb{R}^n\)과 그 내적 \(\langle\mathbf{x},\mathbf{y}\rangle=\sum_j x_jy_j\)은 이 틀의
+  가장 단순한 경우입니다 — 정의역 \(\Omega\)가 연속인 영역이 아니라 화소 \(n\)개짜리 유한집합일 뿐, 벡터공간·내적·노름이라는
+  구조는 똑같습니다.</p>
+
+  <h3>함수를 벡터로 바꿔 보기</h3>
+
+  <p>1차원 함수 \(f(x)\)(\(0\le x\le1\))로 이 대응을 눈으로 봅니다. 구간을 \(n\)칸으로 나누고 칸마다 \(f\)의 평균 \(c_j\)를 재면 함수가
+  숫자 \(n\)개의 벡터 \(\mathbf{c}=(c_1,\dots,c_n)\)로 바뀝니다. 칸 수는 화소 수에 해당합니다. 아래 막대를 \(n\)칸의 평균값으로 보고,
+  \(n\)을 바꾸며 함수와 벡터가 얼마나 가까운지 확인하세요.</p>
+
+  <div style="display:flex;gap:1.4rem;align-items:center;justify-content:center;flex-wrap:wrap;margin:1rem 0">
+    <div style="min-width:12rem">
+      <p style="margin:0 0 .3rem;font-size:.86rem;color:var(--muted)">칸 수 \(n\)을 바꿔 보세요.</p>
+      <input id="c8a-n" type="range" min="0" max="14" step="1" value="6" style="width:100%">
+      <p style="text-align:center;font-size:.84rem;margin:.3rem 0 0" id="c8a-nval"></p>
+    </div>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 220" role="img" aria-label="함수 곡선과 그 위에 칸 평균으로 만든 막대. 칸 수가 늘수록 막대가 곡선에 가까워진다">
+      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M40 190 H610"/><path d="M40 20 V190"/></g>
+      <g id="c8a-bars"></g>
+      <path id="c8a-f" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <g font-size="10.5" class="svg-muted"><text x="605" y="206" text-anchor="end">x</text><text x="46" y="30" style="fill:var(--warn)">f(x)</text><text x="46" y="44" style="fill:var(--accent)">칸 평균 c</text></g>
+    </svg>
+    <figcaption>주황 곡선이 함수 \(f\)이고, 파란 막대가 칸 평균으로 만든 벡터 \(\mathbf{c}\)입니다.</figcaption>
+  </figure>
+
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c8a-out"></p>
+
+  <p>세 값의 관계를 봅니다. 원래 함수의 크기 \(\lVert f\rVert^2\)은 \(n\)과 상관없이 \(0.1692\)로 일정합니다. 벡터 \(\mathbf{c}\)를 막대로 편
+  계단 함수 \(f_n\)의 크기 \(\lVert f_n\rVert^2\)과 오차 \(\lVert f-f_n\rVert^2\)의 합이 늘 이 값과 같습니다. 예를 들어 \(n=8\)이면
+  \(0.1519+0.0173=0.1692\)이고, \(n=40\)이면 \(0.1684+0.0008=0.1692\)입니다. 칸을 늘릴수록 벡터가 함수의 크기를 더 많이 담고
+  오차가 줄어듭니다. 두 크기가 더해져 \(\lVert f\rVert^2\)이 되는 이유는 다음 페이지의 사영 정리입니다.</p>
+
+<script>
+(function () {
+  /*calc*/
+  function f(x){return Math.exp(-Math.pow((x-0.35)/0.12,2))+0.5*Math.exp(-Math.pow((x-0.72)/0.06,2));}
+  var M=1200, NS=[1,2,3,4,5,6,8,10,12,15,20,24,30,40,60];
+  var fv=[]; for(var i=0;i<M;i++) fv.push(f((i+0.5)/M));
+  function calc(n){var per=M/n, c=[], j, i, s, nf=0, nn=0, err=0;
+    for(i=0;i<M;i++) nf+=fv[i]*fv[i]; nf/=M;
+    for(j=0;j<n;j++){s=0; for(i=j*per;i<(j+1)*per;i++) s+=fv[i]; c.push(s/per);}
+    for(j=0;j<n;j++) nn+=c[j]*c[j]/n;
+    for(i=0;i<M;i++){var d=fv[i]-c[Math.floor(i/per)]; err+=d*d;} err/=M;
+    return {c:c,nf:nf,nn:nn,err:err};}
+  /*endcalc*/
+  var nIn = document.getElementById('c8a-n'), nVal = document.getElementById('c8a-nval'),
+      bars = document.getElementById('c8a-bars'), fPath = document.getElementById('c8a-f'),
+      out = document.getElementById('c8a-out');
+  function X(x) { return 40 + x * 570; }
+  function Y(v) { return 190 - v / 1.1 * 165; }
+  var d = '', i;
+  for (i = 0; i <= 200; i++) d += (i ? 'L' : 'M') + X(i / 200).toFixed(1) + ' ' + Y(f(i / 200)).toFixed(1);
+  fPath.setAttribute('d', d);
+  function draw() {
+    var n = NS[+nIn.value], r = calc(n), h = '', j;
+    for (j = 0; j < n; j++) {
+      h += '<rect x="' + X(j / n).toFixed(1) + '" y="' + Y(r.c[j]).toFixed(1) + '" width="' + (570 / n).toFixed(1) + '" height="' + (190 - Y(r.c[j])).toFixed(1) +
+        '" style="fill:var(--accent);fill-opacity:.28;stroke:var(--accent)" stroke-width="1"/>';
+    }
+    bars.innerHTML = h;
+    nVal.textContent = 'n = ' + n;
+    out.textContent = '‖f‖² = ' + r.nf.toFixed(4) + ' · ‖f_n‖² = ' + r.nn.toFixed(4) + ' · ‖f−f_n‖² = ' + r.err.toFixed(4) + ' · 합 = ' + (r.nn + r.err).toFixed(4);
+  }
+  nIn.addEventListener('input', draw);
+  draw();
+})();
+</script>
+
+  <p>sinogram의 공간도 같은 방식의 내적을 가집니다 — <a href="../../part1/detail/ch04.html#s6">1편 4장 페이지 6</a>에 있는 식을
+  그대로 가져오면 \(\langle p,q\rangle := \int_0^\pi\!\int p(\theta,s)\,q(\theta,s)\,ds\,d\theta\)입니다. 뒤에서 \(\mathcal{P}\mu\)와
+  sinogram \(q\)의 내적 \(\langle\mathcal{P}\mu,q\rangle\)을 쓸 때 이 식을 씁니다.</p>
+</section>
+
+<!-- ─ 페이지 4 -->
+<section class="screen" data-title="완비성과 힐베르트 공간">
+  <p class="kicker">10장 · 페이지 4 · 심화</p>
+  <h2>완비성과 힐베르트 공간</h2>
+
+  <p>노름이 있으면 "가까워진다"는 말을 할 수 있습니다. 함수열 \(\mu_n\)이 \(\mu\)로 수렴한다는 것은
+  \(\lVert\mu_n-\mu\rVert\to0\)이라는 뜻입니다. 반복 알고리즘은 이런 수열을 만들고, 그 극한이 답입니다.
+  그러므로 극한이 같은 공간 <b>안에</b> 있어야 "답이 그 공간의 원소다"라고 말할 수 있습니다.</p>
+
+  <p>공간 안의 점점 가까워지는 수열(코시 수열) 모두가 그 공간 안의 점으로 수렴하는 성질을
+  완비성(<span class="term" data-term="completeness">Completeness</span>)이라고 부릅니다. \(L^2(\Omega)\)는 완비입니다
+  (증명은 측도론을 쓰는 해석학 정리인 Riesz–Fischer 정리이며, 이 책에서는 결과만 받아들입니다). 그래서 Shepp-Logan 팬텀처럼 날카로운 경계를 가진 영상도
+  \(L^2\) 안에서 안전하게 극한을 취할 수 있습니다. 반대로 "연속함수들의 모임"은 완비가 아닙니다. 아래 접기에서 그 예를 확인할 수 있습니다.</p>
+
+  <details class="fold">
+    <summary>완비성이 깨지는 예: 램프가 계단으로 가는 수열</summary>
+    <div class="fold-body">
+
+  <p>왼쪽 끝이 0, 오른쪽 끝이 1인 연속 램프 함수열 \(\mu_n\)을 생각합니다. 올라가는 구간의 폭을 \(1/n\)으로 줄여 가면
+  \(\mu_n\)은 모두 연속함수이지만, \(n\to\infty\)일 때 \(L^2\) 노름으로 계단 함수(어떤 점에서 0에서 1로 바로 뛰는 함수)에
+  수렴합니다. 계단 함수는 \(L^2(\Omega)\)에는 들어 있지만(제곱해서 적분하면 유한합니다) 연속함수는 아닙니다. 그러므로 연속함수들의
+  모임 안에서 점점 가까워지는 수열이 있어도 그 극한이 그 공간 <b>밖</b>(계단 함수)으로 빠져나갈 수 있습니다.</p>
+
+  <p>구간 \(\Omega=[0,1]\)의 1차원 예로 직접 봅니다. \(x=0.4\)에서 \(0\)이던 값이 폭 \(1/n\)인 구간에서 직선으로 \(1\)까지 올라가는 연속함수를
+  \(\mu_n\)이라 하고, \(x=0.4\)에서 바로 \(1\)로 뛰는 계단 함수를 \(\mu\)라고 합시다. \(n\)을 키워 보세요.</p>
+
+  <div style="display:flex;gap:1.4rem;align-items:center;justify-content:center;flex-wrap:wrap;margin:1rem 0">
+    <div style="min-width:12rem">
+      <p style="margin:0 0 .3rem;font-size:.86rem;color:var(--muted)">램프의 가파른 정도 \(n\)을 바꿔 보세요.</p>
+      <input id="c8b-n" type="range" min="0" max="10" step="1" value="2" style="width:100%">
+      <p style="text-align:center;font-size:.84rem;margin:.3rem 0 0" id="c8b-nval"></p>
+    </div>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 200" role="img" aria-label="연속인 램프 함수가 n이 커질수록 계단 함수에 가까워지는 모습">
+      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M40 170 H610"/><path d="M40 20 V170"/></g>
+      <path id="c8b-step" fill="none" stroke-width="1.6" stroke-dasharray="4 3" style="stroke:var(--warn)"/>
+      <path id="c8b-ramp" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <g font-size="10.5" class="svg-muted"><text x="605" y="186" text-anchor="end">x</text><text x="46" y="30" style="fill:var(--accent)">램프 μₙ(연속)</text><text x="46" y="44" style="fill:var(--warn)">계단 μ(연속 아님)</text></g>
+    </svg>
+    <figcaption>파란 선이 연속함수 \(\mu_n\), 주황 점선이 극한인 계단 함수 \(\mu\)입니다.</figcaption>
+  </figure>
+
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c8b-out"></p>
+
+  <p>두 거리가 모두 \(0\)으로 줄어듭니다. \(\lVert\mu_n-\mu\rVert=\sqrt{1/(3n)}\)이고, 두 램프 사이 거리 \(\lVert\mu_n-\mu_{2n}\rVert=\sqrt{1/(12n)}\)도 함께
+  줄어서 \(\mu_n\)은 코시 수열입니다. 예를 들어 \(n=4\)에서 \(0.2887\)과 \(0.1443\), \(n=16\)에서 \(0.1443\)과 \(0.0722\), \(n=64\)에서
+  \(0.0722\)와 \(0.0361\)입니다. 수열은 점점 모이는데, 모이는 곳(계단 함수)은 연속함수의 모임 밖에 있습니다.</p>
+
+<script>
+(function () {
+  /*calc*/
+  var NN=[2,3,4,6,8,12,16,24,32,48,64], X0=0.4, K=2000;
+  function ramp(n,x){var w=1/n; return x<=X0?0:(x>=X0+w?1:(x-X0)/w);}
+  function stepf(x){return x<X0?0:1;}
+  function dist(g,h){var s=0,i,x,d; for(i=0;i<K;i++){x=(i+0.5)/K; d=g(x)-h(x); s+=d*d;} return Math.sqrt(s/K);}
+  function calc2(n){return {toStep:dist(function(x){return ramp(n,x);},stepf), toNext:dist(function(x){return ramp(n,x);},function(x){return ramp(2*n,x);}), exStep:Math.sqrt(1/(3*n)), exNext:Math.sqrt(1/(12*n))};}
+  /*endcalc*/
+  var nIn = document.getElementById('c8b-n'), nVal = document.getElementById('c8b-nval'),
+      rampP = document.getElementById('c8b-ramp'), stepP = document.getElementById('c8b-step'),
+      out = document.getElementById('c8b-out');
+  function X(x) { return 40 + x * 570; }
+  function Y(v) { return 170 - v * 140; }
+  stepP.setAttribute('d', 'M' + X(0) + ' ' + Y(0) + 'L' + X(X0) + ' ' + Y(0) + 'L' + X(X0) + ' ' + Y(1) + 'L' + X(1) + ' ' + Y(1));
+  function draw() {
+    var n = NN[+nIn.value], r = calc2(n), w = 1 / n;
+    rampP.setAttribute('d', 'M' + X(0) + ' ' + Y(0) + 'L' + X(X0).toFixed(1) + ' ' + Y(0) + 'L' + X(X0 + w).toFixed(1) + ' ' + Y(1) + 'L' + X(1) + ' ' + Y(1));
+    nVal.textContent = 'n = ' + n + ' (램프 폭 1/n = ' + w.toFixed(4) + ')';
+    out.textContent = '‖μₙ−μ‖ = ' + r.toStep.toFixed(4) + ' · ‖μₙ−μ₂ₙ‖ = ' + r.toNext.toFixed(4);
+  }
+  nIn.addEventListener('input', draw);
+  draw();
+})();
+</script>
+
+    </div>
+  </details>
+
+  <p>내적이 있고 완비인 벡터공간을 힐베르트 공간(<span class="term" data-term="hilbert">Hilbert Space</span>)이라고 부릅니다.
+  \(L^2(\Omega)\)는 힐베르트 공간입니다. 유한 차원 \(\mathbb{R}^n\)은 항상 완비이므로 3장의 벡터공간도 자동으로 힐베르트 공간입니다.
+  3장에서 완비성을 걱정할 필요가 없었던 이유입니다.</p>
+
+  <h3>사영 정리와 화소 평균</h3>
+
+  <p>힐베르트 공간의 핵심 정리 하나를 봅니다. 닫힌 부분공간 \(V\)가 있으면, 모든 \(\mu\)는 \(V\) 안의 성분과 \(V\)에 수직인 성분의
+  합으로 유일하게 나뉩니다.</p>
+
+  <p style="text-align:center">\[\mu = \mu_V + \mu_\perp, \qquad \mu_V\in V,\quad \mu_\perp\perp V\]</p>
+
+  <p>두 성분이 수직이므로 피타고라스 관계가 성립합니다. 페이지 3에서 \(\lVert f\rVert^2\)이 \(\lVert f_n\rVert^2\)과 \(\lVert f-f_n\rVert^2\)의 합이라고 한 것이 이 관계입니다(\(V\)는 \(n\)칸 계단 함수의 모임, \(f_n\)은 \(f\)의 칸 평균입니다).</p>
+
+  <p style="text-align:center">\[\lVert\mu\rVert^2 = \lVert\mu_V\rVert^2 + \lVert\mu_\perp\rVert^2\]</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 220" role="img" aria-label="부분공간 V를 가로축으로 그리고, 그 위에 있지 않은 벡터 μ를 수직으로 내려 V 위의 성분 μ_V와 V에 수직인 성분 μ_⊥로 나눈 그림">
+      <g class="svg-line" stroke-width="1.4">
+        <path d="M60 180 H580" marker-end="url(#f4-mu)"/>
+        <path d="M60 180 L380 60" marker-end="url(#f4-mu2)"/>
+        <path d="M60 180 L380 180" marker-end="url(#f4-mu3)"/>
+        <path d="M380 180 L380 60" marker-end="url(#f4-mu4)" stroke-dasharray="4 3"/>
+      </g>
+      <defs>
+        <marker id="f4-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="svg-muted" style="fill:currentColor"/></marker>
+        <marker id="f4-mu2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="svg-fg" style="fill:currentColor"/></marker>
+        <marker id="f4-mu3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="svg-fg" style="fill:currentColor"/></marker>
+        <marker id="f4-mu4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="svg-muted" style="fill:currentColor"/></marker>
+      </defs>
+      <path d="M365 180 V165 H380" fill="none" stroke-width="1" class="svg-muted"/>
+      <g font-size="13" class="svg-fg">
+        <text x="586" y="184">V</text>
+        <text x="392" y="55">μ</text>
+        <text x="190" y="202">μ<tspan font-size="9" dy="3">V</tspan></text>
+        <text x="392" y="125">μ<tspan font-size="9" dy="3">⊥</tspan></text>
+      </g>
+    </svg>
+    <figcaption>\(V\)는 전체 공간 안의 닫힌 부분공간입니다. \(\mu\)에서 \(V\)로 내린 수선의 발이 \(\mu_V\)이고, \(\mu\)에서 \(\mu_V\)까지의
+    남은 부분이 \(\mu_\perp\)입니다. \(\mu_V\)는 \(V\) 안에서 \(\mu\)와 가장 가까운 점이기도 합니다.</figcaption>
+  </figure>
+
+  <p><a href="ch03.html#s4">3장 페이지 4</a>의 "잔차가 열공간과 수직"이라는 사실이 바로 이 정리의 유한 차원 버전입니다 —
+  \(V=\) 열공간, \(\mu=\mathbf{b}\), \(\mu_V=\mathbf{A}\hat{\mathbf{x}}\), \(\mu_\perp=\mathbf{b}-\mathbf{A}\hat{\mathbf{x}}\)로
+  대응합니다.</p>
+
+  <p>이 정리를 화소 기저에 적용하면 주목할 결과가 나옵니다. \(\varphi_j\)를 화소 \(j\)의 indicator 함수(<a href="ch01.html#s1">1장
+  페이지 1</a>), \(V=\mathrm{span}\{\varphi_j\}\)라고 하면, 서로 다른 화소는 겹치지 않으므로
+  \(\langle\varphi_j,\varphi_k\rangle=0\ (j\ne k)\)입니다. 이 경우 사영의 계수는 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\mu_V = \sum_j c_j\varphi_j, \qquad c_j = \frac{\langle\mu,\varphi_j\rangle}{\lVert\varphi_j\rVert^2} = \frac{1}{(\text{화소 넓이})}\iint_{\text{화소 }j}\mu\,dx\,dy\]</p>
+
+  <p>연속 영상 \(\mu\)를 화소 기저로 사영하면 <b>화소별 평균값</b>이 나옵니다. 화소화(픽셀화)가 연속 영상을 어떻게 근사하는지를
+  "표본을 뽑는다"가 아니라 "가장 가까운 분할 함수로 사영한다"로 정확히 설명해 주는 결과입니다.</p>
+</section>
+
+<!-- ─ 페이지 5 -->
+<section class="screen" data-title="선형 연산자와 유계성">
+  <p class="kicker">10장 · 페이지 5 · 심화</p>
+  <h2>선형 연산자와 유계성</h2>
+
+  <p>행렬 \(\mathbf{A}\)는 유한 차원 벡터를 다른 유한 차원 벡터로 보내는 사상입니다. 이 생각을 함수공간으로 넓히면 선형
+  연산자(<span class="term" data-term="linop">Linear Operator</span>)가 됩니다 — 모든 \(\mu,\nu\)와 실수 \(c\)에 대해
+  \(\mathcal{T}(\mu+\nu)=\mathcal{T}\mu+\mathcal{T}\nu\), \(\mathcal{T}(c\mu)=c\,\mathcal{T}\mu\)를 만족하는, 한 함수공간에서 다른
+  함수공간(또는 같은 공간)으로 가는 사상입니다.</p>
+
+  <p>CT의 투영 연산자 \(\mathcal{P}\)(<a href="../../part0/ch02.html#s5">0편 2장 페이지 5</a>)가 바로 이런 연산자입니다 —
+  두 영상을 더해 투영한 값은 각각 투영한 값의 합이고, 영상을 \(c\)배 하면 투영값도 \(c\)배이기 때문입니다. \(\mathcal{P}\)는
+  \(L^2(\Omega)\)의 함수를 받아, \(\theta\in[0,\pi)\), \(s\in\mathbb{R}\) 위에서 정의된 다른 함수(sinogram)로 보냅니다.</p>
+
+  <h3>유계 연산자와 연산자 노름</h3>
+
+  <p>행렬에는 "가장 많이 늘리는 방향"이 있었습니다(3장의 \(\sigma_{\max}\)). 연산자에도 같은 수를 정의할 수 있습니다.
+  어떤 상수 \(C\)가 있어 모든 \(\mu\)에 대해 \(\lVert\mathcal{T}\mu\rVert\le C\lVert\mu\rVert\)를 만족하면 \(\mathcal{T}\)를 유계
+  연산자(<span class="term" data-term="boundedop">Bounded Operator</span>)라고 부르고, 그런 \(C\) 중 가장 작은 값을 연산자
+  노름(<span class="term" data-term="opnorm">Operator Norm</span>) \(\lVert\mathcal{T}\rVert\)이라고 부릅니다.</p>
+
+  <p style="text-align:center">\[\lVert\mathcal{T}\rVert := \sup_{\mu\neq0}\ \frac{\lVert\mathcal{T}\mu\rVert}{\lVert\mu\rVert}\]</p>
+
+  <p>입력이 조금만 바뀌어도 출력이 한없이 커지지 않는다는 뜻입니다. 행렬에서는 \(\lVert\mathbf{A}\rVert=\sigma_{\max}(\mathbf{A})\)로
+  정확히 같은 수입니다(<a href="ch09.html#s5">9장 페이지 5</a>가 이미 \(\lVert\mathbf{A}\rVert^2=\lambda_{\max}(\mathbf{A}^{\mathsf T}\mathbf{A})\)로 쓴 것이
+  이 수입니다).</p>
+
+  <h3>눈으로 보는 연산자 노름</h3>
+
+  <p>연산자 노름은 "단위 크기 입력이 만들 수 있는 가장 큰 출력"입니다. \(\mathcal{P}\)는 무한 차원이라 그릴 수 없으므로, 같은 생각을 \(2\times2\) 행렬
+  \(\mathbf{A}=\begin{pmatrix}1.5&0.5\\0.5&1\end{pmatrix}\)로 봅니다. 왼쪽 단위원 위의 점이 입력 \(\mathbf{u}\)이고, 오른쪽 타원 위의 점이 그 출력
+  \(\mathbf{A}\mathbf{u}\)입니다. 각도 \(\varphi\)를 돌리며 출력의 길이를 확인하세요.</p>
+
+  <div style="display:flex;gap:1.4rem;align-items:center;justify-content:center;flex-wrap:wrap;margin:1rem 0">
+    <div style="min-width:12rem">
+      <p style="margin:0 0 .3rem;font-size:.86rem;color:var(--muted)">입력 방향 \(\varphi\)를 돌려 보세요.</p>
+      <input id="c8c-a" type="range" min="0" max="180" step="1" value="20" style="width:100%">
+      <p style="text-align:center;font-size:.84rem;margin:.3rem 0 0" id="c8c-aval"></p>
+    </div>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 560 250" role="img" aria-label="왼쪽 단위원 위의 점이 행렬 A로 오른쪽 타원 위의 점으로 옮겨지는 그림. 타원의 가장 긴 반지름이 연산자 노름이다">
+      <g class="svg-line" stroke-width="1" opacity=".45"><path d="M20 125 H240"/><path d="M130 15 V235"/><path d="M290 125 H530"/><path d="M410 15 V235"/></g>
+      <circle cx="130" cy="125" r="60" fill="none" stroke-width="1.6" style="stroke:var(--muted)"/>
+      <path id="c8c-ell" fill="none" stroke-width="1.6" style="stroke:var(--muted)"/>
+      <path id="c8c-max" fill="none" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--warn)"/>
+      <path id="c8c-maxo" fill="none" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--warn)"/>
+      <path id="c8c-u" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <path id="c8c-au" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <circle id="c8c-pu" r="4.5" style="fill:var(--accent)"/>
+      <circle id="c8c-pau" r="4.5" style="fill:var(--accent)"/>
+      <g font-size="11" class="svg-muted"><text x="130" y="12" text-anchor="middle">입력 u (단위원)</text><text x="410" y="12" text-anchor="middle">출력 Au (타원)</text></g>
+    </svg>
+    <figcaption>파란 선은 현재 입력과 그 출력입니다. 주황 점선은 출력이 가장 길어지는 방향이고, 그 길이가 \(\lVert\mathbf{A}\rVert=\sigma_{\max}\)입니다.</figcaption>
+  </figure>
+
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c8c-out"></p>
+
+  <p>이 행렬에서 출력 길이는 \(\varphi=31.72^\circ\)에서 최대 \(1.8090\)이고, 그와 수직인 \(121.72^\circ\)에서 최소 \(0.6910\)입니다. 입력이 단위 길이이면 출력은 어떤
+  방향에서도 \(1.8090\)을 넘지 않으므로 \(\lVert\mathbf{A}\rVert=1.8090\)입니다. \(\mathcal{P}\)가 유계라는 말은 이 타원에 해당하는 "출력이 놓이는 범위"에 한계가 있다는 뜻이고,
+  그 한계를 위에서 누르는 값이 아래에서 구하는 \(\sqrt{2\pi R}\)입니다.</p>
+
+<script>
+(function () {
+  /*calc*/
+  var A3=[[1.5,0.5],[0.5,1]];
+  function img(phi){var c=Math.cos(phi),s=Math.sin(phi); return [A3[0][0]*c+A3[0][1]*s, A3[1][0]*c+A3[1][1]*s];}
+  function gram(){var a=A3,g=[[0,0],[0,0]],i,j,k; for(i=0;i<2;i++)for(j=0;j<2;j++)for(k=0;k<2;k++)g[i][j]+=a[k][i]*a[k][j]; return g;}
+  function svd2(){var g=gram(), tr=g[0][0]+g[1][1], det=g[0][0]*g[1][1]-g[0][1]*g[1][0], disc=Math.sqrt(tr*tr/4-det), l1=tr/2+disc, l2=tr/2-disc;
+    var ang=Math.atan2(l1-g[0][0], g[0][1]); return {smax:Math.sqrt(l1), smin:Math.sqrt(l2), ang:ang};}
+  function nrm(phi){var v=img(phi); return Math.hypot(v[0],v[1]);}
+  /*endcalc*/
+  var aIn = document.getElementById('c8c-a'), aVal = document.getElementById('c8c-aval'), out = document.getElementById('c8c-out'),
+      CX1 = 130, CX2 = 410, CY = 125, S = 60, sv = svd2(), i;
+  function seg(el, x0, y0, x1, y1) { el.setAttribute('d', 'M' + x0.toFixed(1) + ' ' + y0.toFixed(1) + 'L' + x1.toFixed(1) + ' ' + y1.toFixed(1)); }
+  var d = '';
+  for (i = 0; i <= 120; i++) { var p = img(2 * Math.PI * i / 120); d += (i ? 'L' : 'M') + (CX2 + S * p[0]).toFixed(1) + ' ' + (CY - S * p[1]).toFixed(1); }
+  document.getElementById('c8c-ell').setAttribute('d', d + 'Z');
+  var mu = [Math.cos(sv.ang), Math.sin(sv.ang)], mo = img(sv.ang);
+  seg(document.getElementById('c8c-max'), CX1, CY, CX1 + S * mu[0], CY - S * mu[1]);
+  seg(document.getElementById('c8c-maxo'), CX2, CY, CX2 + S * mo[0], CY - S * mo[1]);
+  function draw() {
+    var deg = +aIn.value, ph = deg * Math.PI / 180, o = img(ph), ux = Math.cos(ph), uy = Math.sin(ph);
+    seg(document.getElementById('c8c-u'), CX1, CY, CX1 + S * ux, CY - S * uy);
+    seg(document.getElementById('c8c-au'), CX2, CY, CX2 + S * o[0], CY - S * o[1]);
+    document.getElementById('c8c-pu').setAttribute('cx', (CX1 + S * ux).toFixed(1)); document.getElementById('c8c-pu').setAttribute('cy', (CY - S * uy).toFixed(1));
+    document.getElementById('c8c-pau').setAttribute('cx', (CX2 + S * o[0]).toFixed(1)); document.getElementById('c8c-pau').setAttribute('cy', (CY - S * o[1]).toFixed(1));
+    aVal.textContent = 'φ = ' + deg + '°';
+    out.textContent = '‖Au‖ = ' + nrm(ph).toFixed(4) + ' · σ_max = ' + sv.smax.toFixed(4) + ' · σ_min = ' + sv.smin.toFixed(4);
+  }
+  aIn.addEventListener('input', draw);
+  draw();
+})();
+</script>
+
+  <h3>투영 연산자가 유계인 이유</h3>
+
+  <p>\(\mathcal{P}\)를 \(L^2(\mathbb{R}^2)\) 전체에서 생각하면 유계가 아니라는 것이 알려져 있습니다(증명은 이 책의 범위를
+  넘습니다). 그런데 <a href="../../part1/detail/ch05.html#s11">1편 5장 페이지 11</a>처럼 영상이 반지름 \(R\)인 시야 \(\Omega\) 안에만
+  있다고 제한하면, \(\mathcal{P}\)는 유계 연산자가 됩니다. 결론은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\lVert\mathcal{P}\rVert \le \sqrt{2\pi R}\]</p>
+
+  <p>광선이 반지름 \(R\)인 원을 지나는 길이(현의 길이)는 항상 \(2R\) 이하입니다. 코시-슈바르츠 부등식으로 이 길이를 이용하면
+  \(\lVert\mathcal{P}\mu\rVert^2\)을 \(\lVert\mu\rVert^2\)의 상수배로 누를 수 있습니다. 전개는 아래 접기에 있습니다.</p>
+
+  <details class="fold">
+    <summary>유도: 코시-슈바르츠로 유계성 보이기</summary>
+    <div class="fold-body">
+      <p>각도 \(\theta\)를 고정합니다. \(\mu\)가 \(\Omega\) 밖에서 0이므로, \(|s|&gt;R\)인 광선은 \(p(\theta,s)=0\)입니다. \(|s|\le R\)인
+      광선이 원을 지나는 길이는 \(\ell(\theta,s)=2\sqrt{R^2-s^2}\le2R\)입니다. 코시-슈바르츠 부등식을 그 광선 위의 적분에 씁니다.</p>
+      <p style="text-align:center">\[p(\theta,s)^2 = \Bigl(\int_{\text{광선}} 1\cdot\mu\,d\ell\Bigr)^2 \le \Bigl(\int_{\text{광선}}1^2\,d\ell\Bigr)\Bigl(\int_{\text{광선}}\mu^2\,d\ell\Bigr) \le 2R\int_{\text{광선}}\mu^2\,d\ell\]</p>
+      <p>이 식을 \(s\)에 대해 \(-R\)부터 \(R\)까지 적분합니다. 고정된 \(\theta\)에서 \((s,\ell)\)은 \((x,y)\)를 \(\theta\)만큼 돌린
+      좌표일 뿐이고(<a href="../../part1/detail/ch01.html#s1">1편 1장 페이지 1</a>의 회전 좌표), 회전은 넓이 요소를 바꾸지
+      않으므로(야코비안 1) 오른쪽을 \((x,y)\) 적분으로 되돌릴 수 있습니다.</p>
+      <p style="text-align:center">\[\int_{-R}^{R} p(\theta,s)^2\,ds \ \le\ 2R\iint_\Omega \mu(x,y)^2\,dx\,dy = 2R\,\lVert\mu\rVert^2\]</p>
+      <p>이 부등식은 <b>어느</b> \(\theta\)에서나 성립합니다. \(\theta\)에 대해 \(0\)부터 \(\pi\)까지 적분하면 다음을 얻습니다.</p>
+      <p style="text-align:center">\[\lVert\mathcal{P}\mu\rVert^2 = \int_0^\pi\!\int_{-R}^{R}p(\theta,s)^2\,ds\,d\theta \ \le\ \int_0^\pi 2R\lVert\mu\rVert^2\,d\theta = 2\pi R\,\lVert\mu\rVert^2\]</p>
+      <p>양쪽에 제곱근을 취하면 \(\lVert\mathcal{P}\mu\rVert\le\sqrt{2\pi R}\,\lVert\mu\rVert\)이고, 이것이 모든 \(\mu\)에 대해
+      성립하므로 \(\lVert\mathcal{P}\rVert\le\sqrt{2\pi R}\)입니다. \(\theta\)를 \([0,\pi)\) 대신 \([0,2\pi)\)로 잡았다면
+      오른쪽은 \(\sqrt{4\pi R}\)이 됩니다 — 평행빔은 180°로 충분하므로(<a href="../../part1/detail/ch03.html#s9">1편 3장 페이지
+      9</a>) 이 책은 \([0,\pi)\)만 씁니다.</p>
+    </div>
+  </details>
+
+  <p>이 부등식은 상한일 뿐 등호가 아닙니다 — 등호가 되는지는 페이지 11의 직접 해보기에서 구체적인 영상으로 확인합니다.</p>
+</section>
+
+<!-- ─ 페이지 6 -->
+<section class="screen" data-title="수반 연산자">
+  <p class="kicker">10장 · 페이지 6 · 심화</p>
+  <h2>수반 연산자</h2>
+
+  <p>두 힐베르트 공간 사이의 유계 선형 연산자 \(\mathcal{T}\)가 있을 때, 모든 \(\mu\)와 \(q\)에 대해 다음 식을 만족하는 연산자
+  \(\mathcal{T}^{\mathsf T}\)를 \(\mathcal{T}\)의 수반(<span class="term" data-term="adjoint">Adjoint</span>)이라고 부릅니다.</p>
+
+  <p style="text-align:center">\[\langle\mathcal{T}\mu,\ q\rangle = \langle\mu,\ \mathcal{T}^{\mathsf T}q\rangle\]</p>
+
+  <p>이런 연산자가 <b>있다</b>는 것은 아직 보이지 않았습니다 — 그 존재와 유일성을 뒷받침하는 정리(리즈 표현 정리)는 페이지 8에서
+  봅니다. CT에서는 \(\mathcal{T}=\mathcal{P}\)가 바로 이런 연산자이고,
+  <a href="../../part1/detail/ch04.html#s6">1편 4장 페이지 6</a>은 이 식을 만족하는 연산을 역투영이라 부르고 \(\mathcal{B}\)라는
+  이름을 따로 붙였습니다(\(\mathcal{B}=\mathcal{P}^{\mathsf T}\)). 1편은 델타 함수의 Sifting 성질로 이 관계를 보였습니다. 여기서는
+  다른 방법, 즉 회전 좌표 변수변환으로 다시 확인합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="영상 공간과 측정값 공간 사이에서 투영 P가 오른쪽으로, 역투영 B가 왼쪽으로 보내며, 두 공간에서 잰 내적이 같다는 도식">
+      <defs>
+        <marker id="c8d-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="c8d-aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <rect x="30" y="20" width="200" height="130" rx="10" fill="none" stroke-width="1.4" style="stroke:var(--muted)"/>
+      <rect x="410" y="20" width="200" height="130" rx="10" fill="none" stroke-width="1.4" style="stroke:var(--muted)"/>
+      <g font-size="12" class="svg-muted"><text x="130" y="40" text-anchor="middle">영상 공간 L²(Ω)</text><text x="510" y="40" text-anchor="middle">측정값 공간 (sinogram)</text></g>
+      <g font-size="15" class="svg-fg">
+        <text x="130" y="72" text-anchor="middle">μ</text>
+        <text x="130" y="128" text-anchor="middle">Bq</text>
+        <text x="510" y="72" text-anchor="middle">Pμ</text>
+        <text x="510" y="128" text-anchor="middle">q</text>
+      </g>
+      <path d="M160 66 H378" fill="none" stroke-width="2" marker-end="url(#c8d-ar)" style="stroke:var(--accent)"/>
+      <path d="M476 122 H262" fill="none" stroke-width="2" marker-end="url(#c8d-aw)" style="stroke:var(--warn)"/>
+      <g font-size="13"><text x="270" y="58" text-anchor="middle" style="fill:var(--accent)">투영 P</text><text x="370" y="143" text-anchor="middle" style="fill:var(--warn)">역투영 B</text></g>
+      <path d="M130 150 V190 H300" fill="none" stroke-width="1.4" class="svg-line"/>
+      <path d="M510 150 V190 H340" fill="none" stroke-width="1.4" class="svg-line"/>
+      <g font-size="14" class="svg-fg">
+        <text x="130" y="212" text-anchor="middle">⟨μ, Bq⟩ (영상 공간에서 잰 내적)</text>
+        <text x="510" y="212" text-anchor="middle">⟨Pμ, q⟩ (측정값 공간에서 잰 내적)</text>
+        <text x="320" y="196" text-anchor="middle">=</text>
+      </g>
+    </svg>
+    <figcaption>\(\mathcal{P}\mu\)와 \(q\)를 측정값 공간에서 내적한 값은, \(\mu\)와 \(\mathcal{B}q\)를 영상 공간에서 내적한 값과 같습니다. 연산자를 한쪽 입력에서 다른 쪽 입력으로 옮겨도 내적이 변하지 않는다는 뜻입니다.</figcaption>
+  </figure>
+
+  <p style="text-align:center">\[\langle\mathcal{P}\mu,\ q\rangle = \int_0^\pi\!\!\int_s \Bigl[\int_\ell \mu\,d\ell\Bigr]q(\theta,s)\,ds\,d\theta\]</p>
+  <p style="text-align:center">\[= \int_0^\pi\!\!\int_s\!\int_\ell \mu(x,y)\,q(\theta,s)\,d\ell\,ds\,d\theta\]</p>
+
+  <p>고정된 \(\theta\)에서 \((s,\ell)\)은 \((x,y)\)를 돌린 좌표이므로(페이지 5의 접기와 같은 변수변환, 야코비안 1), 안쪽의
+  \(\int_s\int_\ell\) 를 \(\iint dx\,dy\)로 바꿀 수 있습니다.</p>
+
+  <p style="text-align:center">\[= \int_0^\pi\!\!\iint \mu(x,y)\,q(\theta,\ x\cos\theta+y\sin\theta)\,dx\,dy\,d\theta\]</p>
+  <p style="text-align:center">\[= \iint \mu(x,y)\Bigl[\int_0^\pi q(\theta,\ x\cos\theta+y\sin\theta)\,d\theta\Bigr]dx\,dy\]</p>
+
+  <p>안쪽 괄호가 <a href="../../part1/detail/ch04.html#s6">1편 4장 페이지 6</a>의 역투영 정의 \((\mathcal{B}q)(x,y)\)이므로, 전체
+  식은 \(\iint\mu(x,y)\,(\mathcal{B}q)(x,y)\,dx\,dy=\langle\mu,\mathcal{B}q\rangle\)입니다. 적분의 순서를 바꾼 것(이번에는 좌표를
+  통째로 회전해서)이 핵심이고, 1편의 델타 함수 전개와 결국 같은 자리에서 순서를 바꾸는 일을 합니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">다른 책의 표기</p>
+    <p>많은 논문은 일반적인 연산자의 수반을 \(\mathcal{A}^{*}\)로 씁니다(페이지 1의 표). 이 책은 별표를 <a href="../../part1/detail/ch02.html#s2">1편 2장 페이지 2</a>의 컨볼루션에 이미 썼으므로
+    (<a href="../../part1/detail/ch04.html#s6">1편 4장 페이지 6</a>과 같은 이유) 전치와 같은 위첨자 \(\mathcal{P}^{\mathsf T}\)를 쓰고,
+    CT의 구체적인 경우에는 \(\mathcal{B}\)라는 이름을 그대로 씁니다.</p>
+  </div>
+</section>
+
+<!-- ─ 페이지 7 -->
+<section class="screen" data-title="범함수와 그 미분">
+  <p class="kicker">10장 · 페이지 7 · 심화</p>
+  <h2>범함수: 데이터 충실도와 TV</h2>
+
+  <p>지금까지는 연산자(함수를 함수로 보내는 것)를 보았습니다. 이제 함수를 <b>수 하나</b>로 보내는 사상을 봅니다. 이것을
+  범함수(<span class="term" data-term="functional">Functional</span>)라고 부릅니다 — 3장의 목적함수 \(J(\mathbf{x})\)를
+  유한 차원 벡터 대신 연속 함수 \(\mu\)에 적용한 것입니다.</p>
+
+  <p>데이터 충실도(3장 페이지 4, 8)는 다음과 같이 그대로 옮겨집니다.</p>
+
+  <p style="text-align:center">\[J[\mu] = \lVert\mathcal{P}\mu-p\rVert^2\]</p>
+
+  <p>많은 논문은 계수를 \(\tfrac12\)로 두어 \(J[\mu]=\tfrac12\lVert\mathcal{P}\mu-p\rVert^2\)로 씁니다. 이 책은 3장부터
+  계수 1로 썼으므로(그 대가로 기울기에 2가 붙습니다, 페이지 8) 이 장도 같은 규약을 그대로 씁니다.</p>
+
+  <p>TV(<a href="ch04.html#s4">4장 페이지 4</a>)도 연속판으로 옮길 수 있습니다. 화소 간 차이 \((\partial_x\mathbf{x})_{i,j}\),
+  \((\partial_y\mathbf{x})_{i,j}\)의 연속판은 \(\mu\)의 공간 기울기 \(\nabla\mu=(\mu_x,\mu_y)\)이고, 그 크기를 모두 더한 것(합이
+  적분이 됩니다)이 TV입니다.</p>
+
+  <p style="text-align:center">\[\mathrm{TV}[\mu] = \iint_\Omega \lvert\nabla\mu(x,y)\rvert\,dx\,dy\]</p>
+
+  <p>여기서 \(\nabla\mu\)는 영상 \(\mu(x,y)\)를 \(x,y\)로 편미분해 모은 영상의 공간 기울기이며, 페이지 8에서 정의할 범함수의 기울기 \(\nabla J[\mu]\)와 다른 대상입니다(페이지 1의 기호표). 기울기(<span class="term" data-term="gradient">Gradient</span>)의 뜻은 3장과 같습니다.</p>
+
+  <h2>범함수의 미분: Gâteaux 미분</h2>
+
+  <p>3장 페이지 7은 여러 변수 함수의 기울기를 "한 변수만 바꾸고 나머지는 고정한 채 재는 변화율"로 정의했습니다. 범함수에서는
+  "변수"가 함수 전체이므로, 한 성분만 바꾼다는 말 대신 "한 방향으로만 조금 바꾼다"는 말을 씁니다. 범함수 \(J\)가 \(\mu\)에서 방향
+  \(\eta\)로 변하는 순간 변화율을 Gâteaux 미분(<span class="term" data-term="gateaux">Gâteaux 미분</span>)이라고 부르고
+  \(J'[\mu;\eta]\)로 씁니다.</p>
+
+  <p style="text-align:center">\[J'[\mu;\eta] := \lim_{t\to0}\ \frac{J[\mu+t\eta]-J[\mu]}{t}\]</p>
+
+  <p>여기서 \(t\)는 \(0\)으로 보내는 작은 실수 하나이고, 방향 \(\eta\)는 함수입니다(페이지 1의 기호표).</p>
+
+  <p>일변수 함수 \(f(x)\)의 보통 미분은 \(\lim_{t\to0}(f(x+t)-f(x))/t\)이고, 여러 변수 함수의 방향미분은
+  \(\lim_{t\to0}(f(\mathbf{x}+t\mathbf{h})-f(\mathbf{x}))/t=\langle\nabla f(\mathbf{x}),\mathbf{h}\rangle\)(3장 페이지 7)입니다.
+  Gâteaux 미분은 이 생각을 "방향"이 숫자 하나가 아니라 함수 \(\eta\) 전체인 경우로 넓힌 것입니다.</p>
+
+  <h3>데이터 충실도의 Gâteaux 미분</h3>
+
+  <p>\(J[\mu]=\lVert\mathcal{P}\mu-p\rVert^2\)에 적용하면 다음을 얻습니다.</p>
+
+  <p style="text-align:center">\[J'[\mu;\eta] = 2\langle\mathcal{P}\mu-p,\ \mathcal{P}\eta\rangle\]</p>
+
+  <details class="fold">
+    <summary>유도: 제곱을 펼치고 \(t\)로 나누기</summary>
+    <div class="fold-body">
+      <p>내적의 쌍선형성으로 제곱 노름을 펼칩니다.</p>
+      <p style="text-align:center">\[J[\mu+t\eta] = \lVert\mathcal{P}\mu+t\mathcal{P}\eta-p\rVert^2 = \lVert\mathcal{P}\mu-p\rVert^2 + 2t\langle\mathcal{P}\mu-p,\mathcal{P}\eta\rangle + t^2\lVert\mathcal{P}\eta\rVert^2\]</p>
+      <p>첫 항이 \(J[\mu]\)이므로 \((J[\mu+t\eta]-J[\mu])/t = 2\langle\mathcal{P}\mu-p,\mathcal{P}\eta\rangle + t\lVert\mathcal{P}\eta\rVert^2\)이고,
+      \(t\to0\)이면 둘째 항이 사라져 본문의 식이 남습니다.</p>
+    </div>
+  </details>
+
+  <p>이 결과에서 \(\eta\)가 들어가는 자리를 봅니다 — \(J'[\mu;\eta]\)는 \(\eta\)에 대해 선형입니다(\(\eta\)를 2배로 하면 값도
+  2배가 됩니다). 이 선형성이 다음 페이지의 출발점입니다.</p>
+</section>
+
+<!-- ─ 페이지 8 -->
+<section class="screen" data-title="리즈 표현과 범함수의 기울기">
+  <p class="kicker">10장 · 페이지 8 · 심화</p>
+  <h2>리즈 표현과 범함수의 기울기</h2>
+
+  <p>페이지 7의 결과를 페이지 6의 수반으로 다시 씁니다. \(q:=\mathcal{P}\mu-p\)로 두면
+  \(\langle q,\mathcal{P}\eta\rangle=\langle\mathcal{P}\eta,q\rangle=\langle\eta,\mathcal{B}q\rangle\)이므로 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[J'[\mu;\eta] = 2\langle\mathcal{B}(\mathcal{P}\mu-p),\ \eta\rangle\]</p>
+
+  <p>\(\eta\mapsto J'[\mu;\eta]\)는 \(\eta\)에 대해 선형이고(페이지 7), 코시-슈바르츠 부등식으로
+  \(\lvert J'[\mu;\eta]\rvert\le2\lVert\mathcal{B}(\mathcal{P}\mu-p)\rVert\,\lVert\eta\rVert\)이므로 유계이기도 합니다. 즉
+  \(\eta\mapsto J'[\mu;\eta]\)는 힐베르트 공간 위의 유계 선형 범함수입니다.</p>
+
+  <p>리즈 표현 정리(<span class="term" data-term="riesz">Riesz Representation Theorem</span>)는 힐베르트 공간 위의 모든 유계 선형 범함수
+  \(L(\eta)\)가 어떤 고정된 \(g\)에 대해 \(L(\eta)=\langle g,\eta\rangle\)로, 그것도 유일하게 쓸 수 있다고 말합니다. 위에서
+  이미 그 모양의 \(g=2\mathcal{B}(\mathcal{P}\mu-p)\)를 직접 구했으므로, 유일성에 따라 이 \(g\)가 바로 그 표현입니다. 이
+  \(g\)를 범함수의 기울기(리즈 표현)라고 부르고 \(\nabla J[\mu]\)로 씁니다 — \(J'[\mu;\eta]=\langle\nabla J[\mu],\eta\rangle\)를
+  모든 \(\eta\)에 대해 만족시키는 함수입니다. 이 정리의 증명은 생략합니다.</p>
+
+  <p style="text-align:center">\[\nabla J[\mu] = 2\,\mathcal{B}(\mathcal{P}\mu-p)\]</p>
+
+  <p>이 식은 3장 페이지 8의 \(\nabla J(\mathbf{x})=2\mathbf{A}^{\mathsf T}(\mathbf{A}\mathbf{x}-\mathbf{b})\)와 구조가 완전히
+  같습니다 — 화소 기저로 이산화하면 \(\mathcal{P}\)가 \(\mathbf{A}\), \(\mathcal{B}\)가 \(\mathbf{A}^{\mathsf T}\)에 대응하므로,
+  \(\nabla J[\mu]\)는 \(\nabla J(\mathbf{x})\)의 연속판입니다. 다만 두 식의 <b>값</b>이 정확히 같다고는 말할 수 없습니다 — 각도·검출기
+  간격이나 화소 크기 같은, 적분을 유한 합으로 바꿀 때 끼어드는 비례상수가 있기 때문입니다. 정확한 대응 관계는 <a href="ch11.html#s7">11장 페이지 7</a>에서 다룹니다.</p>
+
+  <h3>눈으로 보는 방향 도함수와 기울기</h3>
+
+  <p>함수 \(\mu\)를 숫자 두 개 \((a,b)\)로 줄인 모형에서 Gâteaux 미분을 봅니다. \(J(\mu)=\lVert\mathbf{A}\mu-\mathbf{p}\rVert^2\)이고
+  \(\mathbf{A}=\begin{pmatrix}1.5&0.5\\0.5&1\end{pmatrix}\), \(\mathbf{p}=(2,\ 1.2)\)입니다. 하얀 점(라이트 모드에서는 검은 점)이
+  현재의 \(\mu=(0.3,\ 0.2)\)이고, 그 점을 지나는 굵은 곡선이 같은 \(J\)의 등고선입니다. 방향 \(\eta\)를 돌리면서 그 방향으로 \(J\)가 얼마나 빨리 변하는지(\(J'[\mu;\eta]\))를 읽으세요.</p>
+
+  <div style="display:flex;gap:1.4rem;align-items:center;justify-content:center;flex-wrap:wrap;margin:1rem 0">
+    <div style="min-width:12rem">
+      <p style="margin:0 0 .3rem;font-size:.86rem;color:var(--muted)">방향 \(\eta\)의 각도를 돌려 보세요.</p>
+      <input id="c8e-a" type="range" min="0" max="359" step="1" value="30" style="width:100%">
+      <p style="text-align:center;font-size:.84rem;margin:.3rem 0 0" id="c8e-aval"></p>
+    </div>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 400 250" role="img" aria-label="J의 등고선 위의 한 점에서 방향 η와 기울기 화살표를 보여 주는 그림">
+      <defs>
+        <marker id="c8e-ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="c8e-aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <g id="c8e-cont" fill="none" stroke-width="1.2" style="stroke:var(--muted)"></g>
+      <path id="c8e-line" fill="none" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--accent)" opacity=".6"/>
+      <path id="c8e-eta" fill="none" stroke-width="2.4" marker-end="url(#c8e-ab)" style="stroke:var(--accent)"/>
+      <path id="c8e-grad" fill="none" stroke-width="2.4" marker-end="url(#c8e-aw)" style="stroke:var(--warn)"/>
+      <circle id="c8e-pt" r="4.5" style="fill:var(--fg)"/>
+      <g font-size="11" class="svg-muted"><text x="392" y="244" text-anchor="end">a</text><text x="8" y="16">b</text></g>
+    </svg>
+    <figcaption>회색 곡선이 등고선이고, 파란 화살표가 방향 \(\eta\)입니다. 주황 화살표 \(\nabla J\)(보기 쉽게 \(0.12\)배로 줄여 그렸습니다)는 등고선에 수직이고 \(J\)가 가장 빨리 커지는 쪽을 가리킵니다.</figcaption>
+  </figure>
+
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c8e-out"></p>
+
+  <p>화면의 두 값은 같습니다. 왼쪽은 정의대로 \(h=10^{-6}\)에서 차이를 재서 얻은 \(J'[\mu;\eta]\)이고, 오른쪽은 기울기 \(\nabla J[\mu]\)와 \(\eta\)의 내적입니다.
+  현재 \(\mu\)에서 \(\nabla J=(-5.2,\ -3.15)\)이고 \(\lvert\nabla J\rvert=6.0797\)입니다. 각도를 \(0^\circ\), \(30^\circ\), \(90^\circ\), \(150^\circ\)로 두면
+  \(J'\)은 \(-5.2000\), \(-6.0783\), \(-3.1500\), \(2.9283\)이고, 모두 \(\nabla J\)와 내적한 값과 같습니다.
+  \(J'\)이 가장 큰 방향(\(+6.0797\))은 \(\nabla J\)가 가리키는 \(211.2^\circ\) 부근이고, 가장 작은 방향(\(-6.0797\))은 그 반대인 \(31.2^\circ\) 부근입니다. \(J'=0\)이 되는 방향은 \(\nabla J\)에 수직인 방향으로, 등고선의 접선 방향입니다.
+  방향마다 따로 계산하던 도함수를 \(\nabla J\) 하나와의 내적으로 모두 읽을 수 있다는 것이 리즈 표현의 뜻입니다.</p>
+
+<script>
+(function () {
+  /*calc*/
+  var A4=[[1.5,0.5],[0.5,1]], P4=[2,1.2], M0=[0.3,0.2];
+  function res(m){return [A4[0][0]*m[0]+A4[0][1]*m[1]-P4[0], A4[1][0]*m[0]+A4[1][1]*m[1]-P4[1]];}
+  function J(m){var r=res(m); return r[0]*r[0]+r[1]*r[1];}
+  function grad(m){var r=res(m); return [2*(A4[0][0]*r[0]+A4[1][0]*r[1]), 2*(A4[0][1]*r[0]+A4[1][1]*r[1])];}
+  function dirDer(m,eta){var h=1e-6; return (J([m[0]+h*eta[0],m[1]+h*eta[1]])-J(m))/h;}
+  /*endcalc*/
+  var aIn = document.getElementById('c8e-a'), aVal = document.getElementById('c8e-aval'), out = document.getElementById('c8e-out'),
+      Mstar = [1.12, 0.64], g0 = grad(M0), i, k;
+  function X(a) { return 40 + (a + 0.5) * 100; }
+  function Y(b) { return 220 - (b + 0.5) * 100; }
+  function seg(el, x0, y0, x1, y1) { el.setAttribute('d', 'M' + X(x0).toFixed(1) + ' ' + Y(y0).toFixed(1) + 'L' + X(x1).toFixed(1) + ' ' + Y(y1).toFixed(1)); }
+  var levels = [0.5, 1.5, J(M0), 5.5], cont = '';
+  for (k = 0; k < levels.length; k++) {
+    var d = '';
+    for (i = 0; i <= 120; i++) {
+      var th = 2 * Math.PI * i / 120, dir = [Math.cos(th), Math.sin(th)],
+          ad = [A4[0][0] * dir[0] + A4[0][1] * dir[1], A4[1][0] * dir[0] + A4[1][1] * dir[1]],
+          r = Math.sqrt(levels[k]) / Math.hypot(ad[0], ad[1]);
+      d += (i ? 'L' : 'M') + X(Mstar[0] + r * dir[0]).toFixed(1) + ' ' + Y(Mstar[1] + r * dir[1]).toFixed(1);
+    }
+    cont += '<path d="' + d + 'Z"' + (k === 2 ? ' style="stroke:var(--fg)" stroke-width="1.8"' : '') + '/>';
+  }
+  document.getElementById('c8e-cont').innerHTML = cont;
+  seg(document.getElementById('c8e-grad'), M0[0], M0[1], M0[0] + 0.12 * g0[0], M0[1] + 0.12 * g0[1]);
+  document.getElementById('c8e-pt').setAttribute('cx', X(M0[0]).toFixed(1)); document.getElementById('c8e-pt').setAttribute('cy', Y(M0[1]).toFixed(1));
+  function draw() {
+    var deg = +aIn.value, ph = deg * Math.PI / 180, e = [Math.cos(ph), Math.sin(ph)];
+    seg(document.getElementById('c8e-eta'), M0[0], M0[1], M0[0] + 0.6 * e[0], M0[1] + 0.6 * e[1]);
+    seg(document.getElementById('c8e-line'), M0[0] - 3 * e[0], M0[1] - 3 * e[1], M0[0] + 3 * e[0], M0[1] + 3 * e[1]);
+    aVal.textContent = 'η의 각도 = ' + deg + '°';
+    out.textContent = "J'[μ;η] = " + dirDer(M0, e).toFixed(4) + ' · ⟨∇J, η⟩ = ' + (g0[0] * e[0] + g0[1] * e[1]).toFixed(4);
+  }
+  aIn.addEventListener('input', draw);
+  draw();
+})();
+</script>
+
+  <p>유한 차원에서는 리즈 표현이 눈에 보이지 않았던 이유도 이제 알 수 있습니다. \(\mathbb{R}^n\)의 표준 내적
+  \(\langle\mathbf{x},\mathbf{y}\rangle=\sum x_jy_j\)에서는 모든 선형 범함수가 <b>저절로</b> 어떤 벡터 \(\mathbf{g}\)와의 내적이고,
+  그 \(\mathbf{g}\)가 바로 편미분을 모은 벡터 자체입니다 — 리즈 표현 정리가 유한 차원에서는 항상 자동으로 성립하는 자명한
+  사실이라서, 3장은 이 단계를 거치지 않고 곧바로 기울기 벡터를 썼습니다.</p>
+
+  <p>\(\nabla J[\mu]\)는 \(\mu\)와 같은 \(\Omega\) 위의 함수 한 장이고, 페이지 7의 \(\nabla\mu\)(점마다 2차원 벡터)와 다릅니다.</p>
+</section>
+
+<!-- ─ 페이지 9 -->
+<section class="screen" data-title="변분법과 오일러-라그랑주 방정식">
+  <p class="kicker">10장 · 페이지 9 · 심화</p>
+  <h2>변분법과 오일러-라그랑주 방정식</h2>
+
+  <p>페이지 8에서는 \(\mathcal{P}\)가 선형이었기 때문에 수반을 바로 쓸 수 있었습니다. TV처럼 \(\mu\)의 기울기에 비선형으로 의존하는
+  범함수는 다른 도구가 필요합니다. 범함수가 다음과 같은 꼴(각 점의 \(\mu\)값과 그 자리의 공간 기울기 \(\nabla\mu\)만으로 정해지는
+  적분)이면,</p>
+
+  <p style="text-align:center">\[J[\mu] = \iint_\Omega L(\mu,\ \nabla\mu)\,dx\,dy\]</p>
+
+  <p>경계에서 흐름이 없다고 두면(\(\partial L/\partial(\nabla\mu)\cdot\mathbf{n}=0\), <a href="ch07.html#s3">7장 페이지 3</a>이
+  격자 끝에서 화소 바깥쪽 차이를 \(0\)으로 둔 것과 같은 뜻입니다) 범함수의 기울기는 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\nabla J[\mu] = \frac{\partial L}{\partial\mu} - \operatorname{div}\!\left(\frac{\partial L}{\partial(\nabla\mu)}\right)\]</p>
+
+  <p>(\(\partial L/\partial(\nabla\mu)\)는 \(L\)을 \(\mu_x,\mu_y\) 각각으로 편미분해 모은 벡터입니다.) 이 식이 \(0\)이 되는 조건을
+  오일러-라그랑주 방정식(<span class="term" data-term="elagrange">Euler–Lagrange 방정식</span>)이라고 부릅니다 —
+  <a href="ch03.html#s9">3장 페이지 9</a>의 1차 최적성 조건 \(\nabla J=\mathbf{0}\)을 함수 공간으로 넓힌 것입니다.</p>
+
+  <details class="fold">
+    <summary>유도: Gâteaux 미분과 발산 정리</summary>
+    <div class="fold-body">
+      <p>\(J[\mu+t\eta]\)를 \(t\)로 미분해 \(t=0\)을 넣으면(연쇄법칙), \(L\)의 두 인자 각각에서 한 항씩 나옵니다.</p>
+      <p style="text-align:center">\[J'[\mu;\eta] = \iint_\Omega \left[\frac{\partial L}{\partial\mu}\,\eta + \frac{\partial L}{\partial(\nabla\mu)}\cdot\nabla\eta\right]dx\,dy\]</p>
+      <p>둘째 항에서 \(\nabla\eta\)를 없애려고 발산 정리(\(\iint_\Omega\mathbf{\varphi}\cdot\nabla\eta\,dx\,dy = \oint_{\partial\Omega}\eta\,(\mathbf{\varphi}\cdot\mathbf{n})\,ds - \iint_\Omega\eta\,\operatorname{div}\mathbf{\varphi}\,dx\,dy\))를
+      \(\mathbf{\varphi}=\partial L/\partial(\nabla\mu)\)에 씁니다. 경계에서 \(\mathbf{\varphi}\cdot\mathbf{n}=0\)이라고 두면
+      경계 적분이 사라지고(이 조건은 <b>임의의</b> \(\eta\)에 대해 성립합니다), 두 항을 묶으면 본문의 식이
+      \(J'[\mu;\eta]=\langle\nabla J[\mu],\eta\rangle\) 꼴로 나옵니다.</p>
+    </div>
+  </details>
+
+  <h3>준비: 가장 단순한 경우</h3>
+
+  <p>이 공식이 실제로 작동하는지 가장 간단한 \(L\)로 먼저 확인합니다. \(L=\tfrac12\lvert\nabla\mu\rvert^2\)이면
+  \(\partial L/\partial\mu=0\)이고 \(\partial L/\partial(\nabla\mu)=\nabla\mu\)이므로 \(\nabla J[\mu]=-\operatorname{div}(\nabla\mu)=-\Delta\mu\)입니다
+  (\(-\Delta\mu\)에서 \(\Delta\mu\)는 라플라시안, 곧 \(\nabla\cdot\nabla\mu\)입니다). 영상의 기울기 크기의 제곱을 벌점으로 쓰는 간단한 평활화 정규화의 기울기가 라플라시안의
+  반대라는, 자주 보는 결과를 이 공식으로 한 줄에 얻습니다.</p>
+
+  <h3>평활화 TV의 연속 기울기</h3>
+
+  <p>이제 목표인 \(L=h_\delta(\lvert\nabla\mu\rvert)\)(<a href="ch04.html#s7">4장 페이지 7</a>의 Huber 함수)를 봅니다.
+  \(\mu\)에 직접 의존하지 않으므로 \(\partial L/\partial\mu=0\)이고, 연쇄법칙으로 다음을 얻습니다.</p>
+
+  <p style="text-align:center">\[\frac{\partial L}{\partial(\nabla\mu)} = h_\delta'(\lvert\nabla\mu\rvert)\,\frac{\nabla\mu}{\lvert\nabla\mu\rvert}\]</p>
+
+  <p><a href="ch07.html#s3">7장 페이지 3</a>은 \(h_\delta'(t)/t\)를 계수 \(c(t)\)로 두고 \(t\le\delta\)이면 \(1/\delta\), 아니면
+  \(1/t\)라고 했습니다 — 이것은 정확히 \(c(t)=1/\max(t,\delta)\)와 같은 식입니다. 그러므로 평활화 TV의 연속 기울기는 다음과
+  같습니다.</p>
+
+  <p style="text-align:center">\[\nabla\mathrm{TV}_\delta[\mu] = -\operatorname{div}\!\left(\frac{\nabla\mu}{\max(\lvert\nabla\mu\rvert,\delta)}\right)\]</p>
+
+  <p>이 식은 <a href="ch07.html#s3">7장 페이지 3</a>의 이산 공식
+  \(\bigl(\nabla\mathrm{TV}_\delta(\mathbf{x})\bigr)_{k,l}=-c_{k,l}\bigl((\partial_x\mathbf{x})_{k,l}+(\partial_y\mathbf{x})_{k,l}\bigr)+c_{k-1,l}(\partial_x\mathbf{x})_{k-1,l}+c_{k,l-1}(\partial_y\mathbf{x})_{k,l-1}\)와
+  같은 식입니다 — 그 식도 "자기 화소가 만드는 흐름을 빼고 이웃에서 들어오는 흐름을 더하는" 이산 발산이었습니다. 연속 발산
+  \(\operatorname{div}\)와 이산 발산이 같은 역할을 합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="한 줄로 늘어선 세 칸에서 왼쪽 경계로 들어오는 흐름과 오른쪽 경계로 나가는 흐름의 차이가 기울기가 되는 도식">
+      <defs>
+        <marker id="c8f-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="c8f-aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1.4" style="stroke:var(--muted)">
+        <rect x="70" y="100" width="160" height="60"/><rect x="230" y="100" width="160" height="60" style="fill:var(--accent-bg)"/><rect x="390" y="100" width="160" height="60"/>
+      </g>
+      <g font-size="14" class="svg-fg"><text x="150" y="136" text-anchor="middle">k−1</text><text x="310" y="136" text-anchor="middle">k</text><text x="470" y="136" text-anchor="middle">k+1</text></g>
+      <path d="M170 70 H286" fill="none" stroke-width="2.2" marker-end="url(#c8f-ar)" style="stroke:var(--accent)"/>
+      <path d="M334 70 H450" fill="none" stroke-width="2.2" marker-end="url(#c8f-aw)" style="stroke:var(--warn)"/>
+      <g font-size="13"><text x="228" y="52" text-anchor="middle" style="fill:var(--accent)">들어오는 흐름 φ(k−1)</text><text x="392" y="52" text-anchor="middle" style="fill:var(--warn)">나가는 흐름 φ(k)</text></g>
+      <g font-size="13" class="svg-fg">
+        <text x="320" y="196" text-anchor="middle">기울기 ∇TV(k) = −div φ = φ(k−1) − φ(k)</text>
+        <text x="320" y="218" text-anchor="middle" class="svg-muted" font-size="12">φ(k) = c(k)·(이웃과의 차이), c = 1/max(|∇μ|, δ)</text>
+      </g>
+    </svg>
+    <figcaption>한 줄로 늘어선 칸에서 \(\varphi\)는 칸 사이의 "흐름"입니다. 평활화 TV의 기울기는 \(k\)번째 칸으로 들어오는 흐름에서 나가는 흐름을 뺀 값이며, 이것이 발산의 부호를 바꾼 \(-\operatorname{div}\varphi\)의 이산형입니다.</figcaption>
+  </figure>
+
+  <p>평활화하지 않은 TV(\(L=\lvert\nabla\mu\rvert\), \(\delta\to0\))는 \(\nabla\mu=\mathbf{0}\)인 곳에서 \(\nabla\mu/\lvert\nabla\mu\rvert\)가
+  정의되지 않아 이 공식을 쓸 수 없습니다 — <a href="ch09.html#s2">9장 페이지 2</a>의 서브기울기로만 다룰 수 있고,
+  <a href="ch04.html#s7">4장 페이지 7</a>가 평활화를 택한 이유가 연속 공간에서도 똑같이 성립합니다.</p>
+</section>
+
+<!-- ─ 페이지 10 -->
+<section class="screen" data-title="TV가 사는 공간">
+  <p class="kicker">10장 · 페이지 10 · 심화</p>
+  <h2>TV가 정의되는 공간: 소볼레프와 유계 변동</h2>
+
+  <p>이 페이지는 이 장 안에서도 결론만 알아도 다음 페이지로 넘어가는 데 지장이 없습니다.</p>
+
+  <p>페이지 7의 \(\mathrm{TV}[\mu]=\iint\lvert\nabla\mu\rvert\,dx\,dy\)는 \(\nabla\mu\)가 보통의 뜻으로 존재해야 적분이 됩니다.
+  그런데 Shepp-Logan 팬텀처럼 경계에서 값이 뚝 뛰는 영상은 그 경계에서 보통의 기울기가 없습니다 — TV를 적용하고 싶은 바로
+  그런 영상에, 정의 자체가 곧바로는 적용되지 않는다는 뜻입니다.</p>
+
+  <p>1차원 신호로 두 가지 "변화의 크기"를 비교합니다. 높이 \(0\)에서 \(1\)로 올라가는 램프를 폭 \(w\)로 가파르게 만들어 가면, 한쪽 값은 한없이 커지고
+  다른 쪽 값은 변하지 않습니다.</p>
+
+  <div style="display:flex;gap:1.4rem;align-items:center;justify-content:center;flex-wrap:wrap;margin:1rem 0">
+    <div style="min-width:12rem">
+      <p style="margin:0 0 .3rem;font-size:.86rem;color:var(--muted)">램프의 폭 \(w\)를 줄여 보세요.</p>
+      <input id="c8g-w" type="range" min="0" max="8" step="1" value="2" style="width:100%">
+      <p style="text-align:center;font-size:.84rem;margin:.3rem 0 0" id="c8g-wval"></p>
+    </div>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 220" role="img" aria-label="폭이 w인 램프와 작은 진동 함수를 같은 축에 그린 그래프">
+      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M40 190 H610"/><path d="M40 20 V190"/></g>
+      <path id="c8g-osc" fill="none" stroke-width="1.4" style="stroke:var(--warn)"/>
+      <path id="c8g-ramp" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <g font-size="10.5" class="svg-muted"><text x="605" y="206" text-anchor="end">x</text><text x="46" y="30" style="fill:var(--accent)">램프 (높이 0→1, 폭 w)</text><text x="46" y="44" style="fill:var(--warn)">진동 0.5+0.05 sin(10πx)</text></g>
+    </svg>
+    <figcaption>파란 선은 폭 \(w\)인 램프이고, 주황 선은 작은 진동 함수입니다.</figcaption>
+  </figure>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>함수</th><th>\(\mathrm{TV}=\int\lvert\mu'\rvert\,dx\)</th><th>\(\int\lvert\mu'\rvert^2\,dx\)</th></tr>
+      <tr><td>램프(현재 \(w\))</td><td id="c8g-tv1"></td><td id="c8g-en1"></td></tr>
+      <tr><td>진동</td><td id="c8g-tv2"></td><td id="c8g-en2"></td></tr>
+    </table>
+  </div>
+
+  <p>램프의 TV는 \(w\)와 상관없이 \(1.0000\)입니다. 올라가는 높이가 \(1\)이면 얼마나 가파르든 총 변화량은 \(1\)이기 때문입니다. 반면 기울기를 제곱해서 적분한
+  값은 \(1/w\)로 커져서, \(w=0.5\)에서 \(2\), \(w=0.1\)에서 \(10\), \(w=0.01\)에서 \(100\), \(w=0.001\)에서 \(1000\)이 됩니다. \(w\to0\)인 극한, 곧 계단 함수에서는 이 값이
+  무한대입니다. 기울기를 제곱해 적분하는 방식으로는 계단 함수를 다룰 수 없지만, TV는 \(1\)로 그대로 정의됩니다. 이 차이가 TV를 소볼레프 공간이 아니라 아래의
+  유계 변동(Bounded Variation, BV) 공간에서 정의하는 이유입니다. 진동 함수의 TV도 \(1.0000\)으로 같고 제곱 적분은 \(1.2337\)입니다. 같은 TV라도 한 번의 큰 도약과 여러 번의 작은 진동은 서로 다른 함수이므로, TV는 총 변화량을
+  재는 값일 뿐 모양까지 구별하지는 않습니다.</p>
+
+<script>
+(function () {
+  /*calc*/
+  var WS=[0.5,0.2,0.1,0.05,0.02,0.01,0.005,0.002,0.001], N5=4000;
+  function rampf(w,x){var a=0.5-w/2; return x<=a?0:(x>=a+w?1:(x-a)/w);}
+  function oscf(x){return 0.5+0.05*Math.sin(2*Math.PI*5*x);}
+  function tvEn(g){var tv=0,en=0,i,d,h=1/N5; for(i=0;i<N5;i++){d=g((i+1)/N5)-g(i/N5); tv+=Math.abs(d); en+=d*d/h;} return {tv:tv,en:en};}
+  /*endcalc*/
+  var wIn = document.getElementById('c8g-w'), wVal = document.getElementById('c8g-wval');
+  function X(x) { return 40 + x * 570; }
+  function Y(v) { return 190 - v * 160; }
+  var d = '', i;
+  for (i = 0; i <= 400; i++) d += (i ? 'L' : 'M') + X(i / 400).toFixed(1) + ' ' + Y(oscf(i / 400)).toFixed(1);
+  document.getElementById('c8g-osc').setAttribute('d', d);
+  var o = tvEn(oscf);
+  document.getElementById('c8g-tv2').textContent = o.tv.toFixed(4);
+  document.getElementById('c8g-en2').textContent = o.en.toFixed(4);
+  function draw() {
+    var w = WS[+wIn.value], a = 0.5 - w / 2,
+        r = tvEn(function (x) { return rampf(w, x); });
+    document.getElementById('c8g-ramp').setAttribute('d', 'M' + X(0) + ' ' + Y(0) + 'L' + X(a).toFixed(1) + ' ' + Y(0) + 'L' + X(a + w).toFixed(1) + ' ' + Y(1) + 'L' + X(1) + ' ' + Y(1));
+    wVal.textContent = 'w = ' + w;
+    document.getElementById('c8g-tv1').textContent = r.tv.toFixed(4);
+    document.getElementById('c8g-en1').textContent = r.en.toFixed(2);
+  }
+  wIn.addEventListener('input', draw);
+  draw();
+})();
+</script>
+
+  <p>이 책이 지금까지 \(\mathrm{TV}[\mu]=\iint\lvert\nabla\mu\rvert\)로 적어 온 것은, 실제로는 아래 접기의 BV 정의가 \(\mu\)가 충분히
+  매끄러울 때 같은 값을 준다는 사실에 기대고 있었던 것입니다. 이산 영상(화소 기저)은 화소 안에서 상수이므로 애초에 경계에서
+  값이 뚝 뛰고, 4장의 이산 TV는 처음부터 BV 쪽의 생각(차이의 절댓값을 더함)으로 정의되어 있었습니다.</p>
+
+  <details class="fold">
+    <summary>소볼레프 공간과 유계 변동 공간</summary>
+    <div class="fold-body">
+      <p>보통의 도함수보다 약한 뜻("약한 도함수", 부분적분으로 정의되는 도함수)이 \(L^1\)에 있는 함수들의 모임을
+      소볼레프 공간(<span class="term" data-term="bv">소볼레프·BV</span>) \(W^{1,1}(\Omega)\)라고 부릅니다. 이 공간은 보통의 미분이
+      없어도 되지만, 그래도 값이 뚝 뛰는 함수(계단형 경계)는 받아 주지 않습니다.</p>
+      <p>실제로 TV가 뜻을 가지는 더 넓은 공간은 BV 공간입니다. BV에서는 TV 자체를 \(\nabla\mu\)
+      없이 다시 정의합니다 — 매끄러운 벡터장 \(\varphi\)(크기가 어디서나 \(1\) 이하)를 모두 적용해 보고, 다음 값의 상한을 TV로
+      둡니다.</p>
+      <p style="text-align:center">\[\mathrm{TV}[\mu] := \sup\Bigl\{ \iint_\Omega \mu\,\operatorname{div}\varphi\,dx\,dy\ \Bigm|\ \varphi\in C_c^1(\Omega;\mathbb{R}^2),\ \lvert\varphi\rvert\le1\Bigr\}\]</p>
+      <p>이 식은 \(\mu\)를 전혀 미분하지 않습니다 — 미분은 매끄러운 \(\varphi\) 쪽에서만 일어납니다(<a href="ch09.html#s5">9장 페이지 5</a>의
+      Chambolle-Pock이 TV를 쌍대 변수로 바꿔 쓰는 것과 같은 생각입니다). \(\mu\)가 매끄러우면 발산 정리로 페이지 7의 적분과
+      같은 값이 나오고, \(\mu\)가 어떤 집합의 indicator 함수(값이 \(0\)과 \(1\)뿐)이면 TV는 그 경계의 길이(둘레)와 같아집니다.
+      예를 들어 반지름 \(R\)인 원판의 indicator는 \(\mathrm{TV}=2\pi R\)입니다(둘레 \(\times\) 뛰는 높이 \(1\)). 실제 CT 영상의
+      TV가 뜻을 가지는 것은 이 BV 공간에서입니다.</p>
+    </div>
+  </details>
+
+</section>
+
+<!-- ─ 페이지 11 -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">10장 · 페이지 11 · 심화</p>
+  <h2>10장 마무리</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>(심화) 연속 표기 \(\mathcal{P}\mu=p\), \(J[\mu]\)는 이산 표기 \(\mathbf{A}\mathbf{x}=\mathbf{b}\), \(J(\mathbf{x})\)와 짝을
+      이루며, 유한 차원으로 근사하는 것은 문제 자체가 아니라 계산을 위한 선택입니다.</li>
+      <li>(심화) 함수도 벡터이고, \(L^2\)은 내적·노름을 갖춘 완비된(힐베르트) 공간입니다. 3장의 유한 차원 벡터공간은 이 틀의
+      가장 단순한 경우입니다.</li>
+      <li>(심화) \(\mathcal{P}\)는 시야를 제한하면 유계 연산자이고, 그 수반이 바로 1편 4장의 역투영 \(\mathcal{B}\)입니다.</li>
+      <li>(심화) 범함수의 Gâteaux 미분은 방향미분을 함수 공간으로 넓힌 것이고, 리즈 표현 정리로 그 미분을 함수(범함수의 기울기)로
+      나타낼 수 있습니다 — 3장의 \(\nabla J(\mathbf{x})=2\mathbf{A}^{\mathsf T}(\mathbf{A}\mathbf{x}-\mathbf{b})\)가 바로
+      이 구조의 유한 차원 버전입니다.</li>
+      <li>(심화) 오일러-라그랑주 방정식은 범함수의 기울기를 구체적인 미분방정식으로 바꾸어 주며, 평활화 TV에 적용하면 7장의 이산
+      공식과 같은 꼴 \(-\operatorname{div}(\nabla\mu/\max(\lvert\nabla\mu\rvert,\delta))\)을 얻습니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">이 장의 수반 연산자 \(\mathcal{B}\)와 1장의 \(\mathbf{A}^{\mathsf T}\)의 관계로 가장 알맞은 것은
+    무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 역투영은 투영의 역연산이 아니라 수반 연산입니다(1편 4장). 두 행렬 모두 역행렬이 아니라 전치이고, 수반은 역연산과 다른 개념입니다.">\(\mathcal{B}\)는 \(\mathcal{P}\)의 역연산이고 \(\mathbf{A}^{\mathsf T}\)는 \(\mathbf{A}\)의 역행렬이어서, 둘 다 원래 연산을 되돌린다.</li>
+      <li data-why="틀립니다. 두 연산자의 값이 항상 같다고는 말할 수 없습니다(페이지 8). 이산화 과정에서 각도·검출기 간격, 화소 크기 같은 비례상수가 끼어들기 때문입니다.">\(\mathcal{B}\)와 \(\mathbf{A}^{\mathsf T}\)는 이산화 방법과 상관없이 항상 같은 수를 내므로 바꿔 써도 된다.</li>
+      <li data-why="맞습니다. 두 연산자는 같은 정의식(⟨𝒯μ,q⟩=⟨μ,𝒯ᵗq⟩)을 만족하는, 각자의 공간(연속 L² 공간과 특정 이산화로 얻은 A의 공간)에서의 수반입니다. 𝒫를 이산화해 𝓑를 그대로 행렬로 바꾼 것이 그 A의 전치와 꼭 같지는 않을 수 있고, 같지 않으면 1장의 unmatched가 됩니다.">둘 다 각자의 공간에서 정의된 수반이지만, \(\mathcal{B}\)를 그대로 이산화한 행렬이 반드시 \(\mathbf{A}^{\mathsf T}\)와 같지는 않다.</li>
+      <li data-why="틀립니다. 1편 4장과 1장 모두 역투영·전치가 CT 밖에서도 똑같이 정의되는 수반 연산의 한 예일 뿐이라고 밝혔습니다. 전혀 무관한 개념이 아닙니다.">\(\mathcal{B}\)는 CT에만 있는 개념이고 \(\mathbf{A}^{\mathsf T}\)는 선형대수의 개념이어서, 둘 사이에 수학적 관계는 없다.</li>
+    </ol>
+    <div class="explain">
+      <p>1장 페이지 6의 matched/unmatched가 바로 이 간극에서 생깁니다 — 순투영과 역투영을 따로 구현하면, 연속에서는 같은
+      \(\mathcal{P}\)의 수반이라는 사실이 이산화 뒤에는 저절로 보장되지 않습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">범함수 \(J[\mu]=\langle\mu,\mu\rangle\)의 Gâteaux 미분과 기울기로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. J[μ+tη]를 직접 펼치면 ⟨μ,μ⟩+2t⟨μ,η⟩+t²⟨η,η⟩이 되어, η에 의존하지 않는 것이 아니라 η에 대해 선형인 항 2⟨μ,η⟩이 남습니다.">\(J'[\mu;\eta] = 2\langle\mu,\mu\rangle\)이고, 이 식은 \(\eta\)에 의존하지 않으므로 기울기는 정의되지 않는다.</li>
+      <li data-why="틀립니다. J[μ]는 이미 수(스칼라) 하나이지만, Gâteaux 미분은 그 값 자체가 아니라 μ를 η 방향으로 조금 바꿀 때 그 값이 변하는 속도를 재는 것입니다. 상수라서 미분이 0이 되는 것이 아닙니다.">\(J[\mu]\)가 이미 수(스칼라)이므로 더 미분할 필요가 없고 \(\nabla J[\mu]=\mathbf{0}\)이다.</li>
+      <li data-why="틀립니다. 수반 𝓑는 연산자 𝒫가 등장할 때만 필요합니다. 이 J는 μ에 아무 연산자도 적용하지 않고 μ 자신의 내적을 재는 범함수라서, 수반을 끌어올 자리가 없습니다.">\(\nabla J[\mu]\)는 1편 4장의 \(\mathcal{B}\)를 반드시 써서 \(\nabla J[\mu]=2\mathcal{B}\mu\)로 써야 한다.</li>
+      <li data-why="맞습니다. J[μ+tη]=⟨μ,μ⟩+2t⟨μ,η⟩+t²⟨η,η⟩이므로 (J[μ+tη]−J[μ])/t → 2⟨μ,η⟩이고, 이 값이 모든 η에 대해 ⟨g,η⟩ 꼴이 되는 g는 2μ뿐입니다.">\(J'[\mu;\eta]=2\langle\mu,\eta\rangle\)이고, 이 식이 모든 \(\eta\)에 대해 \(\langle\nabla J[\mu],\eta\rangle\) 꼴이므로 \(\nabla J[\mu]=2\mu\)다.</li>
+    </ol>
+    <div class="explain">
+      <p>이 예는 연산자가 등장하지 않는 가장 단순한 범함수입니다. 리즈 표현이 "저절로" 구해지는 경우(페이지 8의 유한 차원과
+      같은 상황)를 함수 공간에서도 바로 볼 수 있습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="q">\(\mathcal{P}\)가 \(L^2(\mathbb{R}^2)\) 전체에서는 유계가 아닐 수 있는데, 영상이 반지름 \(R\)인 시야 안에 있다고
+    제한하면 유계가 되는 이유로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. 시야를 제한하면 모든 광선이 지나는 길이가 2R 이하로 묶이고, 코시-슈바르츠 부등식으로 이 길이를 이용해 ‖𝒫μ‖²를 ‖μ‖²의 상수배(2πR배)로 누를 수 있습니다(페이지 5).">광선이 시야를 지나는 길이가 \(2R\) 이하여서 \(\lVert\mathcal{P}\mu\rVert^2\)을 \(\lVert\mu\rVert^2\)의 상수배로 누를 수 있기 때문이다.</li>
+      <li data-why="틀립니다. 시야를 제한해도 측정값 p(θ,s)의 크기는 μ의 크기에 따라 얼마든지 커질 수 있습니다. 0과 1 사이로 제한된다는 사실은 없습니다.">시야를 제한하면 측정값 \(p(\theta,s)\) 자체가 항상 \(0\)과 \(1\) 사이의 값만 가지게 되어 값이 커지지 않기 때문이다.</li>
+      <li data-why="틀립니다. 시야 밖의 점에서도 광선(직선) 자체는 여전히 존재하며 무한히 뻗어 있습니다. 다만 그 광선 위에서 μ가 0이라 적분값이 0이 되는 것뿐입니다.">시야 밖의 광선은 존재하지 않게 되어 적분 구간이 없어지고 측정값도 사라지기 때문이다.</li>
+      <li data-why="틀립니다. 반지름 R이 아예 상관없다면 R이 아무리 커져도(시야가 ℝ² 전체에 가까워져도) 유계성이 그대로 유지되어야 하는데, 실제로는 R에 비례해(2πR) 상한이 커집니다. 제한 자체가 유계성의 근거입니다.">유계성은 시야의 크기와 상관없이 항상 성립하며, 반지름 \(R\)은 상수를 계산하는 데만 쓰일 뿐이다.</li>
+    </ol>
+    <div class="explain">
+      <p>이 상한은 등호가 아니라 상한일 뿐입니다. 아래 직접 해보기 1번에서 반지름 \(R\)인 원판의 indicator로 실제 비율을
+      계산해, 상한보다 작게 나오는 것을 직접 확인합니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>(심화) 영상 \(\mu\)가 반지름 \(R\)인 원판 위에서 값이 \(1\)인 indicator 함수라고 합시다. \(p(\theta,s)=2\sqrt{R^2-s^2}\)
+      (\(|s|\le R\))을 써서 \(\lVert\mathcal{P}\mu\rVert^2\)와 \(\lVert\mu\rVert^2\)를 각각 계산하고, 그 비율을 페이지 5의
+      상한 \(2\pi R\)과 비교하세요.</li>
+      <li>(심화) \(J[\mu]=\langle\mu,\mu\rangle\)의 Gâteaux 미분을 정의식 \(\lim_{t\to0}(J[\mu+t\eta]-J[\mu])/t\)로부터 직접 전개해
+      \(J'[\mu;\eta]=2\langle\mu,\eta\rangle\)를 확인하세요(퀴즈 2와 같은 결과를 스스로 유도하는 문제입니다).</li>
+      <li>(심화) \(L=\tfrac12\lvert\nabla\mu\rvert^2\)에 페이지 9의 공식 \(\nabla J[\mu]=\partial L/\partial\mu-\operatorname{div}(\partial L/\partial(\nabla\mu))\)을
+      적용해 \(\nabla J[\mu]=-\Delta\mu\)가 됨을 보이세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> \(\lVert\mu\rVert^2=\iint_{\text{원판}}1^2\,dx\,dy=\pi R^2\)입니다.
+      \(\lVert\mathcal{P}\mu\rVert^2=\int_0^\pi\int_{-R}^{R}4(R^2-s^2)\,ds\,d\theta\)에서 안쪽 적분은
+      \(4[R^2s-s^3/3]_{-R}^{R}=\tfrac{16}{3}R^3\)이고, \(\theta\)에 대해 \(\pi\)를 곱하면
+      \(\lVert\mathcal{P}\mu\rVert^2=\tfrac{16}{3}\pi R^3\)입니다. 비율은 \(\tfrac{16}{3}\pi R^3/(\pi R^2)=\tfrac{16}{3}R\approx5.33R\)이고,
+      페이지 5의 상한 \(2\pi R\approx6.28R\)보다 작습니다 — 상한이 등호가 아님을 숫자로 확인한 것입니다.</p>
+      <p><b>2번.</b> \(J[\mu+t\eta]=\langle\mu+t\eta,\mu+t\eta\rangle=\langle\mu,\mu\rangle+2t\langle\mu,\eta\rangle+t^2\langle\eta,\eta\rangle\)이므로
+      \((J[\mu+t\eta]-J[\mu])/t=2\langle\mu,\eta\rangle+t\langle\eta,\eta\rangle\)이고, \(t\to0\)이면 둘째 항이 사라져
+      \(J'[\mu;\eta]=2\langle\mu,\eta\rangle\)입니다.</p>
+      <p><b>3번.</b> \(L=\tfrac12(\mu_x^2+\mu_y^2)\)이므로 \(\partial L/\partial\mu=0\)이고
+      \(\partial L/\partial(\nabla\mu)=(\mu_x,\mu_y)=\nabla\mu\)입니다. 공식에 넣으면
+      \(\nabla J[\mu]=0-\operatorname{div}(\nabla\mu)=-(\mu_{xx}+\mu_{yy})=-\Delta\mu\)입니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 \(\theta\)를 \([0,2\pi)\)로 적분해 상한과 비교하는 것입니다. 이 책의 \(\mathcal{P}\)는 평행빔이 180°로
+        충분하다는 사실에 맞춰 \(\theta\in[0,\pi)\)만 씁니다(틀리게 \([0,2\pi)\)로 적분하면 비율이 \(2\)배인 \(\tfrac{32}{3}R\)이
+        되어 상한 \(4\pi R\)과는 맞아도, 이 책이 정의한 \(\mathcal{P}\)의 노름과는 맞지 않습니다).</li>
+        <li>2번에서 \(t\langle\eta,\eta\rangle\) 항을 지우지 않고 \(t\to0\)을 보내기 전에 결과에 포함시키는 것입니다. 이 항은
+        \(t\)가 곱해져 있어 극한에서 반드시 사라집니다.</li>
+        <li>3번에서 부호를 놓치는 것입니다. \(\partial L/\partial(\nabla\mu)\)에서 발산을 뺄 때의 마이너스 부호를 빠뜨리면
+        \(\nabla J[\mu]=\Delta\mu\)로 부호가 뒤집힌 답이 나옵니다. 또 \(\nabla J[\mu]\)(범함수의 기울기, 함수 하나)를
+        \(\nabla\mu\)(영상의 공간 기울기, 벡터장)와 혼동해 벡터로 답하는 것도 흔한 실수입니다(페이지 1의 기호표).</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch11.html"><span>다음 장</span>11장 — 연속 모델의 대수적 재구성</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

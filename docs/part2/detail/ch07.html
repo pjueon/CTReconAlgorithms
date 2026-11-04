@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch07">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7장 · TV 재구성은 어떻게 계산할까요? GPBB 알고리즘 — CT 재구성 알고리즘2 - 대수적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="데이터 충실도와 비음수 제약">
+  <p class="kicker">7장 · 페이지 1</p>
+  <h1>TV 재구성은 어떻게 계산할까요? GPBB 알고리즘</h1>
+
+  <p class="lead"><a href="ch04.html#s5">4장 페이지 5</a>에서 TV 최소화 문제를 벌점형과 제약형 두 가지로 썼고, "실제로 계산하는
+  알고리즘이 이 두 형태 가운데 어느 쪽을, 어떤 식으로 변형해 쓰는지는 이 장에서 본다"고 했습니다. 이 장은 그 약속을 지킵니다.</p>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>재구성 문제를 비음수 제약이 있는 최소화 문제로 정하고, 기울기 사영(GP)으로 한 걸음 가는 식을 봅니다(페이지 1~2).</li>
+      <li>평활화 TV의 기울기를 직접 유도하고, 위젯으로 경계에서의 값을 확인합니다(페이지 3, 심화).</li>
+      <li>걸음을 스스로 고르는 BB 스텝과, 매번 줄어들 필요가 없는 비단조 선 탐색을 봅니다(페이지 4, 심화).</li>
+      <li>6장의 순서도에 이 장의 선택을 채워 GPBB 전체를 완성하고, 심화 페이지의 결과를 표로 모은 뒤, 반복이 진행되는 모습을 위젯으로 따라갑니다(페이지 5).</li>
+      <li>의사코드로 반복마다 \(\mathbf{A}\)와 \(\mathbf{A}^{\mathsf T}\)가 정확히 몇 번 쓰이는지 확인합니다(페이지 6, 심화).</li>
+      <li>언제 멈춰야 하는지, 그 판정이 2장의 불일치 원칙과 어떻게 다른지, 그리고 선 탐색 중에도 비음수 제약이 왜 저절로 지켜지는지 봅니다(페이지 7, 심화).</li>
+      <li>\(\lambda\)와 \(\delta\)를 바꾸면 결과가 어떻게 달라지는지 직접 바꿔 확인하고, 과평활과 수렴 정체 같은 흔한 실패 모드를 봅니다(페이지 8).</li>
+      <li>GPBB의 계산 비용을 FBP와 견주고, Shepp-Logan 팬텀으로 sparse-view와 잡음 상황을 분석합니다(페이지 9).</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지(3, 4, 6, 7)는 처음 읽을 때 건너뛰어도 됩니다. 건너뛰어도 이어서 읽을 수 있도록, 이 페이지들의 결과는 페이지 5에 표로 모아 두었습니다.</p>
+  </div>
+
+  <h2>벌점형 선택과 TV 평활화</h2>
+
+  <p>미분할 수 없는 TV를 그대로 쓰면 경사하강형 알고리즘을 바로 쓸 수 없습니다. 그래서 TV 대신 <a href="ch04.html#s7">4장 페이지 7</a>(심화)의
+  평활화 TV \(\mathrm{TV}_\delta\)를 넣고, 비음수 제약은 그대로 남깁니다. 이 장이 실제로 최소화하는 함수는 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[J(\mathbf{x}) = \lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert^2 + \lambda\,\mathrm{TV}_\delta(\mathbf{x}),
+  \qquad \min_{\mathbf{x}\ge\mathbf{0}}\ J(\mathbf{x})\]</p>
+
+  <p>\(\mathrm{TV}_\delta\)는 TV의 꺾인 곳을 \(\delta\) 범위에서 2차함수로 둥글게 바꾼 함수 \(h_\delta\)(Huber 함수, <a href="ch04.html#s7">4장 페이지 7</a>, 심화)로 만든 것이며, \(\delta\)가 작을수록 진짜 TV에 가깝습니다.</p>
+
+  <p>데이터 항과 평활화 TV 항은 각각 볼록함수입니다. 데이터 항은 <a href="ch03.html#s8">3장 페이지 8</a>에서 이미 확인했습니다.
+  평활화 TV는 \(h_\delta\)가 볼록이고 \(0\) 이상에서 감소하지 않는데, 그 안에 들어가는 기울기의 크기
+  \(\sqrt{(\partial_x\mathbf{x})^2+(\partial_y\mathbf{x})^2}\)가 노름이어서(그 자체로 볼록함수, <a href="ch04.html#s4">4장 페이지 4</a>)
+  합성해도 볼록함수가 됩니다. 엄밀한 합성 규칙은 이 책의 범위를 넘습니다. 그래서 \(J\)도 볼록함수이고,
+  뒤에서 볼 멈춤 조건(페이지 7)에 닿는 점은 지역해가 아니라 전체 최솟값입니다.</p>
+
+  <p>제약형의 \(\varepsilon\)(<a href="ch04.html#s5">4장 페이지 5</a>)은 이 식에 직접 들어가지 않고, \(\lambda\)를 고르는 과정에 간접적으로 나타납니다.
+  <a href="ch02.html#s8">2장 페이지 8</a>의 불일치 원칙처럼 잔차의 크기가 측정 잡음과 비슷해지도록 \(\lambda\)를
+  고르면, 제약형의 \(\varepsilon\)과 같은 생각을 벌점형 안에서 쓰는 셈입니다. \(\lambda\)를 고르는 민감도는 페이지 8에서 다룹니다. \(\varepsilon\)을 식에 직접 제약으로 넣어 푸는 방법은 <a href="ch08.html#s1">8장</a>에서 다룹니다.</p>
+
+  <h2>GPBB를 블랙박스 최적화 알고리즘으로 보기</h2>
+
+  <p>이 장이 쓰는 GPBB는 \(\mathbf{x}\ge\mathbf{0}\) 제약 아래에서 \(J(\mathbf{x})\)를 내리막으로 줄여 가는 최적화 알고리즘입니다. 6장에서 본 대로 CT나 TV에 딸린 알고리즘이 아니라 일반적인 최적화 알고리즘이고, 이 장에서 TV 재구성 문제에 적용합니다. TV는 미분이 안 되는 곳이 있으므로 이 장에서 Huber로 매끈하게 만들어 기울기를 계산할 수 있게 한 뒤 GPBB에 넣습니다.
+  처음 읽을 때는 GPBB를 안쪽이 보이지 않는 상자(블랙박스)로 두어도 이 편의 큰 흐름을 따라갈 수 있습니다. 상자에 넣는 것은
+  \(\mathbf{A}\), \(\mathbf{b}\), 그리고 사람이 정하는 \(\lambda\)와 \(\delta\)이고, 꺼내는 것은 재구성 영상입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 210" role="img" aria-label="GPBB를 상자로 본 그림. 시스템 행렬 A, 측정 데이터 b, 사람이 정하는 λ와 δ가 상자로 들어가고, 상자는 x가 0 이상이라는 제약 아래에서 J를 내리막으로 줄이는 반복을 하며, 재구성 영상 x가 나온다. 상자 안쪽의 세부는 심화 페이지 3, 4, 6, 7에 있다">
+      <defs><marker id="c6-bb-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-line" fill="none" stroke-width="1.3">
+        <rect x="10" y="22" width="140" height="42" rx="6"/>
+        <rect x="10" y="84" width="140" height="42" rx="6"/>
+        <rect x="10" y="146" width="140" height="42" rx="6"/>
+        <rect x="210" y="22" width="270" height="166" rx="10" stroke-width="1.8"/>
+        <rect x="540" y="78" width="130" height="54" rx="6"/>
+      </g>
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.3">
+        <path d="M150 43 H208" marker-end="url(#c6-bb-ar)"/>
+        <path d="M150 105 H208" marker-end="url(#c6-bb-ar)"/>
+        <path d="M150 167 H208" marker-end="url(#c6-bb-ar)"/>
+        <path d="M480 105 H538" marker-end="url(#c6-bb-ar)"/>
+      </g>
+      <g text-anchor="middle" font-size="11" class="svg-fg">
+        <text x="80" y="40">A (시스템 행렬)</text><text x="80" y="102">b (측정 데이터)</text><text x="80" y="164">λ, δ (사람이 정함)</text>
+        <text x="605" y="102">재구성 영상</text><text x="605" y="118">x̂ ≥ 0</text>
+      </g>
+      <g text-anchor="middle" font-size="13" font-weight="700" class="svg-fg"><text x="345" y="50">GPBB</text></g>
+      <g text-anchor="middle" font-size="11" class="svg-fg">
+        <text x="345" y="78">x ≥ 0 아래에서</text>
+        <text x="345" y="96">J(x)를 내리막으로 줄이는 반복</text>
+      </g>
+      <g text-anchor="middle" font-size="10" class="svg-muted">
+        <text x="345" y="126">안쪽 세부: 기울기 식(페이지 3), 걸음 선택(4),</text>
+        <text x="345" y="141">의사코드(6), 멈춤 판정·제약 처리(7)</text>
+        <text x="345" y="167">모두 심화 — 건너뛰어도 됩니다</text>
+      </g>
+    </svg>
+    <figcaption>GPBB를 상자로 본 그림. 입력은 \(\mathbf{A}\), \(\mathbf{b}\), \(\lambda\), \(\delta\)이고 출력은 재구성 영상입니다. 상자 안쪽의 세부는 심화 페이지에 있습니다.</figcaption>
+  </figure>
+
+  <p>상자 밖에서 알아 두면 되는 것은 세 가지입니다. 첫째, 한 반복은 \(J\)가 줄어드는 방향으로 한 걸음 가고 음수를 \(0\)으로 자르는 것입니다.
+  둘째, 반복마다 \(\mathbf{A}\)와 \(\mathbf{A}^{\mathsf T}\)를 한 번씩 쓰므로 비용은 반복 수에 비례합니다(페이지 9).
+  셋째, 결과를 바꾸는 값은 \(\lambda\)와 \(\delta\)입니다(페이지 8).</p>
+
+  <h2>공액경사법 대신 GPBB를 고른 이유</h2>
+
+  <p>이 식을 최소화하는 방법은 한 가지가 아닙니다. 이 장은 6장에서 배운 두 부품을 조립합니다. 하나는 제약 안으로 되돌리는
+  기울기 사영(<span class="term" data-term="gp">Gradient Projection, GP</span>, <a href="ch06.html#s2">6장 페이지 2</a>)이고,
+  다른 하나는 걸음 크기를 스스로 고르는 BB 스텝(<a href="ch06.html#s3">6장 페이지 3</a>)입니다. 이 조합이 <a href="ch06.html#s5">6장 페이지 5</a>에서 정의한 GPBB이며, 이 장은 여기에 비단조 선 탐색을 더해 씁니다.</p>
+
+  <p>공액경사법(<span class="term" data-term="cg">CG</span>)은 매끄러운 2차함수를 경사하강법보다 훨씬 빠르게 푸는 방법입니다. 그러나 비음수 제약과, 2차함수가 아닌 TV 항을 자연스럽게 다루기 어려워 이 장에서는 쓰지 않습니다. 논문에서는 같은 TV 재구성을 Chambolle-Pock·FISTA(9장)로 풀거나, 제약형으로 써서 ASD-POCS(8장)로 푸는 경우도 자주 만납니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">출처</p>
+    <p>기울기 사영에 BB 스텝을 붙여 TV 정규화 CBCT 재구성에 쓰는 방법은 J. C. Park 외, Medical Physics 39(3), 2012, 1207–1217에 소개되어 있습니다.
+    이 장의 구성은 그 논문을 그대로 옮긴 것이 아니라, 6장의 GP·BB 스텝과 4장의 평활화 TV(<a href="ch04.html#s7">4장 페이지 7</a>), 비단조 선 탐색을 이 책이 조립한 것입니다.</p>
+  </div>
+
+  <p>다음 페이지부터 이 조합을 하나씩 살펴봅니다.</p>
+</section>
+
+<!-- ─ 페이지 2 -->
+<section class="screen" data-title="기울기 사영 알고리즘">
+  <p class="kicker">7장 · 페이지 2</p>
+  <h2>기울기 사영(GP) 알고리즘</h2>
+
+  <p>기울기 사영(GP)은 기울기 반대 방향으로 내려간 뒤, 허용된 집합 밖이면 그 집합 안으로 다시 당겨오는 걸음입니다
+  (<a href="ch06.html#s2">6장 페이지 2</a>). 이 장의 \(J(\mathbf{x})\)와 제약 \(C = \{\mathbf{x} : \mathbf{x}\ge\mathbf{0}\}\)에 그대로 적용하면 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\mathbf{x}^{(k+1)} = P_C\big(\mathbf{x}^{(k)} - \alpha_k\,\nabla J(\mathbf{x}^{(k)})\big),
+  \qquad P_C(\mathbf{v})_j = \max(v_j,\ 0)\]</p>
+
+  <p>\(P_C\)는 음수인 성분을 \(0\)으로 자르는 사영입니다.</p>
+
+  <p>갱신식의 우변에서 \(\mathbf{x}^{(k)}\)를 뺀 이동
+  \(\mathbf{u}^{(k)} := P_C\big(\mathbf{x}^{(k)}-\alpha_k\,\nabla J(\mathbf{x}^{(k)})\big)-\mathbf{x}^{(k)}\)를 사영 방향이라고 부릅니다.
+  \(\lVert\mathbf{u}^{(k)}\rVert\)가 \(0\)이면 더 갈 곳이 없다는 뜻이고, 이 값이 충분히 작아지면 반복을 멈춥니다. 이 장에서 \(\mathbf{u}\)는 언제나 이 이동을 가리킵니다.</p>
+
+  <p>\(\nabla J(\mathbf{x})\)는 두 항의 기울기를 더한 것입니다.</p>
+
+  <p style="text-align:center">\[\nabla J(\mathbf{x}) = 2\mathbf{A}^{\mathsf T}(\mathbf{A}\mathbf{x}-\mathbf{b}) + \lambda\,\nabla\mathrm{TV}_\delta(\mathbf{x})\]</p>
+
+  <p>앞의 항은 <a href="ch03.html#s8">3장 페이지 8</a>에서 이미 구한 최소제곱의 기울기입니다. 뒤의 항 \(\nabla\mathrm{TV}_\delta(\mathbf{x})\)는
+  화소마다 이웃과의 차이에 가중치를 곱해 모은 값입니다. 영상이 평평한 곳에서는 \(0\)이고, 경계에서는 차이가 \(\delta\)보다 크면
+  차이의 크기와 상관없이 크기가 \(1\) 안팎입니다. 이 기울기의 반대 방향으로 가면 경계 양쪽의 값이 서로 가까워집니다.
+  정확한 식과 유도는 페이지 3(심화)에 있고, 이 장의 나머지는 이 요약만 알아도 읽을 수 있습니다.</p>
+
+  <p>이 갱신은 <a href="ch02.html#s7">2장 페이지 7</a>(심화)의 경사하강형 갱신(Landweber 반복, SIRT의 바탕)과 모양이 비슷합니다. 다른 점은 둘입니다.
+  데이터 항뿐 아니라 \(\lambda\,\mathrm{TV}_\delta\)라는 명시적인 정규화 항이 기울기에 들어 있고, 매 걸음 끝에 \(P_C\)로
+  음수를 잘라냅니다. 2장의 방법은 이 둘 중 어느 것도 하지 않았습니다.</p>
+
+  <p>이 식을 쓰려면 걸음 크기 \(\alpha_k\)를 정해야 합니다. GPBB는 \(\alpha_k\)를 반복마다 BB 스텝(<a href="ch06.html#s3">6장 페이지 3</a>)으로 다시 구하며,
+  이 선택으로 고정 걸음보다 반복 수가 약 \(8\)~\(12\)배 줄어듭니다. 확인은 페이지 4(심화)에 있고, 결과는 페이지 5의 표에도 모아 두었습니다.</p>
+</section>
+
+<!-- ─ 페이지 3 -->
+<section class="screen" data-title="평활화 TV의 기울기 유도">
+  <p class="kicker">7장 · 페이지 3 · 심화</p>
+  <h2>평활화 TV의 기울기 유도</h2>
+
+  <p>경사하강형 알고리즘에는 \(J\)의 기울기가 필요하고, 그 가운데 TV 항의 기울기가 \(\nabla\mathrm{TV}_\delta\)입니다.
+  영상은 2차원이라 식이 복잡해 보이므로, 화소가 한 줄로 놓인 1차원 신호에서 먼저 모양을 확인합니다.</p>
+
+  <h3>1차원에서 먼저 보기</h3>
+
+  <p>신호 \(\mathbf{x}=(x_1,\dots,x_n)\)의 이웃 차이를 \(d_i := x_{i+1}-x_i\)라 하고, 평활화 TV를
+  \(\mathrm{TV}_\delta(\mathbf{x})=\sum_i h_\delta(\lvert d_i\rvert)\)로 둡니다(\(h_\delta\)는 <a href="ch04.html#s7">4장 페이지 7</a>의 Huber 함수).
+  화소 \(i\)는 차이 \(d_{i-1}\)과 \(d_i\)에 나타나므로, 미분하면 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\big(\nabla\mathrm{TV}_\delta(\mathbf{x})\big)_i = \psi_\delta(d_{i-1})-\psi_\delta(d_i),
+  \qquad \psi_\delta(d)=\max\!\big(-1,\ \min(1,\ d/\delta)\big)\]</p>
+
+  <p>\(\psi_\delta(d)\)는 \(\lvert d\rvert\le\delta\)이면 \(d/\delta\)(차이에 비례)이고, 그보다 크면 부호만 남아 \(\pm1\)입니다.
+  첫 화소와 마지막 화소는 차이가 하나뿐이어서 해당하는 항만 둡니다.
+  계단 \(\mathbf{x}=(0,0,H,H,H)\)에서는 차이가 \((0,H,0,0)\)이고, 기울기는 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>높이 \(H\), 평활화 \(\delta\)</th><th>\(\nabla\mathrm{TV}_\delta\)</th><th>읽는 법</th></tr>
+      <tr><td>\(H=1,\ \delta=0.1\)</td><td>\((0,\ -1,\ +1,\ 0,\ 0)\)</td><td>\(H>\delta\)라 크기가 \(1\)로 눌립니다.</td></tr>
+      <tr><td>\(H=0.05,\ \delta=0.1\)</td><td>\((0,\ -0.5,\ +0.5,\ 0,\ 0)\)</td><td>\(H\le\delta\)라 \(H/\delta\)로 줄어듭니다.</td></tr>
+    </table>
+  </div>
+
+  <p>경사하강은 이 값의 반대로 값을 바꾸므로, 계단 아래쪽 화소(\(i=2\))는 올라가고 위쪽 화소(\(i=3\))는 내려가 계단이 낮아집니다.
+  \(H>\delta\)이면 높이와 상관없이 같은 크기 \(1\)이 나오는 것이 TV의 특징이고, \(\lvert d\rvert\le\delta\)에서 차이에 비례하는 것이 평활화의 효과입니다.</p>
+
+  <h3>2차원으로 넓히기</h3>
+
+  <p><a href="ch04.html#s4">4장 페이지 4</a>의 이산 기울기 \((\partial_x\mathbf{x})_{i,j} := x_{i+1,j}-x_{i,j}\),
+  \((\partial_y\mathbf{x})_{i,j} := x_{i,j+1}-x_{i,j}\)를 그대로 쓰고, 격자 끝(마지막 행·열)에서는 다음 화소가 없으므로
+  그 방향의 차이를 \(0\)으로 둡니다. 크기 \(t_{i,j} := \sqrt{(\partial_x\mathbf{x})_{i,j}^2+(\partial_y\mathbf{x})_{i,j}^2}\)에
+  Huber 함수를 넣은 것이 평활화 TV입니다.</p>
+
+  <p style="text-align:center">\[\mathrm{TV}_\delta(\mathbf{x}) = \sum_{i,j} h_\delta(t_{i,j})\]</p>
+
+  <p>1차원의 \(\psi_\delta(d)\)는 \(c\,d\) 꼴로도 쓸 수 있습니다(\(c=1/\delta\) 또는 \(1/\lvert d\rvert\)). 2차원에서는 이 계수를
+  \(h_\delta'(t)/t\)로 일반화해 \(c_{i,j} := c(t_{i,j})\)로 두고(\(t\le\delta\)이면 \(1/\delta\), 아니면 \(1/t\)), 가로·세로 차이에 똑같이 곱합니다.
+  화소 \((k,l)\)에서의 기울기는 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\big(\nabla\mathrm{TV}_\delta(\mathbf{x})\big)_{k,l} = -c_{k,l}\big((\partial_x\mathbf{x})_{k,l}+(\partial_y\mathbf{x})_{k,l}\big)
+  + c_{k-1,l}\,(\partial_x\mathbf{x})_{k-1,l} + c_{k,l-1}\,(\partial_y\mathbf{x})_{k,l-1}\]</p>
+
+  <p>(격자 밖을 가리키는 항은 뺍니다.) 이 식은 화소 \((k,l)\) 자신이 만드는 차이 두 개(첫 항)와, 그 화소가 "다음 화소"로 등장하는
+  이웃 두 개의 차이(둘째·셋째 항)를 모두 모은 것입니다. 1차원의 \(\psi_\delta(d_{i-1})-\psi_\delta(d_i)\)가 가로·세로 두 방향으로 나란히 들어간 모양이며,
+  가중치를 매긴 차이를 다시 뺀 꼴이라 이산 발산(Discrete Divergence)과 같습니다.</p>
+
+  <p>식이 어떤 모양을 만드는지 작은 영상으로 확인해 봅니다. \(10\times10\) 영상의 가운데에 \(4\times4\) 정사각형이 있고, 값은 정사각형 안이 높이 \(H\), 바깥이 \(0\)입니다.
+  오른쪽 지도는 위 식으로 계산한 \(\nabla\mathrm{TV}_\delta\)입니다. 주황은 양수, 파랑은 음수이고, 경사하강은 이 값의 반대로 값을 바꿉니다.</p>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="c6-tv-h">
+    <span>정사각형 높이 \(H\)</span>
+    <button type="button" data-v="1">1</button>
+    <button type="button" data-v="0.1">0.1</button>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.3rem" id="c6-tv-d">
+    <span>평활화 \(\delta\)</span>
+    <button type="button" data-v="0.01">0.01</button>
+    <button type="button" data-v="0.2">0.2</button>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.3rem" id="c6-tv-n">
+    <span>잡음 화소(값 \(0.05\))</span>
+    <button type="button" data-v="0">없음</button>
+    <button type="button" data-v="1">왼쪽 아래에 하나</button>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 318" role="img" aria-label="왼쪽은 정사각형이 있는 10 곱하기 10 영상, 오른쪽은 각 화소의 평활화 TV 기울기 값을 주황(양수)과 파랑(음수)으로 나타낸 지도">
+      <g font-size="11.5" font-weight="700" class="svg-fg"><text x="20" y="24">영상 x</text><text x="350" y="24">기울기 ∇TVδ(x)</text></g>
+      <g id="c6-tv-img"></g>
+      <g id="c6-tv-map"></g>
+      <g font-size="10" class="svg-muted"><text x="20" y="310" id="c6-tv-note"></text></g>
+    </svg>
+    <figcaption>칸 안의 숫자는 그 화소의 값입니다. 오른쪽 지도에서 값이 \(0\)인 칸은 숫자를 적지 않았습니다.</figcaption>
+  </figure>
+
+  <p>높이 \(H\)를 \(1\)에서 \(0.1\)로 바꿔도 \(\delta=0.01\)이면 경계 화소의 값은 \(\pm1\) 그대로입니다. 모서리 세 곳은 두 경계가 겹쳐 \(2\)이고, 오른쪽 아래 모서리만 오른쪽·아래 두 차이가 하나의 \(t\)로 묶여 \(\sqrt2\approx1.41\)입니다.
+  차이 \(t\)가 \(\delta\)보다 크면 가중치가 \(1/t\)여서 차이를 곱하면 단위 크기만 남기 때문입니다.
+  \(\delta=0.2\)로 키우면 높이 \(0.1\)의 경계는 \(t\le\delta\)가 되어 값이 \(0.5\)로 줄어듭니다. 이 구간에서는 기울기가 차이에 비례해 Tikhonov처럼 움직입니다.
+  한 화소짜리 잡음(\(0.05\))을 더하면, \(\delta=0.01\)에서는 차이 하나하나가 경계와 같은 단위 크기로 눌리고 그 값이 한 화소에 여러 개 더해져 \(3.41\)이 됩니다.
+  \(\delta=0.2\)에서는 차이 \(0.05\)가 \(\delta\)보다 작은 비례 구간이라 \(1.00\)으로 약해집니다. 차이가 작아도 \(\delta\)보다 크면 경계와 같은 단위 크기로 눌린다는 점이 TV 평활화의 특징입니다.</p>
+
+  <details class="fold">
+    <summary>유도: 화소 하나로 편미분하기</summary>
+    <div class="fold-body">
+      <p>\(\mathrm{TV}_\delta\)를 \(x_{k,l}\) 하나로 편미분합니다. \(x_{k,l}\)은 세 항의 \(t\)에 나타납니다 — 자기 자신이 속한
+      \((k,l)\)의 \(t_{k,l}\)(가로 차이 \((\partial_x\mathbf{x})_{k,l}=x_{k+1,l}-x_{k,l}\)와 세로 차이
+      \((\partial_y\mathbf{x})_{k,l}=x_{k,l+1}-x_{k,l}\)의 두 항에 모두 \(-1\)로 들어갑니다), 왼쪽 화소가 속한 \(t_{k-1,l}\)의
+      가로 차이(\(+1\)로), 위쪽 화소가 속한 \(t_{k,l-1}\)의 세로 차이(\(+1\)로)입니다.
+      연쇄법칙 \(\partial h_\delta(t)/\partial x_{k,l} = c(t)\cdot t\cdot(\partial t/\partial x_{k,l})\)에서
+      \(t\cdot(\partial t/\partial x_{k,l})\)는 그 차이 자체이므로(\(t=\sqrt{a^2+b^2}\)이면 \(t\,\partial t/\partial a = a\)),
+      세 항을 모으면 본문의 식이 됩니다.</p>
+    </div>
+  </details>
+
+  <p>특이점이던 \(t=0\)에서도 \(c(0)=1/\delta\)로 유한합니다. 이것이 <a href="ch04.html#s7">4장 페이지 7</a>에서 TV를 평활화해 얻은 효과입니다.
+  차이가 \(0\)인 화소 쌍이 대부분인 영상(<a href="ch04.html#s3">4장 페이지 3</a>)에서는 그 화소들의 계수가 \(1/\delta\)로 똑같아, 이 영역에서는 평활화 TV가 Tikhonov처럼 움직입니다.
+  4장 페이지 7의 "두 정규화를 잇는 다리"가 수식으로도 그대로 보이는 셈입니다. 이 식은 수치 미분과 비교해 확인했습니다(차이는 \(10^{-9}\) 이하).</p>
+
+<script>
+(function () {
+  var N = 10, CELL = 26, X0 = 20, X1 = 350, Y0 = 34;
+  var st = { H: 1, d: 0.01, n: 0 };
+  function tvGrad(x, N, delta) {
+    function at(ix, iy) { return x[iy * N + ix]; }
+    var g = new Float64Array(N * N), coeff = new Float64Array(N * N), ix, iy, dx, dy, t;
+    for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+      dx = ix < N - 1 ? at(ix + 1, iy) - at(ix, iy) : 0;
+      dy = iy < N - 1 ? at(ix, iy + 1) - at(ix, iy) : 0;
+      t = Math.sqrt(dx * dx + dy * dy);
+      coeff[iy * N + ix] = t <= delta ? 1 / delta : 1 / t;
+    }
+    for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+      dx = ix < N - 1 ? at(ix + 1, iy) - at(ix, iy) : 0;
+      dy = iy < N - 1 ? at(ix, iy + 1) - at(ix, iy) : 0;
+      var v = -coeff[iy * N + ix] * (dx + dy);
+      if (ix > 0) v += coeff[iy * N + ix - 1] * (at(ix, iy) - at(ix - 1, iy));
+      if (iy > 0) v += coeff[(iy - 1) * N + ix] * (at(ix, iy) - at(ix, iy - 1));
+      g[iy * N + ix] = v;
+    }
+    return g;
+  }
+  function build() {
+    var x = new Float64Array(N * N), i, j;
+    for (j = 3; j <= 6; j++) for (i = 3; i <= 6; i++) x[j * N + i] = st.H;
+    if (st.n) x[8 * N + 1] = 0.05;
+    return x;
+  }
+  function fmt(v) { return (Math.abs(v) < 0.005 ? '' : v.toFixed(2).replace('-', '−')); }
+  function draw() {
+    var x = build(), g = tvGrad(x, N, st.d), a = '', b = '', i, j, k, v, gmax = -1e9, gmin = 1e9;
+    for (j = 0; j < N; j++) for (i = 0; i < N; i++) {
+      k = j * N + i;
+      a += '<rect x="' + (X0 + i * CELL) + '" y="' + (Y0 + j * CELL) + '" width="' + CELL + '" height="' + CELL +
+           '" style="fill:var(--fg);fill-opacity:' + (0.55 * Math.min(1, x[k] / st.H)).toFixed(3) + ';stroke:var(--muted);stroke-width:.4"/>';
+      if (x[k] !== 0) a += '<text x="' + (X0 + i * CELL + CELL / 2) + '" y="' + (Y0 + j * CELL + CELL / 2 + 3) + '" text-anchor="middle" font-size="9" class="svg-fg">' + x[k] + '</text>';
+      v = g[k]; if (v > gmax) gmax = v; if (v < gmin) gmin = v;
+      b += '<rect x="' + (X1 + i * CELL) + '" y="' + (Y0 + j * CELL) + '" width="' + CELL + '" height="' + CELL +
+           '" style="fill:var(' + (v >= 0 ? '--warn' : '--accent') + ');fill-opacity:' + Math.min(0.85, Math.abs(v) / 3.5 * 0.85 + (Math.abs(v) > 0.005 ? 0.1 : 0)).toFixed(3) + ';stroke:var(--muted);stroke-width:.4"/>';
+      if (fmt(v)) b += '<text x="' + (X1 + i * CELL + CELL / 2) + '" y="' + (Y0 + j * CELL + CELL / 2 + 3) + '" text-anchor="middle" font-size="8.5" class="svg-fg">' + fmt(v) + '</text>';
+    }
+    document.getElementById('c6-tv-img').innerHTML = a;
+    document.getElementById('c6-tv-map').innerHTML = b;
+    document.getElementById('c6-tv-note').textContent = 'H=' + st.H + ', δ=' + st.d + ' · 기울기 최댓값 ' + gmax.toFixed(2) + ', 최솟값 ' + gmin.toFixed(2).replace('-', '−');
+    ['h', 'd', 'n'].forEach(function (id) {
+      var key = id === 'h' ? 'H' : id, btns = document.querySelectorAll('#c6-tv-' + id + ' button'), q;
+      for (q = 0; q < btns.length; q++) {
+        var on = +btns[q].getAttribute('data-v') === st[key];
+        btns[q].style.fontWeight = on ? '700' : '400';
+        btns[q].style.borderColor = on ? 'var(--accent)' : '';
+      }
+    });
+  }
+  function bind(id, key) {
+    document.getElementById('c6-tv-' + id).addEventListener('click', function (e) {
+      var t = e.target.closest('button[data-v]'); if (!t) return;
+      st[key] = +t.getAttribute('data-v'); draw();
+    });
+  }
+  bind('h', 'H'); bind('d', 'd'); bind('n', 'n');
+  draw();
+})();
+</script>
+</section>
+
+<!-- ─ 페이지 4 -->
+<section class="screen" data-title="BB 스텝과 비단조 선 탐색">
+  <p class="kicker">7장 · 페이지 4 · 심화</p>
+  <h2>BB 스텝의 공식과 비단조 선 탐색</h2>
+
+  <p>이제 \(\nabla J\)를 모두 계산할 수 있으니, 페이지 2의 걸음 크기 \(\alpha_k\)를 정해야 합니다.
+  <a href="ch05.html#s8">5장 페이지 8</a>의 계산은 각도 수 \(K\)마다 수렴이 보장되도록 미리 정한 고정 걸음(\(K=10,18,40\)에서 각각 \(0.533,\ 0.4825,\ 0.2514\))을 썼습니다. 그 고정 걸음으로
+  페이지 2의 식만 반복해 사영 방향의 크기가 충분히 작아지기까지(정확한 기준은 페이지 7) 이 장의 작은 예제에서 걸리는 횟수는 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>각도 수 \(K\)</th><th>10</th><th>18</th><th>40</th></tr>
+      <tr><td>고정 걸음(<a href="ch05.html#s8">5장 페이지 8</a>의 값)</td><td>3,252회</td><td>1,941회</td><td>985회</td></tr>
+    </table>
+  </div>
+
+  <p>고정 걸음은 "가장 나쁜 경우에도 안전한" 값이라 대부분의 구간에서는 지나치게 조심스럽습니다. 이 장은 <a href="ch06.html#s4">6장 페이지 4</a>의 BB 스텝
+  \(\alpha_k=\langle\mathbf{s}_k,\mathbf{s}_k\rangle/\langle\mathbf{s}_k,\mathbf{y}_k\rangle\)를 그대로 씁니다(\(\mathbf{s}_k\)는 지나온 두 점의 차이, \(\mathbf{y}_k\)는 그 점들의 기울기 차이).
+  <a href="ch06.html#s4">6장 페이지 4</a>의 접기에는 더 작은 걸음을 고르는 short BB 스텝이라는 다른 선택지도 있지만, 이 장은 위의 공식(long BB 스텝)만 씁니다.
+  새로 더하는 것은 아래의 예외 처리와 비단조 선 탐색입니다.</p>
+
+  <p>\(\langle\mathbf{s}_k,\mathbf{y}_k\rangle\)이 \(0\)이거나 음수이면(흔치 않지만 사영과 선 탐색을 거치면 생길 수 있습니다)
+  \(\alpha_k\)를 미리 정한 가장 큰 값으로 둡니다. 어느 쪽으로든 극단적인 값이 나오면 아주 넓은 범위(이 장의 계산에서는
+  \(10^{-8}\)부터 \(10^{8}\)까지)로 자릅니다. 이 BB 스텝으로 바꾸면 반복 수가 다음과 같이 줄어듭니다. 괄호의 배수는 위의 "수렴이 보장되도록 보수적으로 잡은 고정 걸음"과 비교한 값이고,
+  <a href="ch06.html#s3">6장 페이지 3</a>에서 본 것처럼 고정 걸음을 잘 맞춰 고르면 격차는 이보다 줄어듭니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>각도 수 \(K\)</th><th>10</th><th>18</th><th>40</th></tr>
+      <tr><td>BB 스텝</td><td>280회(약 11.6배)</td><td>208회(약 9.3배)</td><td>116회(약 8.5배)</td></tr>
+    </table>
+  </div>
+
+  <p>BB 스텝의 반복 수는 구현과 부동소수점 계산에 민감해 몇 회에서 십여 회까지 달라질 수 있으므로, 대략적인 값으로 읽어 주세요.</p>
+
+  <p>두 방법 모두 거의 같은 참값 오차에 도착합니다(고정 걸음 대 BB 스텝이 \(K=10\)에서 \(0.1285\) 대 \(0.1278\), \(K=18\)에서
+  \(0.0334\) 대 \(0.0332\), \(K=40\)에서 둘 다 \(0.0100\)). \(J\)가 볼록함수(페이지 1에서 확인했습니다)이므로 사영 방향이
+  \(\mathbf{0}\)에 가까워지는 점은 모두 같은 최솟값을 줍니다. 영공간이 있으면 그 최솟값을 주는 점이 여럿일 수 있지만(<a href="ch03.html#s9">3장 페이지 9</a>),
+  이 예제에서는 두 경로가 사실상 같은 영상에 도착했습니다.</p>
+
+  <h3>BB 스텝의 불규칙한 걸음</h3>
+
+  <p>BB 스텝은 매끄럽게 줄어들지 않고 반복마다 들쑥날쑥하지만 평균적으로는 더 적은 반복으로 수렴합니다.
+  실제로 \(K=18\)의 처음 10번은 \(\alpha\)가 \(0.40\), \(0.45\), \(1.72\), \(1.95\), \(1.45\), \(0.47\), \(0.43\), \(1.13\), \(8.23\), \(9.09\)로 약 20배
+  뛰었다가 다시 줄어듭니다. 이렇게 들쑥날쑥한 걸음은 가끔 목적함수 \(J\)를 오히려 늘립니다. 매 반복마다 \(J\)가 줄어들
+  것을 요구하면 이런 걸음을 거부해야 하는데, 그러면 BB 스텝의 장점이 사라집니다.</p>
+
+  <p>대신 비단조 선 탐색(<span class="term" data-term="nonmonotone">Non-monotone Line Search</span>)을 씁니다. 페이지 2의 사영 방향
+  \(\mathbf{u}^{(k)}\)를 걸음 길이 \(\eta\in(0,1]\)만큼만 따라가 \(\mathbf{x}^{(k)}+\eta\,\mathbf{u}^{(k)}\)을 시도합니다.
+  받아들이는 기준은 "최근 값들의 최댓값보다 작기만 하면 된다"가 아니라 그보다 조금 더 엄격합니다.</p>
+
+  <p style="text-align:center">\[J\big(\mathbf{x}^{(k)}+\eta\,\mathbf{u}^{(k)}\big) \ \le\ \max(\text{최근 10회의 }J) + 10^{-4}\,\eta\,\langle\nabla J(\mathbf{x}^{(k)}),\mathbf{u}^{(k)}\rangle\]</p>
+
+  <p>\(\mathbf{u}^{(k)}\)는 내려가는 방향이라 \(\langle\nabla J(\mathbf{x}^{(k)}),\mathbf{u}^{(k)}\rangle<0\)이고, 그 앞의
+  계수 \(10^{-4}\)는 아주 작은 양수입니다. 그래서 우변은 최근 10회의 최댓값보다 항상 조금 더 작습니다. 매 반복마다 줄어들
+  것을 요구하는 기준보다는 느슨하지만(그래서 BB의 들쑥날쑥한 걸음을 받아들일 수 있습니다), "최근 최댓값보다 작기만 하면
+  된다"는 기준보다는 엄격합니다. \(\eta=1\)(BB가 추정한 걸음 그대로)부터 시작해 이 조건을 만족하지 못하면 \(\eta\)를 반으로
+  줄여 다시 시도합니다.</p>
+
+  <p>실제로 \(K=18\) 예제의 17번째 반복에서 18번째로 넘어가며 \(J\)는 \(0.598\)에서 \(0.750\)으로 오히려 커졌지만, 최근 10번
+  중 최댓값(11번째 반복의 \(18.82\))을 기준으로 한 위 조건을 만족해 그대로 받아들여졌습니다. 이 느슨함 덕분에 BB의 들쑥날쑥한
+  걸음을 그대로 쓸 수 있습니다.</p>
+</section>
+
+<!-- ─ 페이지 5 -->
+<section class="screen" data-title="GPBB 전체 알고리즘과 반복 따라가기">
+  <p class="kicker">7장 · 페이지 5</p>
+  <h2>GPBB 전체 알고리즘: 반복 따라가기</h2>
+
+  <p>한 반복의 흐름은 <a href="ch06.html#s5">6장 페이지 5</a>의 순서도와 같습니다. 기울기를 구하고, 걸음 크기를 정하고, 내려가 사영하고,
+  안전장치를 거쳐 갱신한 뒤 멈춤을 판정합니다. 이 장은 그 상자에 다음 세 가지를 채워 넣습니다.</p>
+
+  <ul>
+    <li>상자 ①의 기울기는 TV 항이 더해져 \(2\mathbf{A}^{\mathsf T}(\mathbf{A}\mathbf{x}-\mathbf{b})+\lambda\,\nabla\mathrm{TV}_\delta(\mathbf{x})\)가 됩니다(페이지 2, 3).</li>
+    <li>상자 ⑤의 안전장치는 최근 \(10\)회 \(J\) 값의 최댓값을 기준으로 삼는 비단조 선 탐색입니다(페이지 4).</li>
+    <li>멈춤 판정은 \(\lVert\mathbf{u}^{(k)}\rVert&lt;10^{-4}\)입니다(페이지 7). 6장의 일반형 의사코드와 같이, 이 장의 의사코드(페이지 6)도
+    사영 방향 \(\mathbf{u}^{(k)}\)를 구한 직후, 선 탐색 앞에서 판정합니다.</li>
+  </ul>
+
+  <h3>심화 페이지의 결과</h3>
+
+  <p>각 상자에 들어가는 내용은 심화 페이지에서 유도하거나 확인했습니다. 심화를 건너뛴 경우에도 이어서 읽을 수 있도록 결과만 모았습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:5.5rem">항목</th><th>결과</th><th style="width:5rem">근거</th></tr>
+      <tr><td>기울기 \(\nabla\mathrm{TV}_\delta\)</td><td>화소마다 이웃과의 차이에 가중치(\(t\le\delta\)이면 \(1/\delta\), 아니면 \(1/t\))를 곱해 모은 값입니다. 평평한 곳은 \(0\)이고 경계에서는 크기가 \(1\) 안팎입니다.</td><td>페이지 3(심화)</td></tr>
+      <tr><td>걸음 \(\alpha\)</td><td>지나온 두 점의 차이와 그때의 기울기 차이로 곡률을 어림해 매 반복 다시 정합니다(BB 스텝). \(K=10,\ 18,\ 40\)에서 고정 걸음은 \(3{,}252,\ 1{,}941,\ 985\)회, BB 스텝은 \(280,\ 208,\ 116\)회가 걸립니다(대략적인 값). </td><td>페이지 4(심화)</td></tr>
+      <tr><td>선 탐색</td><td>매 반복마다 \(J\)가 줄어들 필요는 없고, 최근 \(10\)회 값의 최댓값보다 조금 낮으면 받아들입니다. 걸음 길이 \(\eta\)(\(1\)이면 BB가 정한 걸음 그대로)는 \(1\)에서 시작해 반씩 줄입니다.</td><td>페이지 4(심화)</td></tr>
+      <tr><td>비용</td><td>반복당 순투영 \(\mathbf{A}\) 한 번, 역투영 \(\mathbf{A}^{\mathsf T}\) 한 번입니다. 잔차 \(\mathbf{r}=\mathbf{A}\mathbf{x}-\mathbf{b}\)를 들고 다니면서 방향 \(\mathbf{u}\)에 대한 \(\mathbf{A}\mathbf{u}\)만 한 번 구해 두면, \(\mathbf{A}\)가 선형이므로 선 탐색의 모든 시도에서 잔차를 \(\mathbf{r}+\eta\mathbf{A}\mathbf{u}\)로 얻어 \(\mathbf{A}\mathbf{x}\)를 다시 곱하지 않습니다. 역투영은 갱신된 \(\mathbf{r}\)로 새 기울기 \(2\mathbf{A}^{\mathsf T}\mathbf{r}+\lambda\nabla\mathrm{TV}_\delta\)를 구할 때 한 번만 씁니다.</td><td>페이지 6(심화)</td></tr>
+      <tr><td>멈춤</td><td>\(\lVert\mathbf{u}^{(k)}\rVert &lt; 10^{-4}\)이면 멈춥니다. \(K=40\)에 잡음을 더한 데이터에서 불일치 원칙으로 \(39\)회에 일찍 끊으면 오차가 \(0.0514\)로, \(156\)회까지 돌린 \(0.0168\)보다 큽니다.</td><td>페이지 7(심화)</td></tr>
+      <tr><td>제약</td><td>사영 방향 \(\mathbf{u}\)는 허용 집합 안의 두 점을 잇는 선분 위에 있으므로, 선 탐색 중에 다시 사영하지 않아도 \(\mathbf{x}\ge\mathbf{0}\)이 지켜집니다.</td><td>페이지 7(심화)</td></tr>
+    </table>
+  </div>
+
+  <h3>반복 따라가기</h3>
+
+  <p>\(K=40\), 잡음 없는 데이터에 \(\lambda=0.001\), \(\delta=0.01\)로 GPBB를 실제로 돌린 결과입니다. 슬라이더로 반복 \(k\)를 고르면 그 반복의 영상과 값이 나옵니다.
+  파란선은 목적함수 \(J\), 주황선은 사영 방향의 크기 \(\lVert\mathbf{u}\rVert\)이고, 파란 동그라미는 \(J\)가 직전 반복보다 늘어난 반복입니다.
+  \(k=0\) 칸의 \(\alpha=1\)은 초깃값이고, 그 뒤의 \(\alpha\)는 BB 스텝이 정합니다. 반복 수는 브라우저의 수치 계산 차이로 몇 회 달라질 수 있습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 290" role="img" aria-label="왼쪽은 선택한 반복에서의 재구성 영상, 오른쪽은 반복에 따른 목적함수 J(파란선)와 사영 방향의 크기(주황선)를 세로 로그 눈금으로 그린 그래프">
+      <image id="c6-it-img" x="14" y="40" width="240" height="240" preserveAspectRatio="none"/>
+      <rect x="14" y="40" width="240" height="240" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <g font-size="11.5" font-weight="700" class="svg-fg"><text x="14" y="30">반복 k = <tspan id="c6-it-kv">0</tspan>의 영상</text></g>
+      <g class="svg-line" fill="none" stroke-width="1" opacity=".6"><path d="M290 40 V230 H620"/></g>
+      <g id="c6-it-grid"></g>
+      <path id="c6-it-J" fill="none" stroke-width="1.8" style="stroke:var(--accent)"/>
+      <path id="c6-it-U" fill="none" stroke-width="1.4" style="stroke:var(--warn)"/>
+      <g id="c6-it-rise"></g>
+      <g id="c6-it-mark" transform="translate(0 0)">
+        <path d="M290 40 V230" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--muted)"/>
+        <circle id="c6-it-mj" cx="290" cy="40" r="4" style="fill:var(--accent)"/>
+        <circle id="c6-it-mu" cx="290" cy="40" r="4" style="fill:var(--warn)"/>
+      </g>
+      <g font-size="10" class="svg-muted">
+        <text x="290" y="34">값(로그 눈금)</text>
+        <text id="c6-it-axis" x="620" y="246" text-anchor="end">반복 k (0~116)</text>
+      </g>
+      <g font-size="10.5" class="svg-fg">
+        <text x="300" y="266" style="fill:var(--accent)">J(x⁽ᵏ⁾)</text>
+        <text x="360" y="266" style="fill:var(--warn)">‖u⁽ᵏ⁾‖</text>
+        <text x="425" y="266" class="svg-muted">○ = J가 늘어난 반복</text>
+      </g>
+    </svg>
+    <figcaption>영상은 값 \(0.98\)~\(1.05\)를 흑백으로 나타냅니다(5장의 비교와 같은 범위).</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="c6-it-k">반복 \(k\)</label>
+    <input id="c6-it-k" type="range" min="0" max="116" step="1" value="0" style="width:14rem">
+    <button type="button" id="c6-it-play">재생</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c6-it-out"></p>
+
+  <p>\(116\)번의 반복 가운데 \(24\)번은 \(J\)가 오히려 늘었습니다. 예를 들어 \(k=5\)에서 \(6\)으로 가며 \(J\)는 \(9.67\)에서 \(24.9\)가 됩니다.
+  그래도 \(J\)는 전체로 \(2{,}651.9\)에서 \(0.361\)로 내려가고, 참값 오차는 \(0.807\)에서 \(k=10\)에 \(0.1577\), \(k=50\)에 \(0.0286\), \(k=116\)에 \(0.0100\)이 됩니다.
+  \(k=80\) 무렵부터 \(J\)는 \(0.36\) 부근에서 거의 변하지 않지만 영상은 아직 조금씩 바뀝니다. 그래서 \(J\)가 아니라 \(\lVert\mathbf{u}\rVert\)가 충분히 작아질 때까지 반복합니다(페이지 7).</p>
+
+<script>
+(function () {
+    var D2R = Math.PI / 180;
+    var SL = [
+      ['a', 0, 0, 0.92, 0.69, 90, 2.0], ['b', 0, -0.0184, 0.874, 0.6624, 90, -0.98],
+      ['c', 0.22, 0, 0.31, 0.11, 72, -0.02], ['d', -0.22, 0, 0.41, 0.16, 108, -0.02],
+      ['e', 0, 0.35, 0.25, 0.21, 90, 0.01], ['f', 0, 0.1, 0.046, 0.046, 0, 0.01],
+      ['g', 0, -0.1, 0.046, 0.046, 0, 0.01], ['h', -0.08, -0.605, 0.046, 0.023, 0, 0.01],
+      ['i', 0, -0.605, 0.023, 0.023, 0, 0.01], ['j', 0.06, -0.605, 0.046, 0.023, 90, 0.01]
+    ];
+    function ellMu(x, y) {
+      var v = 0, i, e, c, s, u, w;
+      for (i = 0; i < SL.length; i++) {
+        e = SL[i]; c = Math.cos(e[5] * D2R); s = Math.sin(e[5] * D2R);
+        u = (x - e[1]) * c + (y - e[2]) * s; w = -(x - e[1]) * s + (y - e[2]) * c;
+        if (u * u / (e[3] * e[3]) + w * w / (e[4] * e[4]) <= 1) v += e[6];
+      }
+      return v;
+    }
+    function buildGrid(N, half) {
+      var cell = 2 * half / N, xs = new Float64Array(N * N), ys = new Float64Array(N * N), ix, iy;
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        xs[iy * N + ix] = -half + (ix + 0.5) * cell;
+        ys[iy * N + ix] = half - (iy + 0.5) * cell;
+      }
+      return { N: N, half: half, cell: cell, xs: xs, ys: ys };
+    }
+    function buildSystemMatrix(grid, angles, dets) {
+      var N = grid.N, half = grid.half, cell = grid.cell;
+      var rows = [], k, n, theta, s, c, sn, p0x, p0y, dx, dy;
+      var lines = [], li;
+      for (li = 0; li <= N; li++) lines.push(-half + li * cell);
+      for (k = 0; k < angles.length; k++) {
+        theta = angles[k]; c = Math.cos(theta); sn = Math.sin(theta);
+        for (n = 0; n < dets.length; n++) {
+          s = dets[n]; p0x = s * c; p0y = s * sn; dx = -sn; dy = c;
+          var txlo, txhi, tylo, tyhi, tmin, tmax, ts, li2, t, x, y, ix, iy, idx, skip = false;
+          if (Math.abs(dx) > 1e-12) { txlo = (-half - p0x) / dx; txhi = (half - p0x) / dx; if (txlo > txhi) { t = txlo; txlo = txhi; txhi = t; } }
+          else { if (p0x < -half || p0x > half) skip = true; txlo = -1e9; txhi = 1e9; }
+          if (!skip) {
+            if (Math.abs(dy) > 1e-12) { tylo = (-half - p0y) / dy; tyhi = (half - p0y) / dy; if (tylo > tyhi) { t = tylo; tylo = tyhi; tyhi = t; } }
+            else { if (p0y < -half || p0y > half) skip = true; tylo = -1e9; tyhi = 1e9; }
+          }
+          if (skip) { rows.push({ cols: [], vals: [] }); continue; }
+          tmin = Math.max(txlo, tylo); tmax = Math.min(txhi, tyhi);
+          if (tmin >= tmax - 1e-12) { rows.push({ cols: [], vals: [] }); continue; }
+          ts = [tmin, tmax];
+          for (li2 = 1; li2 < N; li2++) {
+            var xk = lines[li2], yk = lines[li2];
+            if (Math.abs(dx) > 1e-12) { t = (xk - p0x) / dx; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+            if (Math.abs(dy) > 1e-12) { t = (yk - p0y) / dy; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+          }
+          ts.sort(function (a, b) { return a - b; });
+          var cols = [], vals = [], map = {};
+          for (li2 = 0; li2 < ts.length - 1; li2++) {
+            var ta = ts[li2], tb = ts[li2 + 1], len = tb - ta;
+            if (len <= 1e-12) continue;
+            var tm = (ta + tb) / 2;
+            x = p0x + tm * dx; y = p0y + tm * dy;
+            ix = Math.floor((x + half) / cell); iy = Math.floor((half - y) / cell);
+            if (ix < 0 || ix >= N || iy < 0 || iy >= N) continue;
+            idx = iy * N + ix;
+            if (map.hasOwnProperty(idx)) { vals[map[idx]] += len; } else { map[idx] = cols.length; cols.push(idx); vals.push(len); }
+          }
+          rows.push({ cols: cols, vals: vals });
+        }
+      }
+      var M = rows.length, Npix = N * N;
+      return { rows: rows, M: M, Npix: Npix };
+    }
+    function forward(sysA, x) {
+      var M = sysA.M, rows = sysA.rows, b = new Float64Array(M), i, j, r, s;
+      for (i = 0; i < M; i++) { r = rows[i]; s = 0; for (j = 0; j < r.cols.length; j++) s += r.vals[j] * x[r.cols[j]]; b[i] = s; }
+      return b;
+    }
+    function backward(sysA, dvec) {
+      var M = sysA.M, rows = sysA.rows, x = new Float64Array(sysA.Npix), i, j, r;
+      for (i = 0; i < M; i++) { r = rows[i]; for (j = 0; j < r.cols.length; j++) x[r.cols[j]] += r.vals[j] * dvec[i]; }
+      return x;
+    }
+    function rmseFn(x, xt) {
+      var i, s = 0; for (i = 0; i < x.length; i++) { var dd = x[i] - xt[i]; s += dd * dd; }
+      return Math.sqrt(s / x.length);
+    }
+    function tvEnergyGradHuber(x, N, delta) {
+      function at(ix, iy) { if (ix < 0 || ix >= N || iy < 0 || iy >= N) return 0; return x[iy * N + ix]; }
+      var g = new Float64Array(N * N), ix, iy, coeff = new Float64Array(N * N);
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        if (ix === N - 1 && iy === N - 1) { coeff[iy * N + ix] = 0; continue; }
+        var xc = at(ix, iy), xr = (ix < N - 1) ? at(ix + 1, iy) : xc, xd = (iy < N - 1) ? at(ix, iy + 1) : xc;
+        var dx = (ix < N - 1) ? (xr - xc) : 0, dy = (iy < N - 1) ? (xd - xc) : 0;
+        var t = Math.sqrt(dx * dx + dy * dy);
+        coeff[iy * N + ix] = (t <= delta) ? (1 / delta) : (t > 1e-12 ? (1 / t) : 0);
+      }
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        var xc = at(ix, iy), xr = (ix < N - 1) ? at(ix + 1, iy) : xc, xd = (iy < N - 1) ? at(ix, iy + 1) : xc;
+        var dx1 = (ix < N - 1) ? (xr - xc) : 0, dy1 = (iy < N - 1) ? (xd - xc) : 0;
+        var c1 = coeff[iy * N + ix];
+        var term1x = -c1 * dx1, term1y = -c1 * dy1, term2 = 0, term3 = 0;
+        if (ix > 0) { var xl = at(ix - 1, iy), cl = coeff[iy * N + (ix - 1)]; term2 = cl * (xc - xl); }
+        if (iy > 0) { var xu = at(ix, iy - 1), cu = coeff[(iy - 1) * N + ix]; term3 = cu * (xc - xu); }
+        g[iy * N + ix] = term1x + term1y + term2 + term3;
+      }
+      return g;
+    }
+    function tvValue(x, N, delta) {
+      var s = 0, ix, iy, c, dx, dy, t;
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        c = x[iy * N + ix];
+        dx = ix < N - 1 ? x[iy * N + ix + 1] - c : 0;
+        dy = iy < N - 1 ? x[(iy + 1) * N + ix] - c : 0;
+        t = Math.sqrt(dx * dx + dy * dy);
+        s += t <= delta ? t * t / (2 * delta) : t - delta / 2;
+      }
+      return s;
+    }
+    function dot(a, b) { var s = 0, i; for (i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+    function gpbb(sysA, N, b, lambda, delta, opt) {
+      var tol = opt.tol, maxIter = opt.maxIter, alpha = opt.alpha0, keep = !!opt.keep;
+      var n = sysA.Npix, m = sysA.M, i, k;
+      var x = new Float64Array(n), r = new Float64Array(m);
+      for (i = 0; i < m; i++) r[i] = -b[i];
+      var g = backward(sysA, r); for (i = 0; i < n; i++) g[i] *= 2;          // TV 기울기는 x=0 에서 0
+      var J0 = dot(r, r) + lambda * tvValue(x, N, delta);
+      var hist = { J: [J0], un: [], a: [], eta: [] }, snaps = keep ? [new Float64Array(x)] : null;
+      var recent = [J0], u = new Float64Array(n), xe = new Float64Array(n), re = new Float64Array(m), gn, s = new Float64Array(n), y = new Float64Array(n);
+      for (k = 0; k < maxIter; k++) {
+        for (i = 0; i < n; i++) u[i] = Math.max(x[i] - alpha * g[i], 0) - x[i];
+        var un = Math.sqrt(dot(u, u)); hist.un.push(un); hist.a.push(alpha);
+        if (un < tol) break;
+        var Au = forward(sysA, u), eta = 1, gu = dot(g, u), mx = Math.max.apply(null, recent), f;
+        for (;;) {
+          for (i = 0; i < n; i++) xe[i] = x[i] + eta * u[i];
+          for (i = 0; i < m; i++) re[i] = r[i] + eta * Au[i];
+          f = dot(re, re) + (lambda > 0 ? lambda * tvValue(xe, N, delta) : 0);
+          if (f <= mx + 1e-4 * eta * gu || eta < 1e-12) break;
+          eta /= 2;
+        }
+        for (i = 0; i < n; i++) { s[i] = eta * u[i]; x[i] += s[i]; }
+        for (i = 0; i < m; i++) r[i] += eta * Au[i];
+        gn = backward(sysA, r); for (i = 0; i < n; i++) gn[i] *= 2;
+        if (lambda > 0) { var gt = tvEnergyGradHuber(x, N, delta); for (i = 0; i < n; i++) gn[i] += lambda * gt[i]; }
+        for (i = 0; i < n; i++) y[i] = gn[i] - g[i];
+        var sy = dot(s, y), ss = dot(s, s);
+        alpha = sy > 0 ? Math.min(1e8, Math.max(1e-8, ss / sy)) : 1e8;
+        g = gn;
+        hist.J.push(f); hist.eta.push(eta);
+        recent.push(f); if (recent.length > 10) recent.shift();
+        if (keep) snaps.push(new Float64Array(x));
+      }
+      return { x: x, iters: k, hist: hist, snaps: snaps };
+    }
+  function imageURL(arr, lo, hi) {
+    var cv = document.createElement('canvas'), ctx, im, i, g;
+    cv.width = N; cv.height = N; ctx = cv.getContext('2d'); im = ctx.createImageData(N, N);
+    for (i = 0; i < N * N; i++) {
+      g = Math.round(255 * Math.max(0, Math.min(1, (arr[i] - lo) / (hi - lo))));
+      im.data[4 * i] = im.data[4 * i + 1] = im.data[4 * i + 2] = g; im.data[4 * i + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+
+  var N = 48, K = 40, grid = buildGrid(N, 1), Ns = 61, ds = 2.9 / (Ns - 1), dets = [], angles = [], i;
+  for (i = 0; i < Ns; i++) dets.push(-1.45 + i * ds);
+  for (i = 0; i < K; i++) angles.push(i * Math.PI / K);
+  var xTrue = new Float64Array(N * N); for (i = 0; i < N * N; i++) xTrue[i] = ellMu(grid.xs[i], grid.ys[i]);
+  var sysA = buildSystemMatrix(grid, angles, dets), bData = forward(sysA, xTrue);
+  var R = gpbb(sysA, N, bData, 0.001, 0.01, { tol: 1e-7, maxIter: 400, alpha0: 1, keep: true });
+  var kStop = R.hist.un.findIndex(function (v) { return v < 1e-4; });
+  var rm = R.snaps.map(function (s) { return rmseFn(s, xTrue); });
+  window.ct6Kit = { N: N, sysA: sysA, bData: bData, xTrue: xTrue, run: R, kStop: kStop, rmse: rm, imageURL: imageURL,
+                    gpbb: gpbb, rmseFn: rmseFn, forward: forward, backward: backward, grid: grid, dets: dets,
+                    buildSystemMatrix: buildSystemMatrix, tvEnergyGradHuber: tvEnergyGradHuber };
+
+  /* 반복 따라가기 위젯 */
+  var LO = -4.4, HI = 3.6, PX0 = 290, PX1 = 620, PY0 = 40, PY1 = 230;
+  function PX(k) { return PX0 + k / kStop * (PX1 - PX0); }
+  function PY(v) { return PY1 - (Math.log10(v) - LO) / (HI - LO) * (PY1 - PY0); }
+  var img = document.getElementById('c6-it-img'), sl = document.getElementById('c6-it-k'), out = document.getElementById('c6-it-out'),
+      play = document.getElementById('c6-it-play'), mark = document.getElementById('c6-it-mark');
+  var dJ = '', dU = '', rises = '', k;
+  for (k = 0; k <= kStop; k++) {
+    dJ += (k ? 'L' : 'M') + PX(k).toFixed(1) + ' ' + PY(R.hist.J[k]).toFixed(1);
+    dU += (k ? 'L' : 'M') + PX(k).toFixed(1) + ' ' + PY(R.hist.un[k]).toFixed(1);
+    if (k > 0 && R.hist.J[k] > R.hist.J[k - 1]) rises += '<circle cx="' + PX(k).toFixed(1) + '" cy="' + PY(R.hist.J[k]).toFixed(1) + '" r="3" fill="none" style="stroke:var(--accent)" stroke-width="1.2"/>';
+  }
+  document.getElementById('c6-it-J').setAttribute('d', dJ);
+  document.getElementById('c6-it-U').setAttribute('d', dU);
+  document.getElementById('c6-it-rise').innerHTML = rises;
+  var grid2 = '', e;
+  for (e = -4; e <= 2; e += 2) {
+    grid2 += '<path d="M' + PX0 + ' ' + PY(Math.pow(10, e)).toFixed(1) + ' H' + PX1 + '" class="svg-line" stroke-width=".5" opacity=".5" fill="none"/>' +
+             '<text x="' + (PX0 - 6) + '" y="' + (PY(Math.pow(10, e)) + 3).toFixed(1) + '" text-anchor="end" font-size="9" class="svg-muted">' + (e === 0 ? '1' : '10' + (e < 0 ? '⁻' : '') + ['⁰','¹','²','³','⁴'][Math.abs(e)]) + '</text>';
+  }
+  document.getElementById('c6-it-grid').innerHTML = grid2;
+  sl.max = kStop; document.getElementById('c6-it-axis').textContent = '반복 k (0~' + kStop + ')';
+  function show(kk) {
+    var ak = R.hist.a[kk], et = R.hist.eta[kk];
+    img.setAttribute('href', imageURL(R.snaps[kk], 0.98, 1.05));
+    mark.setAttribute('transform', 'translate(' + (PX(kk) - PX0).toFixed(1) + ' 0)');
+    document.getElementById('c6-it-mj').setAttribute('cy', PY(R.hist.J[kk]).toFixed(1));
+    document.getElementById('c6-it-mu').setAttribute('cy', PY(R.hist.un[kk]).toFixed(1));
+    document.getElementById('c6-it-kv').textContent = kk;
+    out.textContent = 'J = ' + R.hist.J[kk].toFixed(3) + ' · ‖u‖ = ' + (R.hist.un[kk] < 0.01 ? R.hist.un[kk].toExponential(2) : R.hist.un[kk].toPrecision(3)) + ' · α = ' + ak.toFixed(2) +
+      ' · η = ' + (et === undefined ? '—' : et) + ' · 참값 오차(rmse) = ' + rm[kk].toFixed(4) +
+      (kk > 0 && R.hist.J[kk] > R.hist.J[kk - 1] ? ' · 이 반복에서 J가 늘었습니다' : '');
+  }
+  sl.addEventListener('input', function () { show(+sl.value); });
+  var timer = null;
+  play.addEventListener('click', function () {
+    if (timer) { clearInterval(timer); timer = null; play.textContent = '재생'; return; }
+    if (+sl.value >= kStop) sl.value = 0;
+    play.textContent = '멈춤';
+    timer = setInterval(function () {
+      var v = +sl.value + 1; sl.value = v; show(v);
+      if (v >= kStop) { clearInterval(timer); timer = null; play.textContent = '재생'; }
+    }, 90);
+  });
+  show(0);
+})();
+</script>
+</section>
+
+<!-- ─ 페이지 6 -->
+<section class="screen" data-title="의사코드와 연산 횟수">
+  <p class="kicker">7장 · 페이지 6 · 심화</p>
+  <h2>의사코드: 반복당 순투영·역투영 각 한 번</h2>
+
+  <p><a href="ch06.html#s5">6장 페이지 5</a>의 일반형 의사코드에서 \(f=J\), \(P_C(\mathbf{v})=\max(\mathbf{v},0)\), \(M=10\), \(\gamma=10^{-4}\)로 놓고 이 장의 선택(페이지 5)을 넣어 CT 재구성용으로 적습니다. 일반형과 같은 구조에 \(\mathbf{A}\)의 선형성을 이용한 행렬 곱 절약이 더해진 것입니다. 비단조 선 탐색이 한 반복 안에서 \(\eta\)를 여러 번 시도해도
+  행렬 곱은 늘지 않는다는 것이 핵심입니다.</p>
+
+<pre><span class="cap"># GPBB</span><code>x ← 0;  r ← −b                                # 1
+g ← 2·Aᵀr + λ·∇TVδ(x)                          # 2
+α ← 초깃값                                      # 3
+while True:                                   # 4
+    u ← max(x − α·g, 0) − x                   # 5
+    if ‖u‖ &lt; 허용값: break                     # 6
+    Au ← A·u                                  # 7
+    η ← 1                                     # 8
+    repeat:                                   # 9
+        xη ← x + η·u                          # 10
+        rη ← r + η·Au                         # 11
+        f(η) ← ‖rη‖² + λ·TVδ(xη)               # 12
+        if f(η) ≤ 최근 10회 중 최댓값 + 1e-4·η·⟨g,u⟩: break   # 13
+        η ← η / 2                             # 14
+    x ← x + η·u;  r ← r + η·Au                 # 15
+    g_new ← 2·Aᵀr + λ·∇TVδ(x)                  # 16
+    s ← η·u;  y ← g_new − g                    # 17
+    α ← clip(⟨s,s⟩ / ⟨s,y⟩)                    # 18
+    g ← g_new                                 # 19
+return x                                       # 20
+</code></pre>
+
+  <ol class="notes">
+    <li><span class="ln">1행</span> \(\mathbf{x}=\mathbf{0}\)이면 \(\mathbf{A}\mathbf{x}=\mathbf{0}\)이므로 행렬을 전혀
+    곱하지 않고 잔차 \(\mathbf{r}=-\mathbf{b}\)를 바로 얻습니다.</li>
+    <li><span class="ln">2행</span> 그 잔차를 \(\mathbf{A}^{\mathsf T}\)에 한 번 곱해 초기 기울기를 구합니다.
+    \(\mathrm{TV}_\delta(\mathbf{0})\)의 기울기는 모든 차이가 \(0\)이라 \(\mathbf{0}\)입니다(페이지 3). 그래서 시작에
+    필요한 행렬 곱은 \(\mathbf{A}^{\mathsf T}\) 한 번뿐입니다.</li>
+    <li><span class="ln">7행, 9~14행</span> \(\mathbf{A}\)는 선형이므로 \(\mathbf{A}(\mathbf{x}+\eta\mathbf{u})=\mathbf{A}\mathbf{x}+\eta\,\mathbf{A}\mathbf{u}\)입니다.
+    방향 \(\mathbf{u}\)에 대한 \(\mathbf{A}\mathbf{u}\)를 반복당 한 번(7행)만 구해 두면, 9~14행의 모든 시도 \(\eta\)에서
+    잔차를 행렬 곱 없이 \(\mathbf{r}+\eta\mathbf{A}\mathbf{u}\)로 계산할 수 있습니다.</li>
+    <li><span class="ln">13행</span> 받아들이는 기준은 "최근 값들의 최댓값보다 작기만 하면" 되는 것이 아닙니다.
+    \(\langle\mathbf{g},\mathbf{u}\rangle&lt;0\)(\(\mathbf{u}\)는 내려가는 방향)이므로 우변은 최댓값보다 항상 조금 더 작습니다.</li>
+    <li><span class="ln">15~16행</span> 다음 반복의 기울기 사영(5행)과 BB 스텝(17~18행)에 모두 필요한 유일한
+    \(\mathbf{A}^{\mathsf T}\) 계산입니다. 잔차 \(\mathbf{r}\)은 15행에서 이미 갱신해 두었으므로 다시 \(\mathbf{A}\)를
+    곱하지 않습니다.</li>
+  </ol>
+
+  <p>시도 횟수는 반복마다 다르지만(이 장의 예제에서 평균 1.2~1.4회), 7행의 트릭 때문에 시도가 늘어도 행렬 곱 횟수는 늘지
+  않습니다. 그래서 반복 한 번의 비용은 시도 횟수와 거의 무관하게 \(\mathbf{A}\) 한 번 + \(\mathbf{A}^{\mathsf T}\) 한 번입니다 —
+  <a href="ch01.html#s5">1장 페이지 5</a>의 순투영·역투영 한 쌍과 같은 크기이고, 2장의 ART·SART·SIRT 한 바퀴와도 같은 자릿수입니다.</p>
+</section>
+
+<!-- ─ 페이지 7 -->
+<section class="screen" data-title="정지 조건과 제약 처리">
+  <p class="kicker">7장 · 페이지 7 · 심화</p>
+  <h2>정지 조건과 제약 처리</h2>
+
+  <p><a href="ch03.html#s9">3장 페이지 9</a>의 1차 최적성 조건(\(\nabla J=\mathbf{0}\))은 제약이 없을 때만 그대로 쓸 수 있습니다.
+  Shepp-Logan 팬텀은 배경이 정확히 \(0\)이어서, 최솟값에서 많은 화소가 경계 \(x_j=0\)에 붙어 있습니다. 그런 화소에서는
+  \(\nabla J\)의 그 성분이 \(0\)이 아니어도 괜찮으므로, 기울기의 크기만으로는 멈춤을 판정할 수 없습니다.</p>
+
+  <p>대신 <a href="ch06.html#s2">6장 페이지 2</a>의 멈춤 조건("한 걸음 가서 사영해도 제자리")을 씁니다. 이 장의 사영 방향으로 쓰면 \(\mathbf{u}^{(k)}=\mathbf{0}\)이고,
+  실제로는 그 크기가 허용값보다 작아지면 멈춥니다.</p>
+
+  <p style="text-align:center">\[\lVert\mathbf{u}^{(k)}\rVert < \text{허용값}\]</p>
+
+  <p>6장은 \(\alpha=1\)일 때의 \(\lVert\mathbf{x}-P_C(\mathbf{x}-\nabla J)\rVert\)를 썼고 이 장의 \(\mathbf{u}^{(k)}\)는 BB 걸음 \(\alpha_k\)로 만든 것이어서 값의 크기는 다르지만,
+  \(\alpha>0\)이면 \(0\)이 되는 점은 같습니다. 화소 \(j\)마다 풀어 쓰면 \(x_j>0\)이면 \(g_j=0\), \(x_j=0\)이면 \(g_j\ge0\)이라는 뜻입니다.
+  뒤쪽은 \(x_j\)를 더 줄이고 싶어도 \(x_j\ge0\)이 막고 있는 경우입니다.</p>
+
+  <h3>허용값에 따른 멈춤 시점</h3>
+
+  <p>페이지 5의 반복 위젯과 같은 계산(\(K=40\), 잡음 없음)에서 허용값을 바꾸면 어느 반복에서 멈추고, 그때 오차가 얼마인지 봅니다.
+  위 그래프는 \(\lVert\mathbf{u}^{(k)}\rVert\)(주황), 아래 그래프는 참값 오차(파랑)이고, 가로 점선이 허용값입니다.
+  \(\lVert\mathbf{u}^{(k)}\rVert\)가 처음 허용값 아래로 내려온 반복에서 멈춥니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 296" role="img" aria-label="위쪽은 반복에 따른 사영 방향의 크기(주황선)와 허용값(점선), 아래쪽은 같은 반복에서의 참값 오차(파란선). 세로선이 허용값 아래로 처음 내려온 반복을 가리킨다">
+      <g font-size="11" font-weight="700" class="svg-fg"><text x="60" y="20">사영 방향의 크기 ‖u⁽ᵏ⁾‖</text><text x="60" y="170">참값 오차 rmse</text></g>
+      <g class="svg-line" fill="none" stroke-width="1" opacity=".6"><path d="M60 30 V140 H620"/><path d="M60 180 V270 H620"/></g>
+      <g id="c6-st-grid"></g>
+      <path id="c6-st-U" fill="none" stroke-width="1.4" style="stroke:var(--warn)"/>
+      <path id="c6-st-R" fill="none" stroke-width="1.8" style="stroke:var(--accent)"/>
+      <path id="c6-st-tol" fill="none" stroke-width="1.2" stroke-dasharray="5 4" style="stroke:var(--fg)"/>
+      <g id="c6-st-mark" transform="translate(0 0)">
+        <path d="M60 30 V270" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--muted)"/>
+        <circle id="c6-st-mu" cx="60" cy="30" r="4" style="fill:var(--warn)"/>
+        <circle id="c6-st-mr" cx="60" cy="180" r="4" style="fill:var(--accent)"/>
+      </g>
+      <g font-size="10" class="svg-muted"><text id="c6-st-axis" x="620" y="286" text-anchor="end">반복 k</text></g>
+    </svg>
+    <figcaption>가로 점선은 허용값, 세로선은 그 허용값에서 멈추는 반복입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="c6-st-e">허용값</label>
+    <input id="c6-st-e" type="range" min="-6" max="-1" step="0.5" value="-4" style="width:14rem">
+    <b id="c6-st-val">10⁻⁴</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c6-st-out"></p>
+
+  <p>허용값을 \(10^{-3}\)에서 \(10^{-4}\), \(10^{-6}\)으로 줄이면 멈춤 반복은 약 \(77\)회, \(116\)회, \(200\)회로 늘지만 오차는 \(0.0112\), \(0.0100\), \(0.0098\)로 거의 변하지 않습니다.
+  허용값 \(10^{-4}\)는 오차가 더 줄어들지 않는 지점에 비교적 가깝고, 그 뒤의 반복은 계산 비용만 늘립니다.
+  또 \(\lVert\mathbf{u}^{(k)}\rVert\)는 줄어드는 도중에도 오르내립니다. \(k\approx116\)에서 약 \(9\times10^{-5}\)로 허용값 아래로 내려온 값이 바로 다음 반복에서 약 \(4\times10^{-3}\)으로 다시 올라갑니다.
+  BB 스텝의 걸음이 매끄럽지 않기 때문이므로, 처음 허용값 아래로 내려온 반복에서 멈추는 것으로 정합니다. 이 계산도 브라우저의 수치 계산 차이로 반복 수가 몇 회 달라질 수 있습니다.</p>
+
+  <h3>불일치 원칙의 한계</h3>
+
+  <p><a href="ch02.html#s8">2장 페이지 8</a>은 \(\lambda=0\)인 반복법에서 불일치 원칙으로 멈출 시점을 정했습니다. 이 장은 이미 \(\lambda>0\)으로
+  정규화를 식에 넣었는데, 같은 규칙을 그대로 쓰면 어떻게 될까요? \(K=40\), 잡음을 더한 데이터(<a href="../../part0/ch02.html#s8">0편 2장
+  페이지 8</a>(심화)의 \(\sigma_p\))로 확인합니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>멈춤 기준</th><th>멈춘 반복</th><th>참값 오차(rmse)</th></tr>
+      <tr><td>불일치 원칙(잔차 \(\le\) 기대 잡음 크기 \(0.2577\))</td><td>39회</td><td>\(0.0514\)</td></tr>
+      <tr><td>사영 방향 수렴(\(\lVert\mathbf{u}^{(k)}\rVert &lt; 10^{-4}\))</td><td>156회</td><td>\(0.0168\)</td></tr>
+    </table>
+  </div>
+
+  <p>\(\lambda\)가 이미 잡음을 가라앉히는 역할을 하고 있어서, 2장 방식대로 일찍 멈추면 TV가 할 수 있는 만큼 정규화하기 전에
+  끊어 버려 오차가 더 큽니다. 이 장은 사영 방향이 충분히 작아질 때까지 계속 반복하고, 정규화의 세기는 \(\lambda\) 선택
+  자체로 조절합니다(페이지 8).</p>
+
+<script>
+(function () {
+  var kit = window.ct6Kit; if (!kit) return;
+  var H = kit.run.hist, rm = kit.rmse, kEnd = H.un.length - 1;
+  var X0 = 60, X1 = 620, T0 = 30, T1 = 140, B0 = 180, B1 = 270;
+  var ULO = -7.6, UHI = 2.4, RLO = -2.2, RHI = 0;
+  function PX(k) { return X0 + k / kEnd * (X1 - X0); }
+  function PU(v) { return T1 - (Math.log10(v) - ULO) / (UHI - ULO) * (T1 - T0); }
+  function PR(v) { return B1 - (Math.log10(v) - RLO) / (RHI - RLO) * (B1 - B0); }
+  var SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+  function sup(n) { return String(n).split('').map(function (c) { return SUP[c]; }).join(''); }
+  function tolText(e) {
+    var v = Math.pow(10, e), s = v.toExponential(1).split('e'), m = s[0], x = parseInt(s[1], 10);
+    return (m === '1.0' ? '' : m + '×') + '10' + sup(x);
+  }
+  var dU = '', dR = '', k;
+  for (k = 0; k <= kEnd; k++) {
+    dU += (k ? 'L' : 'M') + PX(k).toFixed(1) + ' ' + PU(H.un[k]).toFixed(1);
+    dR += (k ? 'L' : 'M') + PX(k).toFixed(1) + ' ' + PR(rm[k]).toFixed(1);
+  }
+  document.getElementById('c6-st-U').setAttribute('d', dU);
+  document.getElementById('c6-st-R').setAttribute('d', dR);
+  var g = '', e;
+  for (e = -6; e <= 2; e += 2) {
+    g += '<path d="M' + X0 + ' ' + PU(Math.pow(10, e)).toFixed(1) + ' H' + X1 + '" class="svg-line" stroke-width=".5" opacity=".5" fill="none"/>' +
+         '<text x="' + (X0 - 6) + '" y="' + (PU(Math.pow(10, e)) + 3).toFixed(1) + '" text-anchor="end" font-size="9" class="svg-muted">' + (e === 0 ? '1' : '10' + sup(e)) + '</text>';
+  }
+  [0.01, 0.1, 1].forEach(function (v) {
+    g += '<path d="M' + X0 + ' ' + PR(v).toFixed(1) + ' H' + X1 + '" class="svg-line" stroke-width=".5" opacity=".5" fill="none"/>' +
+         '<text x="' + (X0 - 6) + '" y="' + (PR(v) + 3).toFixed(1) + '" text-anchor="end" font-size="9" class="svg-muted">' + v + '</text>';
+  });
+  document.getElementById('c6-st-grid').innerHTML = g;
+  document.getElementById('c6-st-axis').textContent = '반복 k (0~' + kEnd + ')';
+  var sl = document.getElementById('c6-st-e'), out = document.getElementById('c6-st-out'), val = document.getElementById('c6-st-val');
+  function update() {
+    var e2 = +sl.value, t = Math.pow(10, e2), ks = -1, i;
+    for (i = 0; i <= kEnd; i++) if (H.un[i] < t) { ks = i; break; }
+    val.textContent = tolText(e2);
+    document.getElementById('c6-st-tol').setAttribute('d', 'M' + X0 + ' ' + PU(t).toFixed(1) + ' H' + X1);
+    var m = document.getElementById('c6-st-mark');
+    if (ks < 0) {
+      m.setAttribute('visibility', 'hidden');
+      out.textContent = '허용값 ' + tolText(e2) + ' — 이 계산의 ' + kEnd + '번째 반복까지는 닿지 못합니다.';
+      return;
+    }
+    m.setAttribute('visibility', 'visible');
+    m.setAttribute('transform', 'translate(' + (PX(ks) - X0).toFixed(1) + ' 0)');
+    document.getElementById('c6-st-mu').setAttribute('cy', PU(H.un[ks]).toFixed(1));
+    document.getElementById('c6-st-mr').setAttribute('cy', PR(rm[ks]).toFixed(1));
+    out.textContent = '허용값 ' + tolText(e2) + ' → k = ' + ks + '에서 멈춤 · 참값 오차(rmse) = ' + rm[ks].toFixed(4) + ' · J = ' + H.J[ks].toFixed(4);
+  }
+  sl.addEventListener('input', update);
+  update();
+})();
+</script>
+
+  <h2>선 탐색 중의 제약 처리</h2>
+
+  <p>페이지 6의 의사코드는 선 탐색의 각 시도 \(\mathbf{x}+\eta\mathbf{u}\)에서 다시 사영하지 않습니다. 그런데도 비음수 제약
+  \(\mathbf{x}\ge\mathbf{0}\)이 매 시도에서 그대로 지켜지는 이유를 봅니다.</p>
+
+  <p>사영 방향은 \(\mathbf{u}^{(k)} = P_C(\mathbf{x}^{(k)}-\alpha_k\nabla J(\mathbf{x}^{(k)})) - \mathbf{x}^{(k)}\)로
+  정의했습니다. 그러니 \(\mathbf{x}^{(k)}\)와 사영을 거친 점 \(\mathbf{x}^{(k)}+\mathbf{u}^{(k)}\)(\(=P_C(\cdots)\)) 둘 다
+  \(C=\{\mathbf{x}:\mathbf{x}\ge\mathbf{0}\}\) 안에 있습니다. <a href="ch03.html#s8">3장 페이지 8</a>에서 본 볼록 집합의
+  정의 — "안의 두 점을 잇는 선분이 항상 그 집합 안에 있는 집합" — 을 그대로 적용하면, 이 두 점을 잇는 선분 위의 모든 점도
+  \(C\) 안에 있습니다.</p>
+
+  <p style="text-align:center">\[\mathbf{x}^{(k)} + \eta\,\mathbf{u}^{(k)} = (1-\eta)\,\mathbf{x}^{(k)} + \eta\,\big(\mathbf{x}^{(k)}+\mathbf{u}^{(k)}\big)
+  \ \in\ C \qquad (0\le\eta\le1)\]</p>
+
+  <p>그래서 선 탐색이 \(\eta\)를 \(1\)에서 \(0\) 쪽으로 줄여 가며 몇 번을 시도하든, 사영은 반복당 딱 한 번(방향
+  \(\mathbf{u}^{(k)}\)를 구할 때)만 필요합니다. 이 성질은 비음수 제약처럼 사영이 원소별로 자르기만 하면 되는 쉬운 경우에
+  국한되지 않습니다 — \(C\)가 어떤 볼록 집합이든, 사영이 비싸게 계산되는 경우라도 반복당 한 번의 사영만 있으면 됩니다. 다만
+  그 한 번의 사영 자체가 비싸다면, 이 트릭이 아껴 주는 것은 "선 탐색 중의 추가 사영"뿐이라는 점은 달라지지 않습니다.</p>
+</section>
+
+<!-- ─ 페이지 8 -->
+<section class="screen" data-title="파라미터 선택과 실패 모드">
+  <p class="kicker">7장 · 페이지 8</p>
+  <h2>파라미터 선택과 민감도</h2>
+
+  <p>GPBB를 상자로 볼 때(페이지 1) 사람이 정하는 값은 정규화 강도 \(\lambda\)와 평활화 매개변수 \(\delta\), 두 가지입니다. 이 페이지는 이 두 값을 바꿨을 때 결과가 어떻게 달라지는지 봅니다.</p>
+
+  <h3>정규화 강도의 민감도</h3>
+
+  <p>\(K=40\)에 측정 잡음(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>(심화)의 \(\sigma_p\))을 더한 데이터로 \(\lambda\)를 바꿔 수렴할 때까지 돌린 결과입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(\lambda\)</th><td>\(0.0001\)</td><td>\(0.0003\)</td><td>\(0.001\)</td><td>\(0.003\)</td><td>\(0.01\)</td><td>\(0.03\)</td></tr>
+      <tr><th>참값 오차(rmse)</th><td>\(0.0290\)</td><td>\(0.0197\)</td><td>\(0.0168\)</td><td>\(0.0275\)</td><td>\(0.0739\)</td><td>\(0.1496\)</td></tr>
+    </table>
+  </div>
+
+  <p>\(\lambda=0.001\)(5장이 쓴 값)에서 오차가 가장 작고, 양쪽으로 멀어질수록 다시 커집니다. \(\lambda\)가 작으면 잡음을
+  충분히 누르지 못하고, \(\lambda\)가 크면 <a href="ch04.html#s8">4장 페이지 8</a>의 계단 아티팩트처럼 진짜 구조까지 깎입니다. 실제로는 참값을
+  모르므로 이 U자 곡선을 직접 그릴 수 없습니다.</p>
+
+  <p>대신 <a href="ch02.html#s8">2장 페이지 8</a>의 불일치 원칙을 \(\lambda\) 자체를 고르는 데 씁니다. 반복을 일찍 끊는 데 쓰는 것이
+  아니라(페이지 7, 심화), 수렴할 때까지 돌린 뒤 남은 잔차가 기대 잡음 크기(\(0.2577\))와 비슷해지는 \(\lambda\)를 찾습니다. 이 예제에서는
+  \(\lambda\approx0.0022\)(수렴 후 잔차 \(0.2566\))가 그 조건을 만족하고, 오차는 \(0.0223\)으로 참값을 알아야만 고를 수
+  있는 최적값(\(0.0168\))보다는 크지만 극단적인 선택보다 훨씬 낫습니다.</p>
+
+  <h3>평활화 매개변수의 민감도</h3>
+
+  <p>\(K=18\), 잡음 없는 데이터(\(\lambda=0.001\))로 \(\delta\)를 바꾼 결과입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(\delta\)</th><th>수렴까지 반복</th><th>참값 오차(rmse)</th></tr>
+      <tr><td>\(0.01\)</td><td>208회</td><td>\(0.0332\)</td></tr>
+      <tr><td>\(0.001\)</td><td>1,116회</td><td>\(0.0317\)</td></tr>
+    </table>
+  </div>
+
+  <p>\(\delta\)를 10배 줄이면 진짜 TV에 더 가까워져(<a href="ch04.html#s7">4장 페이지 7</a>) 오차가 살짝 줄지만, 수렴까지 걸리는 반복이 5배 넘게
+  늘어납니다. 반복 수가 정해져 있을 때 이 대가가 어떻게 나타나는지는 아래의 "수렴 정체"에서 봅니다.</p>
+
+  <h3>직접 바꿔 보기</h3>
+
+  <p>같은 \(K=40\), 잡음 없는 데이터에서 \(\lambda\)와 \(\delta\)를 바꿔 GPBB를 수렴할 때까지 돌립니다. 위 표들과는 데이터가 달라서 숫자가 다르며,
+  버튼을 누르면 그 자리에서 다시 계산합니다. 반복 수는 브라우저의 수치 계산 차이로 몇 회 달라질 수 있습니다.</p>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="c6-pa-l">
+    <span>\(\lambda\)</span>
+    <button type="button" data-v="0.0001">0.0001</button>
+    <button type="button" data-v="0.001">0.001</button>
+    <button type="button" data-v="0.01">0.01</button>
+    <button type="button" data-v="0.03">0.03</button>
+    <button type="button" data-v="0.1">0.1</button>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.3rem" id="c6-pa-d">
+    <span>\(\delta\)</span>
+    <button type="button" data-v="0.01">0.01</button>
+    <button type="button" data-v="0.001">0.001</button>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 230" role="img" aria-label="선택한 람다와 델타로 재구성한 영상과 참값 영상을 나란히 보여준다">
+      <image id="c6-pa-img" x="14" y="24" width="190" height="190" preserveAspectRatio="none"/>
+      <image id="c6-pa-true" x="226" y="24" width="190" height="190" preserveAspectRatio="none"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><rect x="14" y="24" width="190" height="190"/><rect x="226" y="24" width="190" height="190"/></g>
+      <g font-size="11.5" font-weight="700" class="svg-fg"><text x="14" y="16">재구성</text><text x="226" y="16">참값</text></g>
+    </svg>
+    <figcaption id="c6-pa-cap">계산 중입니다…</figcaption>
+  </figure>
+
+  <p>잡음이 없으면 \(\lambda\)를 줄일수록 오차가 줄어듭니다(\(\lambda=0.0001\)에서 약 \(0.002\)). 위 표의 U자 곡선에서 왼쪽이 다시 올라가는 것은 잡음 때문입니다.
+  반대쪽은 표와 같은 경향입니다. \(\lambda=0.03\)에서는 오차가 약 \(0.15\)이고, 영상의 최댓값(두개골)이 참값 \(2.00\)에서 \(1.79\)로 낮아집니다.
+  \(\delta\)를 \(0.01\)에서 \(0.001\)로 줄이면 \(\lambda=0.001\)에서 오차는 \(0.0100\)에서 \(0.0090\)으로 조금 줄지만 반복 수는 \(116\)회에서 \(250\)회 안팎으로 늘고,
+  \(\lambda=0.03\)에서는 \(220\)회 안팎에서 \(1{,}100\)회 안팎으로 늘어납니다. \(\lambda\)가 클수록 \(\delta\)를 줄이는 데 드는 반복이 더 많아집니다.</p>
+
+<script>
+(function () {
+  var kit = window.ct6Kit; if (!kit) return;
+  var N = kit.N, st = { l: 0.001, d: 0.01 }, cache = {};
+  var img = document.getElementById('c6-pa-img'), cap = document.getElementById('c6-pa-cap');
+  document.getElementById('c6-pa-true').setAttribute('href', kit.imageURL(kit.xTrue, 0.98, 1.05));
+  function compute(l, d) {
+    var key = l + '/' + d;
+    if (!cache[key]) {
+      var R = kit.gpbb(kit.sysA, N, kit.bData, l, d, { tol: 1e-4, maxIter: 1500, alpha0: 1, keep: false });
+      var r = kit.forward(kit.sysA, R.x), s = 0, i;
+      for (i = 0; i < r.length; i++) s += (r[i] - kit.bData[i]) * (r[i] - kit.bData[i]);
+      cache[key] = { url: kit.imageURL(R.x, 0.98, 1.05), rmse: kit.rmseFn(R.x, kit.xTrue), iters: R.iters, resid: Math.sqrt(s), done: R.iters < 1500 };
+    }
+    return cache[key];
+  }
+  function mark() {
+    ['l', 'd'].forEach(function (id) {
+      var btns = document.querySelectorAll('#c6-pa-' + id + ' button'), q;
+      for (q = 0; q < btns.length; q++) {
+        var on = +btns[q].getAttribute('data-v') === st[id];
+        btns[q].style.fontWeight = on ? '700' : '400';
+        btns[q].style.borderColor = on ? 'var(--accent)' : '';
+      }
+    });
+  }
+  function render() {
+    mark();
+    cap.textContent = '계산 중입니다…';
+    setTimeout(function () {
+      var o = compute(st.l, st.d);
+      img.setAttribute('href', o.url);
+      cap.textContent = 'λ=' + st.l + ', δ=' + st.d + ' · 수렴까지 ' + o.iters + '회 · 참값 오차(rmse) = ' + o.rmse.toFixed(4) + ' · 데이터 잔차 ‖Ax−b‖ = ' + o.resid.toFixed(3);
+    }, 15);
+  }
+  function bind(id) {
+    document.getElementById('c6-pa-' + id).addEventListener('click', function (e) {
+      var t = e.target.closest('button[data-v]'); if (!t) return;
+      st[id] = +t.getAttribute('data-v'); render();
+    });
+  }
+  bind('l'); bind('d');
+  render();
+})();
+</script>
+
+  <h2>흔한 실패 모드: 과평활과 수렴 정체</h2>
+
+  <h3>과평활: 정규화 강도가 너무 셀 때</h3>
+
+  <p>앞의 \(\lambda\) 표에서 \(\lambda=0.03\)은 오차가 \(0.1496\)으로, 최적값(\(0.0168\))의 거의 \(9\)배입니다. 완전히 수렴시켰는데도
+  이렇게 나쁜 것은 알고리즘이 잘못된 것이 아니라 정규화 강도가 너무 세기 때문입니다. 영상으로는 <a href="ch04.html#s8">4장 페이지 8</a>에서
+  이미 본 계단(Staircase) 아티팩트와 같은 모습입니다. 완만한 영역이 평평한 구간으로 깎이고, 진짜 경계도 함께 낮아집니다.</p>
+
+  <h3>수렴 정체: 평활화 매개변수가 너무 작을 때</h3>
+
+  <p>앞의 \(\delta\) 표에서 \(\delta=0.001\)은 충분히 반복하면(\(1{,}116\)회) \(\delta=0.01\)보다 살짝 더 낮은 오차(\(0.0317\))에
+  도착했습니다. 그런데 반복을 \(600\)회로 끊으면 어떻게 될까요?</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(\delta\)</th><th>600회 시점의 수렴 상태</th><th>참값 오차(rmse)</th></tr>
+      <tr><td>\(0.01\)</td><td>208회에서 이미 수렴, 이후 그대로</td><td>\(0.0332\)</td></tr>
+      <tr><td>\(0.001\)</td><td>아직 수렴하지 못함(사영 방향이 허용값보다 큼)</td><td>\(0.0452\)</td></tr>
+    </table>
+  </div>
+
+  <p>\(\delta=0.001\)이 이론적으로는 더 정확하지만, 정해진 예산(\(600\)회) 안에서는 오히려 \(\delta=0.01\)보다 나쁜
+  결과가 나옵니다. 아직 수렴 중인 알고리즘을 중간에 멈춘 것일 뿐 실패한 것은 아닙니다. 반복 예산이 빠듯하다면
+  \(\delta\)를 너무 작게 잡지 않는 것이 안전합니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">지나치게 엄격한 멈춤 기준</p>
+    <p>멈춤 허용값(\(10^{-4}\))을 훨씬 작게(예: \(10^{-9}\)) 잡으면, 이미 거의 평평해진 지점에서 BB 스텝이 극단적인
+    값을 오가며 쓸모없는 반복을 계속할 수 있습니다. 페이지 7(심화)의 위젯에서 허용값을 \(10^{-6}\)까지 줄여 보면 오차는 거의 변하지 않고 반복 수만 늘어납니다.
+    적당히 느슨한 허용값을 쓰는 것도 이 장의 선택입니다.</p>
+  </div>
+</section>
+
+<!-- ─ 페이지 9 -->
+<section class="screen" data-title="계산 비용과 Shepp-Logan 결과">
+  <p class="kicker">7장 · 페이지 9</p>
+  <h2>계산 비용: FBP와의 비교</h2>
+
+  <p>GPBB 한 반복의 비용은 \(\mathbf{A}\) 한 번 + \(\mathbf{A}^{\mathsf T}\) 한 번입니다. 선 탐색의 시도가 늘어도 행렬 곱은 늘지 않는다는 점은
+  페이지 5의 표에서 보았으므로(의사코드로 확인한 것은 페이지 6, 심화), 수렴까지 걸리는 반복 수(페이지 5의 표)를 비용의 단위로 씁니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>각도 수 \(K\)</th><th>10</th><th>18</th><th>40</th></tr>
+      <tr><td>GPBB 반복 수(\(\mathbf{A}\)·\(\mathbf{A}^{\mathsf T}\) 각 그만큼)</td><td>280회</td><td>208회</td><td>116회</td></tr>
+      <tr><td>FBP</td><td colspan="3">반복 없음: 필터링 한 번 + 역투영 한 번</td></tr>
+    </table>
+  </div>
+
+  <p>FBP는 <a href="../../part1/detail/ch06.html#s8">1편 6장 페이지 8</a>에서 본 것처럼 필터링 한 번과 역투영 한 번으로 끝납니다.
+  이 역투영은 \(\mathbf{A}^{\mathsf T}\)에 해당하는 계산이고 순투영 \(\mathbf{A}\)는 아예 없으므로, GPBB 반복 한 번(\(\mathbf{A}\)와 \(\mathbf{A}^{\mathsf T}\) 한 쌍)보다도
+  FBP 전체가 가볍습니다. GPBB는 그 한 쌍을 100번 넘게 되풀이해야 수렴합니다. <a href="ch01.html#s9">1장 페이지 9</a>의 "자주 하는 오해" 상자가
+  경고한 대로, 대수적 방법의 계산 비용은 해석적 방법보다 훨씬 큽니다.</p>
+
+  <p>그런데 <a href="ch05.html#s8">5장 페이지 8</a>의 고정 걸음 사영 경사하강법(\(600\)회로 미리 정해 둠)과 비교하면 다른 그림이 보입니다. 고정 걸음은
+  \(600\)회를 모두 채우는 반면, GPBB는 \(K=18\)에서 \(208\)회, \(K=40\)에서 \(116\)회 만에 같거나 더 낮은 오차(아래 표)에
+  도착합니다. 반복마다 "이만큼은 해야 안전하다"는 보수적인 걸음 대신, 그 지점에 맞는 걸음을 스스로 고른 덕분입니다.</p>
+
+  <h2>Shepp-Logan 결과 분석: sparse-view와 잡음</h2>
+
+  <p><a href="ch05.html#s8">5장 페이지 8</a>과 같은 \(48\times48\) Shepp-Logan 팬텀, 검출기 \(61\)개 설정에 GPBB를 더해 비교합니다. 5장의 두 열은
+  \(600\)회로 멈춘 결과이고, GPBB 열은 수렴할 때까지(\(\lVert\mathbf{u}^{(k)}\rVert&lt;10^{-4}\), 페이지 7) 돌린 결과입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(K\)</th><th>FBP</th><th>정규화 없음(\(\lambda=0\), 600회)</th><th>TV, 고정 걸음(5장, 600회)</th><th>GPBB(이 장, 수렴까지)</th></tr>
+      <tr><td>\(10\)</td><td>\(0.3245\)</td><td>\(0.1860\)</td><td>\(0.1461\)</td><td>\(0.1278\)(280회)</td></tr>
+      <tr><td>\(18\)</td><td>\(0.2376\)</td><td>\(0.1141\)</td><td>\(0.0577\)</td><td>\(0.0332\)(208회)</td></tr>
+      <tr><td>\(40\)</td><td>\(0.1769\)</td><td>\(0.0456\)</td><td>\(0.0129\)</td><td>\(0.0100\)(116회)</td></tr>
+    </table>
+  </div>
+
+  <p>\(K=40\)에 잡음(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>(심화)의 \(\sigma_p\))을 더하면 FBP \(0.1776\),
+  정규화 없음 \(0.0536\), TV 고정 걸음 \(0.0198\), GPBB \(0.0168\)(156회)입니다.
+  같은 조건에서 제약형을 직접 푸는 ASD-POCS와의 비교는 8장 페이지 10에서 합니다.</p>
+
+  <h3>재구성 영상으로 비교하기</h3>
+
+  <p>표의 오차를 영상으로 봅니다. 같은 \(K\)에서 FBP, 5장의 TV 고정 걸음(\(600\)회), 이 장의 GPBB(수렴까지)를 참값과 나란히 놓습니다.
+  영상은 값 \(0.98\)~\(1.05\)를 흑백으로 나타낸 것으로 5장 페이지 8과 같은 범위이며, 버튼을 누르면 그 자리에서 다시 계산합니다.
+  이 범위에서 FBP는 \(K\)가 작을수록 얼룩과 줄무늬가 커집니다. \(K=18\)에서는 고정 걸음 결과에 얼룩이 남지만 GPBB 결과는 더 매끈하고,
+  \(K=40\)에서는 두 TV 결과가 눈으로는 거의 구별되지 않습니다. \(K=10\)에서는 두 TV 결과 모두 구조를 충분히 복원하지 못합니다.</p>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="c6-cmp-k">
+    <span>각도 수 \(K\)</span>
+    <button type="button" data-k="10">10</button>
+    <button type="button" data-k="18">18</button>
+    <button type="button" data-k="40">40</button>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 690 220" role="img" aria-label="선택한 각도 수에서 FBP, TV 고정 걸음, GPBB로 재구성한 영상과 참값 영상을 나란히 보여준다">
+      <image id="c6-cmp-fbp" x="14" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <image id="c6-cmp-fix" x="184" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <image id="c6-cmp-gp" x="354" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <image id="c6-cmp-true" x="524" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><rect x="14" y="26" width="150" height="150"/><rect x="184" y="26" width="150" height="150"/><rect x="354" y="26" width="150" height="150"/><rect x="524" y="26" width="150" height="150"/></g>
+      <g font-size="11.5" font-weight="700" class="svg-fg"><text x="14" y="18">FBP</text><text x="184" y="18">TV 고정 걸음(600회)</text><text x="354" y="18">GPBB(수렴까지)</text><text x="524" y="18">참값</text></g>
+      <g font-size="11" class="svg-muted"><text x="14" y="196" id="c6-cmp-r1"></text><text x="184" y="196" id="c6-cmp-r2"></text><text x="354" y="196" id="c6-cmp-r3"></text></g>
+    </svg>
+    <figcaption id="c6-cmp-cap">계산 중입니다…</figcaption>
+  </figure>
+
+  <p>GPBB는 모든 \(K\)에서 5장의 고정 걸음 TV보다 오차가 같거나 낮습니다. 두 방법 모두 같은 볼록한 \(J\)의 최솟값(페이지 1)을
+  향하지만, 고정 걸음이 \(K=10\)에서 같은 수렴 기준에 닿으려면 \(3{,}252\)회가 필요합니다(그때 오차는 \(0.1285\),
+  페이지 4). 5장이 멈춘 \(600\)회는 그 경로의 일부일 뿐입니다. GPBB는 \(280\)·\(208\)·\(116\)회라는 훨씬 적은 반복으로 그 점 근처에
+  도착합니다. GPBB가 고정 걸음보다 앞서는 폭(\(0.0183\)·\(0.0245\)·\(0.0029\))은 \(K\)에 따라 단순하게 늘거나 줄지
+  않습니다. 고정 걸음이 \(600\)회 동안 그 \(K\)에서 얼마나 수렴에 가까워졌는지가 저마다 다르기 때문입니다.</p>
+
+<script>
+(function () {
+  var kit = window.ct6Kit; if (!kit) return;
+  var N = kit.N, ALPHA = { 10: 0.5330, 18: 0.4825, 40: 0.2514 }, cache = {}, curK = 18;
+  function ramLakKernel(Ns2, delta) {
+    var h = new Float64Array(2 * Ns2 - 1), c = Ns2 - 1, n;
+    for (n = -(Ns2 - 1); n <= Ns2 - 1; n++) {
+      if (n === 0) h[n + c] = 1 / (4 * delta * delta);
+      else if (n % 2 === 0) h[n + c] = 0;
+      else h[n + c] = -1 / (n * n * Math.PI * Math.PI * delta * delta);
+    }
+    return h;
+  }
+  function filterRow(row, h, delta) {
+    var Ns2 = row.length, Lh = h.length, c = (Lh - 1) / 2, out = new Float64Array(Ns2), n, m, s, k;
+    for (n = 0; n < Ns2; n++) {
+      s = 0;
+      for (m = 0; m < Ns2; m++) { k = n - m + c; if (k >= 0 && k < Lh) s += row[m] * h[k]; }
+      out[n] = s * delta;
+    }
+    return out;
+  }
+  function fbpReconstruct(grid, angles, dets, sino) {
+    var Ns2 = dets.length, delta = dets[1] - dets[0], h = ramLakKernel(Ns2, delta);
+    var K2 = angles.length, q = new Float64Array(K2 * Ns2), k, n, ix, iy, f;
+    for (k = 0; k < K2; k++) { f = filterRow(sino.slice(k * Ns2, (k + 1) * Ns2), h, delta); for (n = 0; n < Ns2; n++) q[k * Ns2 + n] = f[n]; }
+    var mu = new Float64Array(N * N), dmin = dets[0];
+    for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+      var x = grid.xs[iy * N + ix], y = grid.ys[iy * N + ix], acc = 0;
+      for (k = 0; k < K2; k++) {
+        var s = x * Math.cos(angles[k]) + y * Math.sin(angles[k]);
+        var tau = (s - dmin) / delta, i0 = Math.floor(tau), fr = tau - i0;
+        if (i0 < 0 || i0 >= Ns2 - 1) continue;
+        acc += (1 - fr) * q[k * Ns2 + i0] + fr * q[k * Ns2 + i0 + 1];
+      }
+      mu[iy * N + ix] = (Math.PI / K2) * acc;
+    }
+    return mu;
+  }
+  function fixedStepTV(sysA, bData, lambda, delta, alpha, iters) {
+    var n = sysA.Npix, x = new Float64Array(n), it, i, r, gD, gT, upd;
+    for (it = 0; it < iters; it++) {
+      r = kit.forward(sysA, x);
+      for (i = 0; i < r.length; i++) r[i] -= bData[i];
+      gD = kit.backward(sysA, r);
+      gT = kit.tvEnergyGradHuber(x, N, delta);
+      for (i = 0; i < n; i++) {
+        upd = 2 * gD[i] + lambda * gT[i];
+        x[i] = Math.max(x[i] - alpha * upd, 0);
+      }
+    }
+    return x;
+  }
+  function compute(K) {
+    if (cache[K]) return cache[K];
+    var angles = [], i, A, b, fbpX, fixX, G;
+    for (i = 0; i < K; i++) angles.push(i * Math.PI / K);
+    A = kit.buildSystemMatrix(kit.grid, angles, kit.dets);
+    b = kit.forward(A, kit.xTrue);
+    fbpX = fbpReconstruct(kit.grid, angles, kit.dets, b);
+    fixX = fixedStepTV(A, b, 0.001, 0.01, ALPHA[K], 600);
+    G = kit.gpbb(A, N, b, 0.001, 0.01, { tol: 1e-4, maxIter: 1500, alpha0: 1, keep: false });
+    cache[K] = {
+      fbp: { url: kit.imageURL(fbpX, 0.98, 1.05), e: kit.rmseFn(fbpX, kit.xTrue) },
+      fix: { url: kit.imageURL(fixX, 0.98, 1.05), e: kit.rmseFn(fixX, kit.xTrue) },
+      gp: { url: kit.imageURL(G.x, 0.98, 1.05), e: kit.rmseFn(G.x, kit.xTrue), it: G.iters }
+    };
+    return cache[K];
+  }
+  var cap = document.getElementById('c6-cmp-cap');
+  document.getElementById('c6-cmp-true').setAttribute('href', kit.imageURL(kit.xTrue, 0.98, 1.05));
+  function render() {
+    var btns = document.querySelectorAll('#c6-cmp-k button'), q;
+    for (q = 0; q < btns.length; q++) {
+      var on = +btns[q].getAttribute('data-k') === curK;
+      btns[q].style.fontWeight = on ? '700' : '400';
+      btns[q].style.borderColor = on ? 'var(--accent)' : '';
+    }
+    cap.textContent = '계산 중입니다…';
+    setTimeout(function () {
+      var o = compute(curK);
+      document.getElementById('c6-cmp-fbp').setAttribute('href', o.fbp.url);
+      document.getElementById('c6-cmp-fix').setAttribute('href', o.fix.url);
+      document.getElementById('c6-cmp-gp').setAttribute('href', o.gp.url);
+      document.getElementById('c6-cmp-r1').textContent = 'rmse ' + o.fbp.e.toFixed(4);
+      document.getElementById('c6-cmp-r2').textContent = 'rmse ' + o.fix.e.toFixed(4);
+      document.getElementById('c6-cmp-r3').textContent = 'rmse ' + o.gp.e.toFixed(4) + ' · ' + o.gp.it + '회';
+      cap.textContent = 'K=' + curK + ' · 잡음 없는 데이터 · λ=0.001, δ=0.01. 반복 수는 브라우저의 수치 계산 차이로 몇 회 달라질 수 있습니다.';
+    }, 15);
+  }
+  document.getElementById('c6-cmp-k').addEventListener('click', function (e) {
+    var t = e.target.closest('button[data-k]'); if (!t) return;
+    curK = +t.getAttribute('data-k'); render();
+  });
+  render();
+})();
+</script>
+</section>
+
+<!-- ─ 페이지 10 -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">7장 · 페이지 10</p>
+  <h2>7장 마무리</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>GPBB는 4장의 벌점형 TV 식(데이터 충실도 + \(\lambda\,\mathrm{TV}_\delta\), \(\mathbf{x}\ge\mathbf{0}\))을, 6장의
+      기울기 사영(GP)과 BB 스텝으로 계산하는 최적화 알고리즘입니다. 처음에는 상자로 보아도 되고, 사람이 정하는 값은 \(\lambda\)와 \(\delta\)입니다.
+      공액경사법(CG)은 비음수 제약과, 2차함수가 아닌 TV 항을 다루기 어려워 고르지 않았습니다. 같은 TV 재구성을 제약형으로 쓰면 8장의 ASD-POCS로 풉니다.</li>
+      <li>(심화) 평활화 TV의 기울기는 화소마다 가중치(\(t\le\delta\)면 \(1/\delta\), 아니면 \(1/t\))를 곱한 차이의 이산 발산이며,
+      수치 미분으로 검증했습니다. 차이가 \(\delta\)보다 크면 높이와 상관없이 경계 화소에 크기 \(1\) 안팎의 값이 나옵니다.</li>
+      <li>(심화) BB 스텝은 들쑥날쑥하지만 평균적으로 고정된 안전한 걸음보다 약 8~12배 적은 반복(구현에 민감한 대략적인 값)으로 같은 최솟값에 수렴합니다. 매
+      반복이 반드시 줄어들 것을 요구하지 않는 비단조 선 탐색이 이 불규칙함을 허용하고, 사영 방향의 크기가 \(10^{-4}\) 아래로 내려오면 멈춥니다.</li>
+      <li>(심화) 선 탐색의 모든 시도점은 \(\mathbf{A}\)를 다시 곱하지 않고 계산되므로, 반복당 \(\mathbf{A}\)와 \(\mathbf{A}^{\mathsf T}\)는
+      각각 한 번씩만 쓰입니다. 비음수 사영은 볼록 집합의 성질 덕분에 선 위 모든 점에서 자동으로 유지됩니다.</li>
+      <li>이 장의 작은 예제에서 GPBB는 5장의 고정 걸음보다 같거나 적은 연산으로 같거나 낮은 오차를 냈지만, FBP보다는 훨씬 많은 계산이 듭니다.
+      \(\delta\)가 너무 작으면 정해진 반복 수 안에서 수렴이 덜 된 것처럼 보이고 \(\lambda\)가 너무 크면 과도하게 평활화됩니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">GPBB를 수렴할 때까지 돌렸는데도 \(\lambda=0.03\)에서는 오차가 \(0.1496\)으로, \(\lambda=0.001\)의 \(0.0168\)보다 훨씬 컸습니다(페이지 8의 표).
+    가장 알맞은 해석은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 사영 방향이 허용값 아래로 내려올 때까지 돌린 결과입니다. 반복을 더 해도 이 값에서 거의 변하지 않습니다.">반복이 부족해 아직 수렴하지 못했으므로, 반복을 더 하면 오차가 줄어든다.</li>
+      <li data-why="틀립니다. 이 표는 δ를 고정하고 λ만 바꾼 결과입니다. δ가 작을 때의 문제는 오차가 아니라 수렴까지 걸리는 반복 수입니다(페이지 8).">평활화 매개변수 δ가 너무 커서 TV가 제대로 근사되지 않았다.</li>
+      <li data-why="맞습니다. λ가 크면 잡음과 함께 영상의 진짜 구조까지 깎입니다. 알고리즘이 아니라 정규화 강도의 문제입니다(페이지 8).">정규화 강도가 너무 커서 잡음뿐 아니라 영상의 진짜 경계까지 깎였기 때문이다.</li>
+      <li data-why="틀립니다. 비단조 선 탐색은 수렴하는 점을 바꾸지 않습니다. 같은 J의 최솟값으로 가는 길을 허용할 뿐입니다(페이지 4).">비단조 선 탐색이 J가 늘어나는 걸음을 받아들여 해가 틀어졌기 때문이다.</li>
+    </ol>
+    <div class="explain">
+      <p>잡음이 없는 데이터에서는 \(\lambda\)를 줄일수록 오차가 줄어듭니다(페이지 8의 위젯에서 \(\lambda=0.0001\)이면 약 \(0.002\)). 잡음이 있을 때 \(\lambda\)를 너무 작게 두면 다시 오차가 커지므로, 표의 U자 곡선이 생깁니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">(심화) 고정된 안전한 걸음 대신 BB 스텝을 쓰면 이 장의 예제에서 반복 수가 약 8~12배 줄었습니다(페이지 4, 심화). 그 이유로
+    가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. BB 스텝은 추가로 Aᵀ를 곱하지 않습니다. 이미 가진 두 점의 차이와 기울기 차이만 씁니다(페이지 6).">BB 스텝은 매 반복마다 Aᵀ를 두 번씩 곱해, 고정 걸음보다 훨씬 더 정확한 기울기 방향을 구하기 때문이다.</li>
+      <li data-why="맞습니다. γ_k=⟨s,y⟩/⟨s,s⟩로 지나온 두 점의 곡률을 어림해, 고정된 한 값이 아니라 그 지점에 맞는 걸음을 쓰기 때문입니다(페이지 4).">BB 스텝은 지나온 두 점의 차이로 곡률을 어림해, 그 지점에 맞는 걸음을 스스로 고르기 때문이다.</li>
+      <li data-why="틀립니다. BB 스텝 자체는 목적함수가 줄어든다고 보장하지 않습니다. 그래서 비단조 선 탐색이 따로 필요합니다(페이지 4).">BB 스텝은 목적함수가 매 반복 반드시 줄어들도록 강제해, 더 적은 반복으로 멈추기 때문이다.</li>
+      <li data-why="틀립니다. 비음수 제약은 그대로 남아 있고, 사영은 매 반복 끝에서 여전히 필요합니다(페이지 2).">BB 스텝은 매 반복의 비음수 제약과 사영 계산을 건너뛰어, 반복이 그만큼 줄어들기 때문이다.</li>
+    </ol>
+    <div class="explain">
+      <p>두 방법은 거의 같은 최솟값에 수렴합니다(페이지 4). 차이는 그 점에 도착하는 데 걸리는 반복 수뿐입니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">(심화) 비단조 선 탐색에서 걸음 길이 \(\eta\)를 여러 번 시도해도(페이지 4, 심화), 반복당 행렬 곱 \(\mathbf{A}\)는 한 번만
+    쓰입니다(페이지 6, 심화). 그 이유로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. TV 항의 기울기와는 별개로, 데이터 항의 값은 매 시도마다 다시 필요합니다. 행렬 곱 없이 계산하는 방법이 핵심입니다.">∇TVδ(x)를 반복마다 미리 저장해 두면, A를 곱하는 데이터 항까지 더 이상 다시 계산할 필요가 전혀 없어지기 때문이다.</li>
+      <li data-why="틀립니다. 사영 방향 u는 반복마다 한 번만 구하고 선 탐색 동안 바뀌지 않습니다. 그래서 A·u도 반복당 한 번만 구하면 됩니다(페이지 6).">비음수 사영 P_C가 매 시도마다 u를 다른 벡터로 바꿔, A·u 자체가 시도마다 값이 달라지기 때문이다.</li>
+      <li data-why="틀립니다. A(x+η·u)=Ax+η·Au이지 Ax와 같지 않습니다. η·Au 항을 무시하면 데이터 항 값 자체를 잘못 구하게 됩니다.">A(x+η·u)=Ax가 항상 성립해, η의 값과 관계없이 데이터 항이 고정되어 있기 때문이다.</li>
+      <li data-why="맞습니다. A(x+η·u)=Ax+η·Au이므로, Au를 반복당 한 번만 구해 두면 모든 시도 η의 데이터 항 값을 행렬 곱 없이 계산할 수 있습니다(페이지 6).">A는 선형이라 A(x+η·u)=Ax+η·Au이므로, A·u를 한 번만 구하면 모든 η의 값을 계산할 수 있기 때문이다.</li>
+    </ol>
+    <div class="explain">
+      <p>TV 항은 화소 사이의 차이만 보는 식이라, 애초에 \(\mathbf{A}\)와 상관없이 매 시도마다 직접 계산할 수 있습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">(심화) 이 장은 2장 페이지 8의 불일치 원칙을 그대로 멈춤 기준으로 쓰면 오히려 결과가 나빠진다고 했습니다(페이지 7, 심화).
+    그 이유로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 불일치 원칙은 잡음이 있는 데이터를 전제로 한 규칙입니다. 잡음이 없으면 적용할 이유가 없을 뿐, 계산할 수 없는 것은 아닙니다.">불일치 원칙은 잡음이 없는 데이터에만 적용할 수 있는 규칙이라서, 잡음이 섞인 데이터에는 아예 계산할 수 없기 때문이다.</li>
+      <li data-why="틀립니다. 데이터 잔차는 반복할수록 계속 줄어듭니다(페이지 7의 표에서 39회에 이미 기준값 아래로 내려갑니다).">λ가 0보다 크면 데이터 잔차가 더 이상 줄어들지 않아, 불일치 원칙의 기준값 자체에 도달하지 못하기 때문이다.</li>
+      <li data-why="틀립니다. 두 기준은 서로 모순되는 것이 아니라, 각자 다른 반복에서 멈추는 서로 다른 규칙일 뿐입니다.">사영 방향의 크기가 불일치 원칙의 잔차보다 항상 더 크게 나와, 두 멈춤 기준이 서로 모순되기 때문이다.</li>
+      <li data-why="맞습니다. λ가 이미 정규화를 맡고 있어서, 데이터 잔차만으로 일찍 멈추면 TV가 잡음을 가라앉히기 전에 끊기게 됩니다(페이지 7, 0.0514 대 0.0168).">λ가 이미 정규화를 맡고 있어서, 잔차만 보고 일찍 멈추면 TV가 잡음을 다 가라앉히기 전에 끊기기 때문이다.</li>
+    </ol>
+    <div class="explain">
+      <p>2장의 ART·SART·SIRT는 \(\lambda=0\)이라 조기 종료가 유일한 정규화 수단이었습니다. 이 장은 \(\lambda>0\)으로 이미 정규화를
+      걸어 두었으므로, 두 수단을 겹쳐 쓰면 과하게 일찍 멈추는 셈이 됩니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>(심화) \(\mathbf{s}_k=(0.02,-0.01)\), \(\mathbf{y}_k=(0.05,-0.03)\)일 때 페이지 4의 공식으로 \(\gamma_k\)와 \(\alpha_k\)를
+      계산하세요.</li>
+      <li>페이지 8의 표에서 \(\lambda=0.001\)(최적)과 \(\lambda=0.03\)(과평활)의 오차 비율을 구하고, 그 비율이 큰 이유를
+      한두 문장으로 설명하세요.</li>
+      <li>(심화) 페이지 7의 표에서 불일치 원칙(39회)이 사영 방향 수렴(156회)보다 더 나쁜 오차를 주는 이유를, 이 장의 \(\lambda\)와
+      2장의 \(\lambda=0\)인 반복법을 비교해 설명하세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> \(\langle\mathbf{s}_k,\mathbf{y}_k\rangle = 0.02\times0.05 + (-0.01)\times(-0.03) = 0.001+0.0003=0.0013\),
+      \(\langle\mathbf{s}_k,\mathbf{s}_k\rangle = 0.02^2+0.01^2=0.0004+0.0001=0.0005\)이므로
+      \(\gamma_k=0.0013/0.0005=2.6\)이고 \(\alpha_k=1/2.6\approx0.3846\)입니다.</p>
+      <p><b>2번.</b> \(0.1496/0.0168\approx8.9\)배입니다. \(\lambda=0.03\)은 잡음뿐 아니라 영상의 진짜 기울기(경계)까지
+      누르는 양이 너무 커서, <a href="ch04.html#s8">4장 페이지 8</a>의 계단 아티팩트처럼 완만한 영역을 평평하게 깎고 경계의 높이도 낮춥니다. 정규화가
+      약해서 생기는 오차(잡음이 남음)와 너무 세서 생기는 오차(구조가 지워짐)는 둘 다 같은 rmse로 나타나지만 원인은
+      반대입니다.</p>
+      <p><b>3번.</b> 2장의 ART·SART·SIRT는 \(\lambda=0\)이라 반복 횟수 자체가 유일한 정규화 수단이었고, 불일치 원칙은 그
+      반복을 적절한 시점에서 끊어 잡음 증폭을 막는 장치였습니다. 이 장은 \(\mathrm{TV}_\delta\) 항이 이미 \(\lambda\)만큼
+      정규화를 걸어 두었으므로, 알고리즘을 끝까지(사영 방향이 거의 \(0\)이 될 때까지) 수렴시켜야 \(\lambda\)가 설계한
+      정규화 효과를 전부 쓸 수 있습니다. 2장 방식대로 데이터 잔차만 보고 일찍 멈추면, \(\lambda\)가 메울 수 있었던 구조를
+      덜 메운 상태에서 끝나 오차가 더 큽니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 \(\alpha_k=\gamma_k\)로(역수를 취하지 않고) 답하는 것입니다. BB 스텝은 \(\gamma_k\)가 곡률의
+        어림값이고 \(\alpha_k=1/\gamma_k\)가 그 역수인 걸음 크기라는 점을 다시 확인해야 합니다.</li>
+        <li>2번에서 \(\lambda\)가 크면 "더 많이 정규화되니 항상 더 좋다"고 생각하는 것입니다. 정규화는 적정선을 넘으면
+        오차를 줄이는 효과보다 구조를 지우는 손실이 더 커집니다.</li>
+        <li>3번에서 불일치 원칙 자체가 "틀린 규칙"이라고 결론짓는 것입니다. 2장(\(\lambda=0\))에서는 올바른 규칙이었고,
+        이 장(\(\lambda>0\))에서는 전제가 달라져 맞지 않을 뿐입니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch08.html"><span>다음 장</span>8장 — 잡음 크기 ε를 제약으로 바로 쓸 수는 없을까요? ASD-POCS 알고리즘</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CT 재구성 알고리즘 — 해석적 재구성에서 대수적 재구성까지</title>
+<script src="assets/theme.js"></script><link rel="stylesheet" href="assets/base.css"><link rel="stylesheet" href="assets/book.css">
+<style>
+:root{--q:var(--accent);--d:var(--fg-strong)}
+*{box-sizing:border-box}
+body{margin:0}
+.wrap{max-width:62rem;margin:0 auto;padding:1.1rem 1rem 1.5rem}
+.kicker{margin:0 0 .15rem;font-size:.8rem}
+h1.title{font-size:1.7rem;line-height:1.2;letter-spacing:-.03em;margin:0 0 .25rem;color:var(--fg-strong);border:0;padding:0}
+.sub{font-size:.92rem;color:var(--muted);margin:0 0 .8rem}
+.vol{margin-top:.9rem}
+.vol>h2{margin:0 0 .45rem;font-size:1.1rem;border:0;padding:0;color:var(--fg-strong);display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap}
+.vol>h2 small{font-size:.8rem;font-weight:500;color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem}
+.card{display:flex;flex-direction:column;gap:.35rem;min-width:0;padding:.8rem 1rem;border:1px solid var(--rule);border-radius:12px;background:var(--card);text-decoration:none;color:var(--fg)}
+a.card:hover{border-color:var(--cc,var(--accent))}
+.card.q{--cc:var(--q)} .card.d{--cc:var(--d)}
+.card .top{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.card .name{font-weight:800;color:var(--fg-strong);font-size:1rem}
+.card .top .pill{margin-left:auto}
+.card p{margin:0;font-size:.86rem;color:var(--muted);line-height:1.45}
+.card .meta{font-size:.8rem;color:var(--fg);font-weight:600}
+.card .go{font-size:.84rem;font-weight:700;color:var(--cc)}
+.cb{display:inline-block;font-size:.72rem;font-weight:800;padding:.08rem .55rem;border-radius:5px;white-space:nowrap}
+.cb.q{background:var(--q);color:#fff} .cb.d{background:var(--d);color:var(--bg)}
+.pill{display:inline-block;font-size:.72rem;font-weight:700;padding:.06rem .6rem;border-radius:99px;border:1px solid var(--rule);color:var(--muted);background:var(--bg-soft);white-space:nowrap}
+.pill.open{color:var(--good);background:var(--good-bg);border-color:var(--good)}
+details.toc{margin-top:.6rem;border:1px solid var(--rule);border-radius:12px;background:var(--card)}
+details.toc>summary{cursor:pointer;padding:.55rem 1rem;font-weight:700;font-size:.9rem;color:var(--fg-strong);list-style:none;display:flex;align-items:center;gap:.4rem}
+details.toc>summary::-webkit-details-marker{display:none}
+details.toc>summary::after{content:"▾";margin-left:auto;color:var(--muted);transition:transform .15s}
+details.toc[open]>summary::after{transform:rotate(180deg)}
+details.toc>summary:hover{color:var(--accent)}
+.tocgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem;padding:0 1rem 1rem}
+.col{align-self:start;min-width:0;border:1px solid var(--rule);border-radius:10px;background:var(--bg-soft);display:flex;flex-direction:column}
+.col>h3{margin:0;padding:.5rem .8rem;font-size:.88rem;border:0;color:var(--fg-strong);display:flex;gap:.5rem;align-items:center;border-bottom:1px solid var(--rule)}
+.col.q>h3 .cb{background:var(--q);color:#fff}.col.d>h3 .cb{background:var(--d);color:var(--bg)}
+.scroll{padding:.4rem .8rem .6rem}
+.scroll h4{margin:.6rem 0 .15rem;font-size:.76rem;font-weight:800;color:var(--muted);letter-spacing:.02em}
+.scroll h4:first-child{margin-top:.1rem}
+.scroll ol{list-style:none;margin:0;padding:0}
+.scroll li a{display:flex;gap:.55rem;align-items:baseline;padding:.22rem .3rem;border-radius:6px;font-size:.84rem;line-height:1.35;text-decoration:none;color:var(--fg)}
+.scroll li a:hover{background:var(--card);color:var(--accent)}
+.scroll .n{flex:none;min-width:2.9rem;color:var(--muted);font-size:.76rem;font-weight:700}
+.vol.soon .card{border-style:dashed;background:transparent;padding:.55rem 1rem;gap:.2rem;filter:grayscale(1)}
+.vol.soon .cb{background:var(--rule);color:var(--muted)}
+.vol.soon .name,.vol.soon .meta,.vol.soon>h2{color:var(--muted)}
+.vol.soon .meta{font-weight:500}
+.about{margin-top:1.2rem;padding-top:.8rem;border-top:1px solid var(--rule);font-size:.88rem;color:var(--fg)}
+.about ul{margin:.3rem 0 .6rem;padding-left:1.2rem}.about p{margin:0 0 .5rem}
+.about p{margin:0 0 .2rem}.about a{margin-right:.9rem}
+
+.map{margin:.2rem 0 1rem;padding:1rem 1.1rem;border:1px solid var(--rule);border-radius:14px;background:var(--bg-soft)}
+.map>h2{margin:0 0 .3rem;font-size:1.15rem;border:0;padding:0;color:var(--fg-strong)}
+.map .sub{margin:0 0 .8rem;color:var(--fg)}
+.mgrid{display:grid;grid-template-columns:7rem minmax(0,1fr) minmax(0,1fr);gap:.55rem}
+.mh{display:flex;flex-direction:column;gap:.2rem;font-size:.8rem;color:var(--muted);align-items:flex-start}
+.rl{display:flex;flex-direction:column;justify-content:center;font-size:.8rem;color:var(--muted)}
+.rl b{font-size:1.15rem;color:var(--fg-strong)}
+.mc{display:flex;flex-direction:column;gap:.3rem;min-width:0;padding:.75rem .95rem;border:2px solid var(--rule);border-radius:12px;background:var(--card);text-decoration:none;color:var(--fg)}
+.mc.q{border-color:var(--q)} .mc.d{border-color:var(--d)}
+.mc.wide{grid-column:2 / 4}
+.mc:hover{box-shadow:0 2px 10px rgba(0,0,0,.12);transform:translateY(-1px)}
+.mc .top{display:flex;gap:.5rem;align-items:flex-start;flex-wrap:wrap}
+.mc .name{font-weight:800;color:var(--fg-strong);font-size:.95rem;line-height:1.3}
+.mc .meta{font-size:.8rem;font-weight:600}
+.mc .go{font-size:.86rem;font-weight:800}
+.mc.q .go{color:var(--q)} .mc.d .go{color:var(--fg-strong)}
+.path{margin:.8rem 0 0;font-size:.88rem;color:var(--fg)} .path span{color:var(--muted);margin:0 .15rem}
+details.about>summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--muted);padding:.3rem 0;list-style:none}
+details.about>summary::before{content:"▸ ";} details.about[open]>summary::before{content:"▾ ";}
+details.about>summary:hover{color:var(--accent)}
+.notice{margin:0 0 .8rem;padding:.7rem 1rem;border:1px solid var(--rule);border-radius:10px;background:var(--bg-soft);font-size:.84rem;line-height:1.55;color:var(--fg)}
+.notice p{margin:0 0 .3rem}.notice p:last-child{margin:0}
+.notice b{color:var(--fg-strong)}
+.notice a{margin:0}
+@media (max-width:640px){
+ .wrap{padding:.8rem .9rem 1.5rem} h1.title{font-size:1.4rem}
+ .grid,.tocgrid{grid-template-columns:minmax(0,1fr)}
+ .mgrid{grid-template-columns:minmax(0,1fr)} .mh{display:none} .mc.wide{grid-column:auto} .rl{flex-direction:row;gap:.5rem;align-items:baseline;margin-top:.4rem}
+}
+</style></head><body>
+<div class="wrap">
+<p class="kicker">CT 재구성 이론을 수식 유도까지 따라가며 배우는 한국어 책</p>
+<h1 class="title">CT 재구성 알고리즘</h1>
+<p class="sub">투영 데이터에서 단면 영상을 구하는 알고리즘을, 코드 없이 수식·순서도·의사코드로 설명합니다.</p>
+<p class="sub"><b>대상 독자</b> 미적분·푸리에 해석·선형대수의 기초를 배운 적이 있고 CT 재구성을 처음 배우는 학습자에게 맞습니다.</p>
+
+<section class="map" aria-label="읽는 길 안내">
+ <h2>어떻게 읽을까요?</h2>
+ <p class="sub">공통 기초인 <b>0편</b>을 읽은 뒤 <b>1편(해석적)</b>, 이어서 <b>2편(대수적)</b>으로 갑니다. 2편은 1편의 투영·역투영·FBP를 바탕으로 합니다. 1편과 2편은 각각 <b>빠르게 보기</b>와 <b>자세히 보기</b> 두 코스가 있으니, 아래 칸 중 하나를 눌러 시작하세요.</p>
+ <div class="mgrid">
+  <div class="mh"></div>
+  <div class="mh q"><span class="cb q">빠르게 보기</span><span>핵심만 · 하루 1시간씩</span></div>
+  <div class="mh d"><span class="cb d">자세히 보기</span><span>유도와 이산화까지 빠짐없이</span></div>
+
+  <div class="rl"><b>0편</b><span>기초 · 공통</span></div>
+  <a class="mc d wide" href="part0/ch01.html">
+   <div class="top"><span class="cb d">한 코스</span><span class="name">CT가 뭐예요? 투영과 선적분, 재구성의 두 갈래</span></div>
+   <div class="meta">3장 · 20페이지 · 약 4시간</div>
+   <div class="go">1장부터 읽기 →</div></a>
+
+  <div class="rl"><b>1편</b><span>해석적 재구성</span></div>
+  <a class="mc q" href="part1/quick/day1.html">
+   <div class="top"><span class="cb q">빠르게 보기</span><span class="name">Radon 변환에서 팬빔 FBP까지</span></div>
+   <div class="meta">7일 · 37페이지 · 약 7시간</div>
+   <div class="go">1일차부터 →</div></a>
+  <a class="mc d" href="part1/detail/ch01.html">
+   <div class="top"><span class="cb d">자세히 보기</span><span class="name">FBP 유도, 데이터 완전성, FDK까지</span></div>
+   <div class="meta">15장 · 144페이지 · 약 26시간</div>
+   <div class="go">1장부터 →</div></a>
+
+  <div class="rl"><b>2편</b><span>대수적 재구성</span></div>
+  <a class="mc q" href="part2/quick/day1.html">
+   <div class="top"><span class="cb q">빠르게 보기</span><span class="name">Ax = b, 반복법, TV 정규화의 핵심</span></div>
+   <div class="meta">7일 · 38페이지 · 약 7시간</div>
+   <div class="go">1일차부터 →</div></a>
+  <a class="mc d" href="part2/detail/ch01.html">
+   <div class="top"><span class="cb d">자세히 보기</span><span class="name">ART·SIRT부터 TV 압축 센싱(GPBB·ASD-POCS)까지</span></div>
+   <div class="meta">11장 · 109페이지 · 약 20시간</div>
+   <div class="go">1장부터 →</div></a>
+ </div>
+ <p class="path"><b>처음이라면</b> 0편 <span>→</span> 1편 빠르게 보기 <span>→</span> 2편 빠르게 보기 <span>→</span> 더 깊이 알고 싶은 부분은 자세히 보기</p>
+</section>
+
+<section class="vol" id="vol0"><h2><a href="part0/index.html" style="color:inherit;text-decoration:none">0편 · 기초</a> <small>CT란 무엇인가 · 투영과 선적분 · 재구성의 두 갈래</small></h2>
+ <details class="toc"><summary>0편 목차 보기</summary>
+  <div class="tocgrid" style="grid-template-columns:minmax(0,1fr)">
+   <section class="col d"><h3><span class="cb d">기초</span>기초편 · 3장</h3>
+    <div class="scroll"><ol>
+<li><a href="part0/ch01.html"><span class="n">1장</span>CT가 뭐예요?</a></li>
+<li><a href="part0/ch02.html"><span class="n">2장</span>검출기가 읽은 숫자, 식으로 적어 보기: 투영과 선적분</a></li>
+<li><a href="part0/ch03.html"><span class="n">3장</span>재구성 방법의 큰 지도</a></li>
+    </ol></div></section>
+  </div>
+ </details>
+</section>
+
+<section class="vol" id="vol1"><h2><a href="part1/index.html" style="color:inherit;text-decoration:none">1편 · 해석적 재구성</a> <small>Radon 변환 · FBP · 팬빔 · 데이터 완전성 · FDK</small></h2>
+ <details class="toc"><summary>1편 목차 보기</summary>
+  <div class="tocgrid">
+   <section class="col q"><h3><span class="cb q">빠르게</span>빠르게 보기 · 7일</h3>
+    <div class="scroll"><ol>
+<li><a href="part1/quick/day1.html"><span class="n">1일차</span>0편 핵심 복습하기</a></li>
+<li><a href="part1/quick/day2.html"><span class="n">2일차</span>찍은 데이터는 어떤 모양일까요? Radon 변환과 sinogram</a></li>
+<li><a href="part1/quick/day3.html"><span class="n">3일차</span>투영 하나는 주파수 평면의 어디일까요? 푸리에 슬라이스 정리</a></li>
+<li><a href="part1/quick/day4.html"><span class="n">4일차</span>흐린 영상을 선명하게: 역투영에서 필터 역투영(FBP)까지</a></li>
+<li><a href="part1/quick/day5.html"><span class="n">5일차</span>평행빔 FBP를 컴퓨터로 계산해 보기</a></li>
+<li><a href="part1/quick/day6.html"><span class="n">6일차</span>팬빔은 평행빔 공식을 어떻게 바꿔 쓸까요? (변수변환)</a></li>
+<li><a href="part1/quick/day7.html"><span class="n">7일차</span>팬빔 FBP를 계산하고 1주 돌아보기</a></li>
+    </ol></div></section>
+   <section class="col d"><h3><span class="cb d">자세히</span>자세히 보기 · 15장</h3>
+    <div class="scroll">
+<h4>I부 · 수학 복습</h4><ol>
+<li><a href="part1/detail/ch01.html"><span class="n">1장</span>복습: 좌표 변환과 적분</a></li>
+<li><a href="part1/detail/ch02.html"><span class="n">2장</span>복습: 푸리에 해석, 이 책에 필요한 만큼만</a></li>
+</ol>
+<h4>II부 · 평행빔 재구성</h4><ol>
+<li><a href="part1/detail/ch03.html"><span class="n">3장</span>찍은 데이터는 어떤 모양일까요? Radon 변환과 sinogram</a></li>
+<li><a href="part1/detail/ch04.html"><span class="n">4장</span>투영에서 영상으로: 푸리에 슬라이스 정리와 역투영</a></li>
+<li><a href="part1/detail/ch05.html"><span class="n">5장</span>필터 역투영(FBP) 공식 유도해 보기 (연속)</a></li>
+<li><a href="part1/detail/ch06.html"><span class="n">6장</span>필터 역투영(FBP)을 컴퓨터로 계산해 보기 (이산)</a></li>
+</ol>
+<h4>III부 · 팬빔</h4><ol>
+<li><a href="part1/detail/ch07.html"><span class="n">7장</span>실제 장치는 왜 평행빔이 아닐까요? 팬빔과 rebinning</a></li>
+<li><a href="part1/detail/ch08.html"><span class="n">8장</span>팬빔 FBP 공식 유도해 보기 (연속)</a></li>
+<li><a href="part1/detail/ch09.html"><span class="n">9장</span>팬빔 FBP를 컴퓨터로 계산해 보기 (이산)</a></li>
+</ol>
+<h4>IV부 · 데이터 완전성</h4><ol>
+<li><a href="part1/detail/ch10.html"><span class="n">10장</span>데이터는 얼마나 있어야 충분할까요? 대칭성과 데이터 완전성</a></li>
+<li><a href="part1/detail/ch11.html"><span class="n">11장</span>한 바퀴를 다 안 돌고 찍으면? Short scan과 Parker weight</a></li>
+<li><a href="part1/detail/ch12.html"><span class="n">12장</span>검출기를 한쪽으로 밀어 놓으면? Displaced detector와 Wang weight</a></li>
+</ol>
+<h4>V부 · 3차원</h4><ol>
+<li><a href="part1/detail/ch13.html"><span class="n">13장</span>3차원이 되면 무엇이 달라질까요? 콘빔 기하와 데이터 완전성</a></li>
+<li><a href="part1/detail/ch14.html"><span class="n">14장</span>팬빔 FBP를 3차원에 쓰려면? FDK 알고리즘</a></li>
+</ol>
+<h4>VI부 · 마무리</h4><ol>
+<li><a href="part1/detail/ch15.html"><span class="n">15장</span>1편 돌아보기</a></li>
+</ol>
+    </div></section>
+  </div>
+ </details>
+</section>
+
+<section class="vol" id="vol2"><h2><a href="part2/index.html" style="color:inherit;text-decoration:none">2편 · 대수적 재구성</a> <small>Ax = b · 반복법 · TV · 압축 센싱</small></h2>
+ <details class="toc"><summary>2편 목차 보기</summary>
+  <div class="tocgrid">
+   <section class="col q"><h3><span class="cb q">빠르게</span>빠르게 보기 · 7일</h3>
+    <div class="scroll"><ol>
+<li><a href="part2/quick/day1.html"><span class="n">1일차</span>재구성을 Ax = b로 쓰기: 순투영 A, 역투영 Aᵀ</a></li>
+<li><a href="part2/quick/day2.html"><span class="n">2일차</span>한 광선씩, 또는 한꺼번에: ART·SIRT·SART</a></li>
+<li><a href="part2/quick/day3.html"><span class="n">3일차</span>언제 멈출까? 목적함수, 불량조건, 반 수렴</a></li>
+<li><a href="part2/quick/day4.html"><span class="n">4일차</span>데이터가 모자라거나 잡음이 있으면: 정규화와 TV</a></li>
+<li><a href="part2/quick/day5.html"><span class="n">5일차</span>TV를 계산하는 법: GPBB(사영 + BB 스텝)</a></li>
+<li><a href="part2/quick/day6.html"><span class="n">6일차</span>잡음 크기를 제약으로: ASD-POCS(사영 + TV 하강)</a></li>
+<li><a href="part2/quick/day7.html"><span class="n">7일차</span>FBP 대 반복법, 1·2편 돌아보기</a></li>
+    </ol></div></section>
+   <section class="col d"><h3><span class="cb d">자세히</span>자세히 보기 · 11장</h3>
+    <div class="scroll">
+<h4>I부 · 대수적 재구성</h4><ol>
+<li><a href="part2/detail/ch01.html"><span class="n">1장</span>광선 하나를 식 하나로: 선형 모델과 시스템 행렬</a></li>
+<li><a href="part2/detail/ch02.html"><span class="n">2장</span>한 광선씩, 또는 한꺼번에: 고전적 반복법 ART·SART·SIRT</a></li>
+</ol>
+<h4>II부 · 수학 복습</h4><ol>
+<li><a href="part2/detail/ch03.html"><span class="n">3장</span>복습: 이 편에 필요한 선형대수와 최적화</a></li>
+</ol>
+<h4>III부 · 정규화와 압축 센싱</h4><ol>
+<li><a href="part2/detail/ch04.html"><span class="n">4장</span>데이터가 모자라거나 잡음이 있으면? 정규화와 TV</a></li>
+<li><a href="part2/detail/ch05.html"><span class="n">5장</span>적게 재고도 복원할 수 있을까요? 압축 센싱</a></li>
+<li><a href="part2/detail/ch06.html"><span class="n">6장</span>걸음을 스스로 고르는 최적화 알고리즘은? GPBB 배우기</a></li>
+<li><a href="part2/detail/ch07.html"><span class="n">7장</span>TV 재구성은 어떻게 계산할까요? GPBB 알고리즘</a></li>
+<li><a href="part2/detail/ch08.html"><span class="n">8장</span>잡음 크기를 제약으로 바로 쓸 수는 없을까요? ASD-POCS 알고리즘</a></li>
+<li><a href="part2/detail/ch09.html"><span class="n">9장</span>그 밖의 길은 없을까요? 다른 최적화 방식</a></li>
+</ol>
+<h4>IV부 · 연속 모델로 보기</h4><ol>
+<li><a href="part2/detail/ch10.html"><span class="n">10장</span>심화 수학: 함수공간과 범함수의 미분</a></li>
+<li><a href="part2/detail/ch11.html"><span class="n">11장</span>연속 모델의 대수적 재구성</a></li>
+</ol>
+    </div></section>
+  </div>
+ </details>
+</section>
+
+<footer class="about" id="about">
+<section class="notice" aria-label="작성자와 라이선스">
+  <p><b>작성자</b> 박주언 (jueon.park)</p>
+  <p><b>자료의 출처</b> 이 자료는 공개된 교과서·논문·공개 구현 등 누구나 접근할 수 있는 공개 자료만을 바탕으로, 개인 학습 목적으로 작성했습니다. 특정 기관이나 회사의 비공개 정보·내부 자료는 포함하지 않으며, 내용은 작성자 개인의 이해와 의견입니다. 인용한 문헌은 <a href="refs.html">참고문헌 페이지</a>에 밝혀 두었습니다.</p>
+  <p><b>라이선스</b> © 2026 박주언. 이 자료는 <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.ko">크리에이티브 커먼즈 저작자표시-비영리 4.0 국제 라이선스(CC BY-NC 4.0)</a>에 따라 이용할 수 있습니다. 출처(작성자)를 밝히면 비영리 목적으로 자유롭게 복제·배포·수정할 수 있습니다. 수식 렌더링에 쓴 KaTeX는 MIT 라이선스를 따릅니다.</p>
+</section>
+<details class="about" id="aboutd"><summary>이 자료에 대해서</summary>
+<h2 style="font-size:1.05rem;margin:.9rem 0 .4rem">이 자료에 대해서</h2>
+
+  <p>이 자료는 CT 재구성 알고리즘을 수식 유도까지 따라가며 설명하는 한국어 책입니다. 미적분·푸리에 해석·선형대수의 기초를 배운 적이 있다고 가정하고, 필요한 수학은 1편 1·2장(좌표 변환과 적분, 푸리에 해석)과 2편 3장(선형대수와 최적화)에서 복습합니다.</p>
+
+  <h3 style="font-size:.95rem;margin:.9rem 0 .3rem">만든 목적</h3>
+  <ul>
+    <li><b>CT 재구성을 처음 접하는 분을 위한 한국어 자료</b><br>
+    필자가 처음 CT 재구성을 배울 때 있었다면 좋았겠다고 생각한 내용을 정리했습니다.</li>
+    <li><b>필자 자신을 위한 공부 노트</b><br>
+    필자도 아직 CT 재구성 알고리즘을 공부하고 있습니다. 공부한 내용을 한곳에 모아 두고 나중에 다시 찾아보기 위한 정리 노트이기도 합니다.
+    그래서 모든 내용을 필자가 완벽하게 이해한 것은 아니며, 이해가 부족하거나 틀린 부분이 있을 수 있습니다.</li>
+  </ul>
+
+  <h3 style="font-size:.95rem;margin:.9rem 0 .3rem">난이도에 대해서</h3>
+  <p>최대한 친절하게 설명하려고 노력했지만, 아주 쉬운 내용이라고 하기는 어렵습니다. 처음 공부하신다면 "심화"로 표시한 주제는 건너뛰어도 좋습니다. 개인적으로는 '0편 기초편'과 '1편 빠르게 보기'까지만 읽어도 재구성의 기초적인 내용은 어느 정도 이해할 수 있다고 생각합니다.</p>
+
+  <h3 style="font-size:.95rem;margin:.9rem 0 .3rem">앞으로</h3>
+  <p>지금은 공통 기초(0편), 해석적 재구성편(1편), 대수적 재구성편(2편)으로 나누어 두었습니다. 여유가 된다면 이후에 아티팩트편 등 이어지는 자료와 더 심화된 내용도 만들어 갈 생각입니다. 언제가 될지는 모르겠지만, 하나씩 천천히 추가해 갈 계획입니다.</p>
+
+  <p>이 자료가 CT 재구성을 처음 공부하는 분께 조금이나마 도움이 되었으면 합니다.</p>
+
+  <div class="box note">
+    <p class="box-t">참고</p>
+    <p>이 자료는 필자가 "나만의 책"을 만든다는 생각으로 정리하고 있어서, 자세히 보기에서는 스스로를 "이 책", 빠르게 보기에서는 "이 코스"라고 부릅니다. 다만 출판을 염두에 두고 쓴 것은 아니며, 편의상 이렇게 부를 뿐입니다.</p>
+  </div>
+
+<h2 id="refs" style="font-size:1.05rem;margin:1.1rem 0 .4rem">참고문헌</h2>
+  <p>주 참고서는 A. C. Kak, M. Slaney, <i>Principles of Computerized Tomographic Imaging</i>(SIAM, 2001)입니다. 편별로 인용한 논문과 책의 서지는 <a href="refs.html">참고문헌 페이지</a>에 모았습니다.</p>
+
+  <p style="color:var(--muted);font-size:.84rem">마지막 수정: 2026-11-04</p>
+</details>
+<p style="margin:.2rem 0 0;font-size:.9rem"><a href="refs.html">참고문헌 →</a></p></footer>
+</div>
+<script>
+(function(){var d=document.getElementById('aboutd');function o(){if(d&&/^#(about|refs)$/.test(location.hash)){d.open=true;var e=document.querySelector(location.hash);if(e)e.scrollIntoView();}}o();addEventListener('hashchange',o);})();
+</script></body></html>

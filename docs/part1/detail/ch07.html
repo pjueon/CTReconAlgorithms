@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch07">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7장 · 실제 장치는 왜 평행빔이 아닐까요? 팬빔과 rebinning — CT 재구성 알고리즘1 - 해석적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="점광원과 팬빔">
+  <p class="kicker">7장 · 페이지 1</p>
+  <h1>실제 장치는 왜 평행빔이 아닐까요? 팬빔과 rebinning</h1>
+
+  <p class="lead">3~6장에서는 광선이 모두 나란한 평행빔을 기준으로 재구성 식을 세우고, 그 식을 컴퓨터로 계산하는 방법까지 보았습니다. 그런데 실제 CT 장치가 측정하는 광선은 대부분 나란하지 않습니다. 이 장에서는 실제 장치의 광선이 어떻게 놓이는지 알아보고, 그 데이터를 평행빔 데이터와 연결하는 방법을 봅니다.</p>
+
+  <h2>평행빔 스캔의 한계</h2>
+
+  <p>3장 페이지 1에서 본 초기의 CT 장치는 가는 X선 빔 하나를 옆으로 옮겨 가며 재고, 장치를 조금 돌린 뒤 같은 측정을 되풀이해 평행빔 데이터를 얻었습니다. 이 방식에는 두 가지 어려움이 있습니다.</p>
+
+  <ul>
+    <li><b>측정 시간.</b> 광선을 하나씩 옮겨 가며 재므로 영상 한 장을 얻는 데 시간이 오래 걸립니다. 그동안 환자가 움직이면 영상이 흐려집니다.</li>
+    <li><b>X선의 이용 효율.</b> X선관에서 나온 X선은 부채꼴로 퍼지는데, 가는 빔 하나만 쓰면 나머지 X선은 측정에 쓰이지 않습니다.</li>
+  </ul>
+
+  <h2>점광원과 검출기 배열</h2>
+
+  <p>X선관에서 X선이 나오는 부분은 작아서 점으로 볼 수 있습니다. 이 점을 선원(Source)이라고 합니다. 선원 맞은편에 검출기 칸을 한 줄로 늘어놓으면, 선원에서 퍼져 나온 X선을 칸마다 동시에 잴 수 있습니다.
+  이렇게 한 점에서 부채꼴로 퍼지는 광선으로 측정하는 방식을 팬빔(<span class="term" data-term="fanbeam">Fan Beam</span>)이라고 합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 262" role="img" aria-label="왼쪽은 평행빔: 나란한 광선 일곱 줄이 타원 물체를 지나 아래의 검출기에 닿음. 오른쪽은 팬빔: 위의 한 점(선원)에서 부채꼴로 퍼진 광선 일곱 줄이 타원 물체를 지나 아래의 검출기에 닿음">
+      <defs>
+        <marker id="r10a-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r10a-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="r10a-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1.2" style="stroke:var(--muted)">
+        <path d="M88 52 V214" marker-end="url(#r10a-mu)"/>
+        <path d="M112 52 V214" marker-end="url(#r10a-mu)"/>
+        <path d="M136 52 V214" marker-end="url(#r10a-mu)"/>
+        <path d="M160 52 V214" marker-end="url(#r10a-mu)"/>
+        <path d="M184 52 V214" marker-end="url(#r10a-mu)"/>
+        <path d="M208 52 V214" marker-end="url(#r10a-mu)"/>
+        <path d="M232 52 V214" marker-end="url(#r10a-mu)"/>
+      </g>
+      <ellipse cx="160" cy="132" rx="54" ry="38" fill-opacity=".14" stroke-width="1.4" style="fill:var(--warn);stroke:var(--warn)"/>
+      <path d="M82 222 H238" fill="none" stroke-width="5" style="stroke:var(--accent)"/>
+      <g fill="none" stroke-width="1.2" style="stroke:var(--muted)">
+        <path d="M480 40 L372 214" marker-end="url(#r10a-mu)"/>
+        <path d="M480 40 L408 214" marker-end="url(#r10a-mu)"/>
+        <path d="M480 40 L444 214" marker-end="url(#r10a-mu)"/>
+        <path d="M480 40 L480 214" marker-end="url(#r10a-mu)"/>
+        <path d="M480 40 L516 214" marker-end="url(#r10a-mu)"/>
+        <path d="M480 40 L552 214" marker-end="url(#r10a-mu)"/>
+        <path d="M480 40 L588 214" marker-end="url(#r10a-mu)"/>
+      </g>
+      <ellipse cx="480" cy="132" rx="54" ry="38" fill-opacity=".14" stroke-width="1.4" style="fill:var(--warn);stroke:var(--warn)"/>
+      <path d="M360 222 H600" fill="none" stroke-width="5" style="stroke:var(--accent)"/>
+      <circle cx="480" cy="40" r="5.5" class="svg-fg"/>
+      <g font-size="12" class="svg-fg">
+        <text x="160" y="22" text-anchor="middle" font-weight="700">평행빔</text>
+        <text x="480" y="22" text-anchor="middle" font-weight="700">팬빔</text>
+        <text x="160" y="240" text-anchor="middle" style="fill:var(--accent)">검출기</text>
+        <text x="480" y="240" text-anchor="middle" style="fill:var(--accent)">검출기</text>
+        <text x="160" y="136" text-anchor="middle" style="fill:var(--warn)">물체</text>
+        <text x="480" y="136" text-anchor="middle" style="fill:var(--warn)">물체</text>
+        <text x="492" y="36">선원</text>
+        <text x="160" y="258" text-anchor="middle" class="svg-muted" font-size="10.5">광선이 모두 나란함</text>
+        <text x="480" y="258" text-anchor="middle" class="svg-muted" font-size="10.5">광선이 한 점에서 퍼짐</text>
+      </g>
+    </svg>
+    <figcaption>같은 물체(주황 타원)를 지나는 광선 일곱 줄을 한 방향에서 그렸습니다. 평행빔은 광선이 모두 같은 방향이고, 팬빔은 한 점(선원)에서 뻗어 나가 방향이 모두 다릅니다. 파란 굵은 선이 검출기입니다.</figcaption>
+  </figure>
+
+  <p>선원과 검출기는 마주 본 채로 물체 둘레를 함께 돌고, 선원이 한 위치에 있을 때 검출기 칸 전체가 받은 값이 한 번의 측정입니다. 선원이 한 바퀴를 도는 동안 위치를 바꿔 가며 되풀이하면 모든 방향의 데이터를 얻습니다.</p>
+
+  <h2>평행빔 FBP를 그대로 쓸 수 없는 이유</h2>
+
+  <p>3~6장의 FBP는 sinogram의 한 행, 곧 각도 \(\theta\)가 같은 나란한 광선들을 한꺼번에 필터링했습니다. 팬빔에서는 선원 위치 하나의 광선들이 서로 다른 방향을 향하므로, 그 측정값들은 sinogram의 한 행이 아닙니다.
+  그러므로 팬빔 데이터를 3~6장의 방법에 쓰려면, 팬빔 광선 하나하나가 평행빔의 어느 직선 \((\theta, s)\)에 해당하는지부터 알아야 합니다. 이 대응을 얻은 뒤에는 두 가지 방법이 있습니다.</p>
+
+  <ul>
+    <li><b>rebinning(재배열).</b> 팬빔 측정값을 평행빔 좌표의 격자로 옮겨 놓고 평행빔 FBP를 그대로 씁니다.</li>
+    <li><b>직접 방식.</b> 평행빔 FBP 식의 변수를 팬빔 좌표로 바꾸어, 팬빔 데이터에 바로 쓰는 식을 만듭니다.</li>
+  </ul>
+
+  <p>이 장은 대응을 구하고 rebinning까지 다룹니다. 직접 방식의 식은 8장에서 유도합니다.</p>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>점광원과 팬빔(페이지 1)</li>
+      <li>팬빔의 기하: 거리 \(D\), \(\mathrm{SDD}\), 선원 각 \(\beta\), 팬 각 \(\gamma\)(페이지 2)</li>
+      <li>곡면 검출기와 평면 검출기, 검출기 좌표(페이지 3)</li>
+      <li>팬빔 광선과 평행빔 직선의 대응 \(\theta = \beta + \gamma\), \(s = D\sin\gamma\)(페이지 4)</li>
+      <li>팬빔 sinogram과 평행빔 sinogram의 비교(페이지 5, 심화)</li>
+      <li>같은 직선을 두 번 재는 측정(페이지 6)</li>
+      <li>팬빔 기하를 직접 움직여 보는 위젯(페이지 7, 심화)</li>
+      <li>rebinning의 계산과 보간의 대가(페이지 8)</li>
+      <li>직접 재구성의 예고와 두 방법의 비교(페이지 9)</li>
+      <li>요약, 퀴즈, 직접 해보기(페이지 10)</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지(5, 7)는 처음 읽을 때 건너뛰어도 됩니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="팬빔의 기하">
+  <p class="kicker">7장 · 페이지 2</p>
+  <h2>팬빔의 기하</h2>
+
+  <p>팬빔의 광선 하나는 선원이 어디에 있는지, 그리고 그 선원에서 어느 방향으로 나가는지로 정해집니다. 이 두 가지를 숫자로 나타내는 기호를 먼저 정합니다. 이 기호는 이후 장에서도 같은 뜻으로 씁니다.</p>
+
+  <h3>거리와 선원 각</h3>
+
+  <ul>
+    <li><b>\(D\).</b> 선원에서 회전 중심 O까지의 거리(cm)입니다. 선원은 O를 중심으로 반지름 \(D\)인 원 위를 돕니다. 선원–물체 거리(Source-to-Object Distance, SOD)라고도 하며, 이 책은 \(D\)로 씁니다.</li>
+    <li><b>\(\mathrm{SDD}\).</b> 선원에서 검출기까지의 거리(cm)입니다. 선원–검출기 거리(<span class="term" data-term="sdd">Source-to-Detector Distance</span>)의 약자입니다. 보통 \(\mathrm{SDD} > D\)이므로 검출기는 O를 지나서 반대쪽에 놓입니다.</li>
+    <li><b>선원 각 \(\beta\).</b> 선원이 원 위의 어디에 있는지 나타내는 각입니다. \(\beta = 0\)이면 선원은 \(y\)축 위의 \((0, D)\)에 있고, \(\beta\)가 커지면 반시계 방향으로 돕니다. 선원의 위치는 \((-D\sin\beta,\ D\cos\beta)\)입니다.</li>
+  </ul>
+
+  <h3>광선의 방향과 팬 각</h3>
+
+  <p>선원에서 O를 향하는 광선을 중심 광선이라고 합니다. 선원에서 나가는 다른 광선은 중심 광선에서 몇 도 기울었는지로 정합니다.</p>
+
+  <ul>
+    <li><b>팬 각 \(\gamma\).</b> 광선이 중심 광선과 이루는 각입니다. 중심 광선을 반시계 방향으로 돌린 쪽을 양수로 잡습니다. 아래 그림 (a)에서는 오른쪽으로 기운 광선이 양수입니다.</li>
+    <li><b>팬 반각 \(\gamma_m\).</b> 팬의 양 끝 광선이 중심 광선과 이루는 각입니다. 검출기가 받는 광선은 \(-\gamma_m \le \gamma \le \gamma_m\)입니다.</li>
+  </ul>
+
+  <p>선원 각 \(\beta\)의 기준과 팬 각 \(\gamma\)의 부호는 이 책이 정한 규약이고, 다른 책은 다르게 잡는 경우가 많습니다. 다른 책의 식과 비교할 때는 두 기호의 기준부터 확인해야 합니다. 이 규약에서는 광선의 대응식이 간단해집니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 310" role="img" aria-label="(a) 선원이 위에 있고 아래에 회전 중심 O, 더 아래에 검출기가 있음. 선원에서 O까지가 D, 검출기까지가 SDD. 주황 광선은 중심 광선에서 팬 각 γ만큼 기울고 팬 반각이 γ_m. (b) 선원이 y축에서 반시계로 β만큼 돈 위치에 있고 검출기도 함께 돎">
+      <defs>
+        <marker id="r10b-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r10b-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="r10b-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <circle cx="165" cy="150" r="40" fill="none" stroke-width="1" stroke-dasharray="3 3" opacity=".55" style="stroke:var(--muted)"/>
+      <path d="M165.0 30.0 L84.2 230.0 M165.0 30.0 L245.8 230.0" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path d="M165 30 V230" fill="none" stroke-width="1" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+      <path d="M78.2 230.0 H251.8" fill="none" stroke-width="5" style="stroke:var(--muted)"/>
+      <path d="M165.0 30.0 L222.3 230.0" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <path d="M165 68 A38 38 0 0 0 175.5 66.5" fill="none" stroke-width="1.2" style="stroke:var(--warn)"/>
+      <path d="M138.8 94.9 A70 70 0 0 0 191.2 94.9" fill="none" stroke-width="1" stroke-dasharray="2 2" style="stroke:var(--muted)"/>
+      <circle cx="165" cy="30" r="5" class="svg-fg"/><circle cx="165" cy="150" r="3" class="svg-fg"/>
+      <path d="M40 34 V146" fill="none" stroke-width="1" style="stroke:var(--muted)" marker-start="url(#r10b-mu)" marker-end="url(#r10b-mu)"/>
+      <path d="M22 34 V226" fill="none" stroke-width="1" style="stroke:var(--muted)" marker-start="url(#r10b-mu)" marker-end="url(#r10b-mu)"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="175" y="26">선원 S</text><text x="150" y="146" text-anchor="end">O</text>
+        <text x="46" y="94">D</text><text x="6" y="196">SDD</text>
+        <text x="171.4" y="79.6" style="fill:var(--warn)">γ</text>
+        <text x="197.5" y="100.5" class="svg-muted">γ<tspan font-size="8" dy="2">m</tspan></text>
+        <text x="165" y="252" text-anchor="middle" class="svg-muted">검출기</text>
+        <text x="159" y="196" text-anchor="end" class="svg-muted">중심 광선</text>
+        <text x="165" y="292" text-anchor="middle" font-weight="700">(a) β = 0</text>
+      </g>
+      <circle cx="480" cy="165" r="90" fill="none" stroke-width="1" stroke-dasharray="4 4" style="stroke:var(--muted)"/>
+      <path d="M385 165 H585 M480 262 V66" fill="none" stroke-width="1" opacity=".6" style="stroke:var(--muted)"/>
+      <circle cx="480" cy="165" r="28" fill="none" stroke-width="1" stroke-dasharray="3 3" opacity=".55" style="stroke:var(--muted)"/>
+      <path d="M428.4 91.3 L464.8 248.9 M428.4 91.3 L564.1 179.4" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path d="M428.4 91.3 L514.4 214.1" fill="none" stroke-width="1" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+      <path d="M461.5 251.2 L567.3 177.1" fill="none" stroke-width="5" style="stroke:var(--muted)"/>
+      <path d="M428.4 91.3 L545.1 192.7" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <path d="M480 133.0 A32 32 0 0 0 461.6 138.8" fill="none" stroke-width="1.2" style="stroke:var(--good)"/>
+      <path d="M480 165 L428.4 91.3" fill="none" stroke-width="1.4" style="stroke:var(--good)"/>
+      <circle cx="428.4" cy="91.3" r="5" class="svg-fg"/><circle cx="480" cy="165" r="3" class="svg-fg"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="376.4" y="87.3">선원 S</text><text x="486" y="182">O</text>
+        <text x="460.8" y="123.0" style="fill:var(--good)">β</text>
+        <text x="590" y="169" class="svg-muted">x</text><text x="484" y="62" class="svg-muted">y</text>
+        <text x="560" y="96" class="svg-muted">선원이 도는 원</text><text x="560" y="110" class="svg-muted">(반지름 D)</text>
+        <text x="480" y="292" text-anchor="middle" font-weight="700">(b) β = 35°</text>
+      </g>
+    </svg>
+    <figcaption>(a) 선원이 \(y\)축 위에 있을 때(\(\beta = 0\))입니다. 점선은 O를 지나는 중심 광선, 회색 실선은 팬의 양 끝 광선(팬 반각 \(\gamma_m\)), 점선 원은 물체가 놓이는 영역입니다. 주황 광선은 중심 광선에서 \(\gamma\)만큼 기웁니다.
+    (b) 선원이 반시계 방향으로 \(\beta\)만큼 돈 위치입니다. 검출기도 선원과 함께 돌아 항상 선원의 맞은편에 놓입니다.</figcaption>
+  </figure>
+
+  <h3>팬빔의 투영값</h3>
+
+  <p>선원 각 \(\beta\), 팬 각 \(\gamma\)인 광선의 투영값을 \(R_\beta(\gamma)\)라고 씁니다. 값의 뜻은 평행빔의 \(p\)와 같습니다. 그 광선을 따라 \(\mu\)를 더한 선적분 \(-\ln(I/I_0)\)입니다(<a href="../../part0/ch02.html#s3">0편 2장 페이지 3</a>). 선원 위치 \(\beta\) 하나에서 검출기 칸 전체가 받은 \(R_\beta(\cdot)\)이 팬빔의 투영 한 장입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">다시 보기: 기하와 광선의 경로</p>
+    <p><a href="../../part0/ch02.html#s2">0편 2장 페이지 2</a>에서 정한 대로, 이 책에서 \(I\)는 플랫필드 보정이 끝난 값이고 물체가 없을 때 모든 검출기 칸이 같은 \(I_0\)를 읽습니다. 재구성 알고리즘은 선원–검출기 칸 거리, 입사각, 칸마다의 이득을 다시 다루지 않습니다. 선원과 검출기 칸의 위치는 광선이 물체를 어떤 경로로 지나는지를 정하는 데에만 쓰입니다.</p>
+    <p>그러므로 이 장의 \(D\), \(\mathrm{SDD}\), \(\beta\), \(\gamma\)는 광선의 경로를 정하는 기호입니다. 선원에서 먼 칸이나 비스듬히 입사하는 칸의 세기 차이는 재구성 전에 정리되었으므로, \(R_\beta(\gamma)\)에는 그 차이를 고치는 인자가 곱해져 있지 않습니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="검출기의 종류와 좌표">
+  <p class="kicker">7장 · 페이지 3</p>
+  <h2>검출기의 종류와 좌표</h2>
+
+  <p>검출기 칸을 어떤 간격으로 배치하느냐에 따라 팬빔은 두 종류로 나뉩니다. 칸의 위치가 광선의 팬 각과 어떻게 대응하는지가 다르고, 이 차이가 재구성 공식에 그대로 나타납니다.</p>
+
+  <h3>곡면 검출기</h3>
+
+  <p>칸이 선원을 중심으로 한 원호 위에 놓인 검출기를 곡면 검출기(<span class="term" data-term="curved">Curved Detector</span>)라고 합니다. 이웃한 칸 사이의 팬 각이 모두 같아서 등각(Equiangular) 검출기라고도 합니다. 칸 간격을 팬 각으로 \(\Delta\gamma\)라고 하면, 중심 칸에서 \(n\)번째 칸의 팬 각은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\gamma_n = n\,\Delta\gamma\]</p>
+
+  <p>많은 의료용 CT 장치가 이 형태의 검출기를 씁니다. 칸의 번호와 팬 각이 비례하므로, 팬 각을 기준으로 식을 쓰기에 편합니다.</p>
+
+  <h3>평면 검출기</h3>
+
+  <p>칸이 평평한 판 위에 같은 간격으로 놓인 검출기를 평면 검출기(<span class="term" data-term="flat">Flat Detector</span>)라고 합니다. 이웃한 칸 사이의 거리가 같아서 등간격(Equispaced) 검출기라고도 합니다. 평판 검출기를 쓰는 C-arm 장치(C자 모양 팔의 양 끝에 선원과 검출기를 단 X선 촬영 장치)나 콘빔 CT(부채꼴이 아니라 원뿔 모양으로 퍼지는 X선을 쓰는 CT)가 이 형태입니다.
+  중심 칸에서 검출기 위로 거리 \(u\)만큼 떨어진 칸에 닿는 광선의 팬 각은 \(\tan\gamma = u/\mathrm{SDD}\)이므로, 거꾸로 팬 각이 \(\gamma\)인 광선은 검출기 가운데에서 다음 거리의 칸에 닿습니다.</p>
+
+  <p style="text-align:center">\[\mathrm{SDD}\,\tan\gamma\]</p>
+
+  <p>이 책은 평면 검출기를 기준으로 공식을 유도하고, 곡면 검출기는 달라지는 점만 따로 다룹니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 310" role="img" aria-label="왼쪽은 곡면 검출기: 선원을 중심으로 한 원호 위에 칸 11개가 있고 이웃한 칸 사이의 팬 각이 모두 같음. 오른쪽은 평면 검출기: 직선 위에 같은 간격으로 칸 11개가 있고 팬 각 간격은 가장자리로 갈수록 좁아짐. 파란 가상 검출기는 회전 중심을 지나는 직선이며 광선이 그 위를 지나는 위치도 실제 칸 위치에 비례함">
+      <defs>
+        <marker id="r10c-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r10c-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="r10c-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <circle cx="165" cy="156" r="40" fill="none" stroke-width="1" stroke-dasharray="3 3" opacity=".55" style="stroke:var(--muted)"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M165.0 36.0 L84.7 208.2" stroke-dasharray="2 3"/>
+        <path d="M165.0 36.0 L100.0 214.5" stroke-dasharray="2 3"/>
+        <path d="M165.0 36.0 L115.8 219.5" stroke-dasharray="2 3"/>
+        <path d="M165.0 36.0 L132.0 223.1" stroke-dasharray="2 3"/>
+        <path d="M165.0 36.0 L148.4 225.3" stroke-dasharray="2 3"/>
+        <path d="M165.0 36.0 L165.0 226.0" stroke-dasharray="5 4"/>
+        <path d="M165.0 36.0 L181.6 225.3" stroke-dasharray="2 3"/>
+        <path d="M165.0 36.0 L198.0 223.1" stroke-dasharray="2 3"/>
+        <path d="M165.0 36.0 L214.2 219.5" stroke-dasharray="2 3"/>
+        <path d="M165.0 36.0 L230.0 214.5" stroke-dasharray="2 3"/>
+        <path d="M165.0 36.0 L245.3 208.2" stroke-dasharray="2 3"/>
+      </g>
+      <path d="M84.7 208.2 A190 190 0 0 0 245.3 208.2" fill="none" stroke-width="5" style="stroke:var(--muted)"/>
+      <g style="fill:var(--accent)">
+        <circle cx="84.7" cy="208.2" r="3"/>
+        <circle cx="100.0" cy="214.5" r="3"/>
+        <circle cx="115.8" cy="219.5" r="3"/>
+        <circle cx="132.0" cy="223.1" r="3"/>
+        <circle cx="148.4" cy="225.3" r="3"/>
+        <circle cx="165.0" cy="226.0" r="3"/>
+        <circle cx="181.6" cy="225.3" r="3"/>
+        <circle cx="198.0" cy="223.1" r="3"/>
+        <circle cx="214.2" cy="219.5" r="3"/>
+        <circle cx="230.0" cy="214.5" r="3"/>
+        <circle cx="245.3" cy="208.2" r="3"/>
+      </g>
+      <path d="M165 66 A30 30 0 0 0 167.6 65.9" fill="none" stroke-width="1.2" style="stroke:var(--warn)"/>
+      <circle cx="480" cy="156" r="40" fill="none" stroke-width="1" stroke-dasharray="3 3" opacity=".55" style="stroke:var(--muted)"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M480.0 36.0 L391.4 226.0" stroke-dasharray="2 3"/>
+        <path d="M480.0 36.0 L409.1 226.0" stroke-dasharray="2 3"/>
+        <path d="M480.0 36.0 L426.8 226.0" stroke-dasharray="2 3"/>
+        <path d="M480.0 36.0 L444.6 226.0" stroke-dasharray="2 3"/>
+        <path d="M480.0 36.0 L462.3 226.0" stroke-dasharray="2 3"/>
+        <path d="M480.0 36.0 L480.0 226.0" stroke-dasharray="5 4"/>
+        <path d="M480.0 36.0 L497.7 226.0" stroke-dasharray="2 3"/>
+        <path d="M480.0 36.0 L515.4 226.0" stroke-dasharray="2 3"/>
+        <path d="M480.0 36.0 L533.2 226.0" stroke-dasharray="2 3"/>
+        <path d="M480.0 36.0 L550.9 226.0" stroke-dasharray="2 3"/>
+        <path d="M480.0 36.0 L568.6 226.0" stroke-dasharray="2 3"/>
+      </g>
+      <path d="M383.4 226.0 H576.6" fill="none" stroke-width="5" style="stroke:var(--muted)"/>
+      <path d="M416.0 156.0 H544.0" fill="none" stroke-width="2.4" style="stroke:var(--accent)"/>
+      <g style="fill:var(--accent)">
+        <circle cx="391.4" cy="226.0" r="3"/><circle cx="424.0" cy="156.0" r="2.4"/>
+        <circle cx="409.1" cy="226.0" r="3"/><circle cx="435.2" cy="156.0" r="2.4"/>
+        <circle cx="426.8" cy="226.0" r="3"/><circle cx="446.4" cy="156.0" r="2.4"/>
+        <circle cx="444.6" cy="226.0" r="3"/><circle cx="457.6" cy="156.0" r="2.4"/>
+        <circle cx="462.3" cy="226.0" r="3"/><circle cx="468.8" cy="156.0" r="2.4"/>
+        <circle cx="480.0" cy="226.0" r="3"/><circle cx="480.0" cy="156.0" r="2.4"/>
+        <circle cx="497.7" cy="226.0" r="3"/><circle cx="491.2" cy="156.0" r="2.4"/>
+        <circle cx="515.4" cy="226.0" r="3"/><circle cx="502.4" cy="156.0" r="2.4"/>
+        <circle cx="533.2" cy="226.0" r="3"/><circle cx="513.6" cy="156.0" r="2.4"/>
+        <circle cx="550.9" cy="226.0" r="3"/><circle cx="524.8" cy="156.0" r="2.4"/>
+        <circle cx="568.6" cy="226.0" r="3"/><circle cx="536.0" cy="156.0" r="2.4"/>
+      </g>
+      <circle cx="165" cy="36" r="5" class="svg-fg"/><circle cx="480" cy="36" r="5" class="svg-fg"/><circle cx="165" cy="156" r="3" class="svg-fg"/><circle cx="480" cy="156" r="3" class="svg-fg"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="165" y="18" text-anchor="middle" font-weight="700">곡면 검출기</text><text x="480" y="18" text-anchor="middle" font-weight="700">평면 검출기</text>
+        <text x="175" y="32">선원</text><text x="490" y="32">선원</text>
+        <text x="150" y="160" text-anchor="end">O</text><text x="410.0" y="160" text-anchor="end" style="fill:var(--accent)">가상 검출기</text>
+        <text x="170.5" y="86.0" style="fill:var(--warn)">Δγ</text>
+        <text x="480" y="244" text-anchor="middle" class="svg-muted">실제 검출기</text>
+        <text x="165" y="244" text-anchor="middle" class="svg-muted">실제 검출기</text>
+        <text x="165" y="266" text-anchor="middle" class="svg-muted" font-size="10.5">이웃한 칸 사이의 팬 각이 모두 같다</text>
+        <text x="480" y="266" text-anchor="middle" class="svg-muted" font-size="10.5">이웃한 칸 사이의 거리가 모두 같다</text>
+        <text x="480" y="284" text-anchor="middle" class="svg-muted" font-size="10.5">(팬 각 간격은 가장자리로 갈수록 좁아진다)</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽은 곡면 검출기, 오른쪽은 평면 검출기입니다. 둘 다 칸이 11개이고 점선이 각 칸으로 가는 광선입니다. 곡면 검출기는 광선 사이의 팬 각이 모두 \(\Delta\gamma\)로 같습니다. 평면 검출기는 칸 사이의 거리가 같으므로 가장자리 광선일수록 서로 가까워집니다. 평면 검출기 그림 가운데의 파란 선은 가상 검출기이며 아래에서 설명합니다.</figcaption>
+  </figure>
+
+  <h3>가상 검출기와 좌표 \(t\)</h3>
+
+  <p>평면 검출기의 위치 \(\mathrm{SDD}\tan\gamma\)에는 \(\mathrm{SDD}\)가 들어 있어서, 장치마다 값이 달라집니다. 식을 간단히 하려고 이 책은 검출기를 회전 중심 O로 옮겨 놓은 가상 검출기(<span class="term" data-term="virtualdet">Virtual Detector</span>)를 씁니다. 가상 검출기는 O를 지나고 중심 광선에 수직인 직선이며, 그 위의 좌표를 \(t\)라고 씁니다. 팬 각 \(\gamma\)인 광선은 가상 검출기의 다음 위치를 지납니다.</p>
+
+  <p style="text-align:center">\[t = D\tan\gamma\]</p>
+
+  <ul>
+    <li>실제 검출기의 위치 \(\mathrm{SDD}\tan\gamma\)와 \(t\)는 같은 광선에 대해 비율 \(\mathrm{SDD}/D\)만 다릅니다. 실제 칸 간격에 \(D/\mathrm{SDD}\)를 곱하면 가상 검출기 위의 칸 간격 \(\Delta t\)가 됩니다.</li>
+    <li>광선의 순서와 칸 사이의 비율은 그대로이므로, 측정값을 \(t\)에 놓고 써도 정보가 줄지 않습니다.</li>
+    <li>\(t\)가 커지는 방향은 \(x\)축을 선원 각 \(\beta\)만큼 돌린 방향이고, 중심 광선은 \(t = 0\)을 지납니다.</li>
+  </ul>
+
+  <p>가상 검출기 위치 \(t\)를 지나는 광선의 투영값도 \(R_\beta(t)\)로 씁니다. 곡면 검출기에서 쓰는 \(R_\beta(\gamma)\)와 같은 광선의 같은 값이고, 광선을 부르는 좌표만 다릅니다.</p>
+
+  <h3>\(\gamma\), \(t\), \(s\)의 비교</h3>
+
+  <p>팬 각 \(\gamma\)에 대해 \(t/D = \tan\gamma\)와 \(\sin\gamma\)를 비교합니다. \(\sin\gamma\)에 \(D\)를 곱한 \(s = D\sin\gamma\)는 O에서 광선까지의 거리이며, 3장의 검출기 좌표 \(s\)와 같습니다. 평면 검출기에서 \(t\)의 칸 간격이 같으면 칸 하나가 맡는 팬 각은 \(\Delta\gamma \approx (\cos^{2}\gamma)\,\Delta t/D\)로 가장자리에서 좁아집니다(아래 접기).</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(\gamma\)</th><th>\(\gamma\) (rad)</th><th>\(s/D = \sin\gamma\)</th><th>\(t/D = \tan\gamma\)</th><th>평면 검출기의 칸 하나가 맡는 팬 각 (중심 칸 = 1)</th></tr>
+      <tr><td>\(10^{\circ}\)</td><td>0.1745</td><td>0.1736</td><td>0.1763</td><td>\(\cos^{2}\gamma = 0.970\)</td></tr>
+      <tr><td>\(20^{\circ}\)</td><td>0.3491</td><td>0.3420</td><td>0.3640</td><td>\(0.883\)</td></tr>
+      <tr><td>\(30^{\circ}\)</td><td>0.5236</td><td>0.5000</td><td>0.5774</td><td>\(0.750\)</td></tr>
+    </table>
+  </div>
+
+  <p>중심 근처에서는 세 값이 거의 같습니다. 가장자리로 갈수록 \(t\)가 가장 빨리 커지고, \(s\)가 가장 느리게 커집니다. 곡면 검출기에서는 \(\gamma\)의 간격이 같고, 평면 검출기에서는 \(t\)의 간격이 같습니다.</p>
+
+  <details class="fold">
+    <summary>평면 검출기의 팬 각 간격 \(\cos^{2}\gamma\)</summary>
+    <div class="fold-body">
+      <p>\(t = D\tan\gamma\)를 \(\gamma\)로 미분하면 \(dt/d\gamma = D/\cos^{2}\gamma\)입니다. 칸 간격 \(\Delta t\)가 작을 때 이웃한 칸의 팬 각 차이는 \(\Delta\gamma \approx (d\gamma/dt)\,\Delta t = (\cos^{2}\gamma)\,\Delta t/D\)입니다.</p>
+      <p>\(\gamma = 30^{\circ}\)이면 \(\cos^{2}30^{\circ} = 0.75\)이므로 이 칸이 맡는 팬 각은 중심 칸의 0.75배입니다. 표의 마지막 열은 이 값입니다. 근사의 오차는 \(\Delta t\)가 작을수록 작아집니다.</p>
+    </div>
+  </details>
+
+  <div class="box note">
+    <p class="box-t">다른 책의 표기</p>
+    <p>이 책은 \(t\)를 가상 검출기 위의 좌표로만 씁니다. 책에 따라 \(t\)나 \(s\) 등을 실제 검출기 위의 좌표로 쓰기도 하므로, 다른 책의 식을 읽을 때는 기호의 뜻부터 확인해야 합니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="팬빔 광선과 평행빔 직선">
+  <p class="kicker">7장 · 페이지 4</p>
+  <h2>팬빔 광선과 평행빔 직선</h2>
+
+  <p>팬빔의 광선도 평면 위의 직선입니다. 그렇다면 3장에서 쓴 직선의 좌표 \((\theta, s)\)로 이 광선을 나타내면 어떻게 될까요? 선원 각이 \(\beta\)이고 팬 각이 \(\gamma\)인 광선은 평행빔의 어느 직선일까요?</p>
+
+  <h3>대응식</h3>
+
+  <p>광선 \((\beta, \gamma)\)는 다음 직선 \((\theta, s)\)와 같습니다.</p>
+
+  <p style="text-align:center">\[\theta = \beta + \gamma,\qquad s = D\sin\gamma\]</p>
+
+  <p>거꾸로 직선 \((\theta, s)\)가 주어지면 이 직선을 지나는 광선은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\gamma = \arcsin\frac{s}{D},\qquad \beta = \theta - \gamma\]</p>
+
+  <p>\(\theta\)는 직선에 수직인 방향(법선)의 각이고, \(s\)는 O에서 직선까지의 부호 있는 거리입니다(3장 페이지 2). 두 식은 각각 다음 이유로 성립합니다.</p>
+
+  <ul>
+    <li><b>\(\theta = \beta + \gamma\).</b> 중심 광선(\(\gamma = 0\))은 O를 지나므로 \(s = 0\)이고, 선원이 \(y\)축에서 \(\beta\)만큼 돈 위치에 있으므로 법선의 방향은 \(x\)축에서 \(\beta\)만큼 돈 \(\theta = \beta\)입니다. 광선을 \(\gamma\)만큼 돌리면 법선도 \(\gamma\)만큼 돌아 \(\theta = \beta + \gamma\)가 됩니다.</li>
+    <li><b>\(s = D\sin\gamma\).</b> O에서 광선에 수선을 내린 발을 F라고 하면 삼각형 SOF는 F에서 직각이고, 빗변 SO가 \(D\), S의 각이 \(\gamma\)입니다. 그러므로 수선의 길이는 \(\mathrm{OF} = D\sin\gamma\)입니다. \(\gamma\)가 양수이면 \(s\)도 양수입니다.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="선원 S가 위에, 회전 중심 O가 아래에 있다. 선원에서 팬 각 γ로 나간 광선(주황)에 O에서 수선을 내린 발이 F이고 O에서 F까지의 길이가 s. 삼각형 S O F는 F에서 직각이고 S의 각이 γ이며 빗변 SO의 길이가 D. 오른쪽으로 뻗은 x축과 O에서 F로 향하는 선 사이의 각이 θ이고 이 그림에서는 β가 0이므로 θ는 γ와 같다">
+      <defs>
+        <marker id="r10d-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r10d-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="r10d-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <path d="M60 150 H330" fill="none" stroke-width="1" opacity=".6" style="stroke:var(--muted)"/>
+      <path d="M180 30 V150" fill="none" stroke-width="1" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+      <path d="M180.0 30.0 L275.0 194.5" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <path d="M180.0 150.0 L232.0 120.0" fill="none" stroke-width="2.2" style="stroke:var(--good)"/>
+      <path d="M227.5 112.2 L219.7 116.7 L224.2 124.5" fill="none" stroke-width="1" style="stroke:var(--good)"/>
+      <path d="M180 62 A32 32 0 0 0 196.0 57.7" fill="none" stroke-width="1.2" style="stroke:var(--warn)"/>
+      <path d="M218.0 150.0 A38 38 0 0 0 212.9 131.0" fill="none" stroke-width="1.2" style="stroke:var(--accent)"/>
+      <path d="M150 34 V146" fill="none" stroke-width="1" style="stroke:var(--muted)" marker-start="url(#r10d-mu)" marker-end="url(#r10d-mu)"/>
+      <circle cx="180" cy="30" r="5" class="svg-fg"/><circle cx="180" cy="150" r="3" class="svg-fg"/><circle cx="232.0" cy="120.0" r="3.5" style="fill:var(--good)"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="190" y="26">선원 S</text><text x="166" y="166" text-anchor="end">O</text><text x="240.0" y="114.0" style="fill:var(--good)">F</text>
+        <text x="142" y="94" text-anchor="end">D</text>
+        <text x="196.4" y="74.6" style="fill:var(--warn)">γ</text>
+        <text x="224.0" y="144.0" style="fill:var(--accent)">θ</text>
+        <text x="212.0" y="170" style="fill:var(--good)">s = D sinγ</text>
+        <text x="326" y="146" class="svg-muted">x</text>
+        <text x="271.0" y="208.5" style="fill:var(--warn)">팬 각 γ의 광선</text>
+        <text x="392" y="60" font-weight="700">그림에서 읽는 것 (β = 0인 경우)</text>
+        <text x="392" y="84">삼각형 S O F: F에서 직각, 빗변 SO = D</text>
+        <text x="392" y="104">S의 각 = γ  ⇒  OF = D sinγ = s</text>
+        <text x="392" y="124">OF는 광선에 수직, 곧 법선 방향</text>
+        <text x="392" y="144">법선과 x축 사이의 각 θ = γ  (= β + γ)</text>
+        <text x="392" y="176" class="svg-muted">β가 0이 아니면 그림 전체가</text>
+        <text x="392" y="194" class="svg-muted">O를 중심으로 β만큼 돌아가므로</text>
+        <text x="392" y="212" class="svg-muted">θ에 β가 더해지고 s는 그대로다</text>
+      </g>
+    </svg>
+    <figcaption>\(\beta = 0\)인 경우의 기하입니다. 주황 광선에 O에서 내린 수선의 발이 F이고(초록), OF의 길이가 \(s\)입니다. 삼각형 SOF에서 S의 각이 \(\gamma\)이므로 \(s = D\sin\gamma\)입니다. OF 방향이 광선의 법선이어서, 그것이 \(x\)축과 이루는 각 \(\theta\)는 \(\gamma\)와 같습니다.</figcaption>
+  </figure>
+
+  <p>예를 들어 \(D = 3\) cm, \(\beta = 40^{\circ}\), \(\gamma = 20^{\circ}\)인 광선은 \(\theta = 60^{\circ}\), \(s = 3\sin 20^{\circ} \approx 1.03\) cm인 직선입니다. 이 광선의 측정값 \(R_{40^{\circ}}(20^{\circ})\)은 평행빔 sinogram의 \((\theta, s) = (60^{\circ},\ 1.03\ \mathrm{cm})\)에 놓일 값과 같습니다. 같은 직선의 선적분이기 때문입니다.</p>
+
+  <h3>물체를 덮는 팬 반각</h3>
+
+  <p>물체가 O를 중심으로 반지름 \(r_0\)인 원 안에 있다면, 이 물체를 지나는 직선은 모두 \(|s| \le r_0\)입니다. 팬이 이 직선을 모두 덮으려면 \(D\sin\gamma_m \ge r_0\)이어야 합니다. 예를 들어 \(D = 3\) cm, \(r_0 = 1\) cm이면 \(\sin\gamma_m \ge 1/3\), 곧 \(\gamma_m \ge 19.5^{\circ}\)입니다. 같은 이유로 O를 중심으로 반지름 \(D\sin\gamma_m\)인 원 안의 점은 모든 선원 각에서 팬 안에 들어오므로, 이 원이 팬빔의 시야(FOV, 3장 페이지 10)입니다. \(D\sin\gamma_m &lt; r_0\)이면, 곧 물체가 시야보다 크면 물체의 일부 직선을 측정하지 못합니다(5장 페이지 11의 절단과 같은 종류의 문제입니다. 다만 5장의 검출기 반폭은 \(D_{\mathrm{det}}\)이고, 이 장의 \(D\)는 선원–회전 중심 거리입니다).</p>
+
+  <details class="fold">
+    <summary>대응식의 좌표 계산</summary>
+    <div class="fold-body">
+      <p>위의 기하를 좌표로 확인합니다. 선원의 위치와 광선의 방향은 다음과 같습니다.</p>
+      <ol>
+        <li>선원은 \(\mathrm{S} = (-D\sin\beta,\ D\cos\beta)\)입니다.</li>
+        <li>중심 광선의 방향은 선원에서 O를 향하는 \((\sin\beta,\ -\cos\beta)\)입니다. 이 방향을 반시계 방향으로 \(\gamma\)만큼 돌리면 팬 각 \(\gamma\)인 광선의 방향이 됩니다. 회전 공식으로 계산하면 \(\bigl(\sin\beta\cos\gamma + \cos\beta\sin\gamma,\ \sin\beta\sin\gamma - \cos\beta\cos\gamma\bigr) = \bigl(\sin(\beta + \gamma),\ -\cos(\beta + \gamma)\bigr)\)입니다.</li>
+        <li>\(\theta = \beta + \gamma\)로 두면 방향은 \((\sin\theta,\ -\cos\theta)\)이고, 이 방향에 수직인 단위 벡터는 \(\mathbf{n} = (\cos\theta,\ \sin\theta)\)입니다. 3장의 직선 \(x\cos\theta + y\sin\theta = s\)는 법선이 \(\mathbf{n}\)이고, 점 \((x, y)\)가 \(\mathbf{n}\)과 내적해서 \(s\)가 되는 점의 모임입니다.</li>
+        <li>광선은 선원을 지나므로 \(s = \mathbf{n}\cdot\mathrm{S} = -D\sin\beta\cos\theta + D\cos\beta\sin\theta = D\sin(\theta - \beta) = D\sin\gamma\)입니다.</li>
+      </ol>
+      <p>3장 페이지 2는 광선의 진행 방향을 \((-\sin\theta,\ \cos\theta)\)로 정했습니다. 선원에서 나가는 광선의 방향 \((\sin\theta,\ -\cos\theta)\)는 그 반대입니다. 같은 직선을 반대 방향으로 따라가도 선적분의 값은 같으므로, 투영값 \(p(\theta, s)\)에는 영향이 없습니다.</p>
+    </div>
+  </details>
+
+  <div class="box note">
+    <p class="box-t">다시 보기: 3장의 직선 좌표</p>
+    <p>\(\theta\)는 직선에 수직인 방향의 각이며 \(\theta = 0\)이면 세로 광선입니다. \(s\)는 O에서 직선까지의 부호 있는 거리입니다. 직선 위의 점은 \(x\cos\theta + y\sin\theta = s\)를 만족합니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 -->
+<section class="screen" data-title="팬빔 sinogram">
+  <p class="kicker">7장 · 페이지 5 · 심화</p>
+  <h2>팬빔 sinogram</h2>
+
+  <p>3장에서는 평행빔 투영을 각도 \(\theta\)마다 한 행씩 쌓아 sinogram을 만들었습니다. 팬빔 데이터도 같은 방식으로 쌓을 수 있을까요? 쌓는다면 평행빔 sinogram과 어떻게 달라질까요?</p>
+
+  <h3>팬빔 sinogram의 정의</h3>
+
+  <p>선원 각 \(\beta\)마다의 투영 \(R_\beta(\gamma)\)를 가로 \(\gamma\)(평면 검출기라면 \(t\)), 세로 \(\beta\)로 쌓은 2차원 배열을 팬빔 sinogram(<span class="term" data-term="fansino">Fan-beam Sinogram</span>)이라고 합니다. 3장의 규약을 그대로 따라서, 행 하나가 선원 위치 하나의 투영이고 \(\beta\)는 위에서 아래로 커집니다.</p>
+
+  <p>아래 그림은 같은 Shepp-Logan 팬텀의 두 sinogram입니다. \(D = 3\) cm, 팬 반각 \(\gamma_m = 22^{\circ}\)이고, 두 그림의 밝기는 같은 눈금입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 372" role="img" aria-label="같은 Shepp-Logan 팬텀의 평행빔 sinogram(가로 s, 세로 θ 0에서 180도)과 팬빔 sinogram(가로 γ, 세로 β 0에서 360도). 두 그림에 주황 고리로 같은 광선 하나를 표시했다">
+      <image id="r10s-p" x="50" y="60" width="200" height="135" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <image id="r10s-f" x="380" y="60" width="200" height="270" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <rect x="50" y="60" width="200" height="135"/><rect x="380" y="60" width="200" height="270"/>
+      </g>
+      <circle cx="103.6" cy="97.5" r="5.5" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <circle cx="434.5" cy="105" r="5.5" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <g font-size="12" class="svg-fg" text-anchor="middle" font-weight="700">
+        <text x="150" y="26">평행빔 sinogram</text><text x="480" y="26">팬빔 sinogram</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="middle">
+        <text x="150" y="44">가로 s, 세로 θ</text><text x="480" y="44">가로 γ, 세로 β</text>
+        <text x="61" y="210">−1</text><text x="150" y="210">0</text><text x="239" y="210">1</text><text x="150" y="224">s (cm)</text>
+        <text x="389" y="346">−20°</text><text x="480" y="346">0</text><text x="571" y="346">20°</text><text x="480" y="360">γ</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="end">
+        <text x="44" y="64">0°</text><text x="44" y="131">90°</text><text x="44" y="199">180°</text>
+        <text x="374" y="64">0°</text><text x="374" y="131">90°</text><text x="374" y="199">180°</text><text x="374" y="266">270°</text><text x="374" y="334">360°</text>
+        <text x="44" y="52">θ</text><text x="374" y="52">β</text>
+      </g>
+      <g font-size="11" class="svg-fg">
+        <text x="14" y="250" style="fill:var(--warn)">주황 고리: 같은 광선</text>
+        <text x="14" y="268">선원 각 β = 60°, 팬 각 γ = −10°</text>
+        <text x="14" y="286">⇒ θ = 50°, s = 3 sin(−10°) ≈ −0.52 cm</text>
+        <text x="14" y="312" class="svg-muted">세로 눈금은 두 그림에서 같다 (1° = 0.75 px)</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽은 평행빔 sinogram \(p(\theta, s)\)(\(\theta\) 0°~180°), 오른쪽은 팬빔 sinogram \(R_\beta(\gamma)\)(\(\beta\) 0°~360°)입니다. 밝을수록 투영값이 큽니다. 주황 고리가 같은 광선 하나이며, 두 그림에서 값이 같습니다.</figcaption>
+  </figure>
+
+  <ul>
+    <li><b>가로축.</b> 평행빔은 \(s\), 팬빔은 \(\gamma\)입니다. 페이지 4의 대응에서 \(s = D\sin\gamma\)이므로 눈금이 조금 다릅니다.</li>
+    <li><b>세로축.</b> 평행빔은 \(0^{\circ}\)~\(180^{\circ}\)로 충분했습니다. 이 그림의 팬빔은 한 바퀴(\(0^{\circ}\)~\(360^{\circ}\))를 돌린 스캔입니다. 팬빔은 같은 직선의 짝이 정확히 \(180^{\circ}\) 뒤에 있지 않아서 \(180^{\circ}\)만으로는 모든 직선을 얻지 못하고, 한 바퀴를 돌리면 팬이 덮는 직선을 두 번씩 잽니다.</li>
+    <li><b>모양.</b> 같은 팬텀이지만 두 sinogram의 윤곽이 다릅니다. 팬빔 sinogram에서는 윤곽이 가로 위치에 따라 세로로 어긋나 있습니다. 이 어긋남이 어디서 오는지 아래에서 봅니다.</li>
+  </ul>
+
+  <h3>직사각형이 평행사변형이 되는 이유</h3>
+
+  <p>같은 광선 집합을 두 좌표에 칠하면 모양이 어떻게 바뀌는지 도형으로 확인합니다. 그림의 왼쪽 파란 직사각형은 평행빔 sinogram에서 \(70^{\circ} \le \theta \le 130^{\circ}\), \(|s| \le 0.4D\)인 광선 묶음입니다. 이 광선들이 팬빔 sinogram에서 차지하는 영역이 오른쪽의 파란 도형입니다.</p>
+
+  <figure class="fig" id="fig-fan-sino">
+    <svg id="fs-svg" viewBox="0 0 640 376" role="img" aria-label="같은 광선을 평행빔 sinogram(가로 s, 세로 θ 0에서 180도)과 팬빔 sinogram(가로 γ, 세로 β 0에서 360도)에 칠한 그림. 평행빔의 직사각형(파랑)은 팬빔에서 평행사변형이 되고, 팬빔의 직사각형(주황)은 평행빔에서 위아래 변이 약간 휜 평행사변형 모양이 됨. 연한 점선 평행사변형은 같은 직선을 선원 각 β+π로 다시 잰 측정">
+      <rect x="45.0" y="50.0" width="240.0" height="144.0" fill="none" stroke-width="1" style="stroke:var(--rule)"/>
+      <rect x="355.0" y="50.0" width="240.0" height="288.0" fill="none" stroke-width="1" style="stroke:var(--rule)"/>
+      <g fill="none" stroke-width="1" opacity=".35" style="stroke:var(--muted)">
+        <path d="M165.0 50.0 V194.0 M45.0 122.0 H285.0"/>
+        <path d="M475.0 50.0 V338.0 M355.0 122.0 H595.0 M355.0 194.0 H595.0 M355.0 266.0 H595.0"/>
+      </g>
+      <path d="M380.7 268.9 L569.3 231.1 L569.3 279.1 L380.7 316.9 Z" fill-opacity=".12" stroke-width="1.4" stroke-dasharray="5 3" style="fill:var(--accent);stroke:var(--accent)" opacity=".75"/>
+      <path d="M73.3 106.0 L256.7 106.0 L256.7 154.0 L73.3 154.0 Z" fill-opacity=".35" stroke-width="1.6" style="fill:var(--accent);stroke:var(--accent)"/>
+      <path d="M380.7 124.9 L569.3 87.1 L569.3 135.1 L380.7 172.9 Z" fill-opacity=".35" stroke-width="1.6" style="fill:var(--accent);stroke:var(--accent)"/>
+      <path d="M57.4 59.6 L60.1 60.2 L62.7 60.8 L65.4 61.4 L68.1 62.0 L70.9 62.6 L73.6 63.2 L76.4 63.8 L79.1 64.4 L81.9 65.0 L84.7 65.6 L87.6 66.2 L90.4 66.8 L93.2 67.4 L96.1 68.0 L99.0 68.6 L101.8 69.2 L104.7 69.8 L107.6 70.4 L110.5 71.0 L113.4 71.6 L116.4 72.2 L119.3 72.8 L122.3 73.4 L125.2 74.0 L125.2 75.0 L125.2 76.0 L125.2 77.0 L125.2 78.0 L125.2 79.0 L125.2 80.0 L125.2 81.0 L125.2 82.0 L125.2 83.0 L125.2 84.0 L125.2 85.0 L125.2 86.0 L125.2 87.0 L125.2 88.0 L125.2 89.0 L125.2 90.0 L125.2 91.0 L125.2 92.0 L125.2 93.0 L125.2 94.0 L125.2 95.0 L125.2 96.0 L125.2 97.0 L125.2 98.0 L122.3 97.4 L119.3 96.8 L116.4 96.2 L113.4 95.6 L110.5 95.0 L107.6 94.4 L104.7 93.8 L101.8 93.2 L99.0 92.6 L96.1 92.0 L93.2 91.4 L90.4 90.8 L87.6 90.2 L84.7 89.6 L81.9 89.0 L79.1 88.4 L76.4 87.8 L73.6 87.2 L70.9 86.6 L68.1 86.0 L65.4 85.4 L62.7 84.8 L60.1 84.2 L57.4 83.6 L57.4 82.6 L57.4 81.6 L57.4 80.6 L57.4 79.6 L57.4 78.6 L57.4 77.6 L57.4 76.6 L57.4 75.6 L57.4 74.6 L57.4 73.6 L57.4 72.6 L57.4 71.6 L57.4 70.6 L57.4 69.6 L57.4 68.6 L57.4 67.6 L57.4 66.6 L57.4 65.6 L57.4 64.6 L57.4 63.6 L57.4 62.6 L57.4 61.6 L57.4 60.6 Z" fill-opacity=".35" stroke-width="1.6" style="fill:var(--warn);stroke:var(--warn)"/>
+      <path d="M363.0 82.0 L435.0 82.0 L435.0 106.0 L363.0 106.0 Z" fill-opacity=".35" stroke-width="1.6" style="fill:var(--warn);stroke:var(--warn)"/>
+      <g font-size="11" font-weight="700" style="fill:var(--accent)">
+        <text x="60.3" y="103.0">A</text><text x="260.7" y="103.0">B</text>
+        <text x="260.7" y="165.0">C</text><text x="60.3" y="165.0">D</text>
+        <text x="367.7" y="128.9">A</text><text x="573.3" y="88.1">B</text>
+        <text x="573.3" y="139.1">C</text><text x="367.7" y="176.9">D</text>
+        <text x="573.3" y="235.1">A′</text><text x="359.7" y="272.9">B′</text>
+        <text x="359.7" y="320.9">C′</text><text x="573.3" y="283.1">D′</text>
+        <text x="475.0" y="274.0" text-anchor="middle" font-weight="400">같은 직선, β + π</text>
+      </g>
+      <g font-size="12" class="svg-fg" text-anchor="middle" font-weight="700">
+        <text x="165.0" y="28">평행빔 sinogram</text><text x="475.0" y="28">팬빔 sinogram</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="middle">
+        <text x="165.0" y="42">가로 s, 세로 θ</text><text x="475.0" y="42">가로 γ, 세로 β</text>
+        <text x="50.4" y="208.0" text-anchor="middle">−0.5 D</text><text x="165.0" y="208.0" text-anchor="middle">0</text><text x="279.6" y="208.0" text-anchor="middle">0.5 D</text>
+        
+        <text x="355.0" y="352.0" text-anchor="middle">−30°</text><text x="475.0" y="352.0" text-anchor="middle">0</text><text x="595.0" y="352.0" text-anchor="middle">30°</text>
+        
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="end">
+        <text x="40.0" y="54.0" text-anchor="end">0°</text><text x="40.0" y="126.0" text-anchor="end">90°</text><text x="40.0" y="198.0" text-anchor="end">180°</text>
+        <text x="350.0" y="54.0" text-anchor="end">0°</text><text x="350.0" y="126.0" text-anchor="end">90°</text><text x="350.0" y="198.0" text-anchor="end">180°</text><text x="350.0" y="270.0" text-anchor="end">270°</text><text x="350.0" y="342.0" text-anchor="end">360°</text>
+        <text x="40.0" y="42.0" text-anchor="end">θ</text><text x="350.0" y="42.0" text-anchor="end">β</text>
+      </g>
+      <g font-size="11" class="svg-fg">
+        <text x="45.0" y="246" font-weight="700">대응: θ = β + γ,  s = D sin γ</text>
+        <text x="45.0" y="266" style="fill:var(--accent)">파랑: (θ, s)의 직사각형</text>
+        <text x="45.0" y="284" style="fill:var(--accent)">  70° ≤ θ ≤ 130°, |s| ≤ 0.4 D</text>
+        <text x="45.0" y="304" style="fill:var(--warn)">주황: (γ, β)의 직사각형</text>
+        <text x="45.0" y="322" style="fill:var(--warn)">  −28° ≤ γ ≤ −10°, 40° ≤ β ≤ 70°</text>
+        <text x="45.0" y="342" style="fill:var(--accent)">점선: 파랑과 같은 직선을 선원 반대편에서</text>
+        <text x="45.0" y="358" style="fill:var(--accent)">  다시 잰 측정. A′~D′는 A~D와 같은 광선</text>
+      </g>
+    </svg>
+    <figcaption>같은 광선 집합을 두 좌표에 칠했습니다. 세로 눈금은 두 그림에서 같고(\(D\)는 선원–회전 중심 거리), 가로 눈금은 중심 근처에서 같습니다. 왼쪽 파란 직사각형(\(70^{\circ} \le \theta \le 130^{\circ}\), \(|s| \le 0.4D\))의 꼭짓점 A~D는 오른쪽에서 \(\gamma = \pm\arcsin 0.4 \approx \pm 23.6^{\circ}\)의 세로 변과 \(\beta = \theta - \gamma\)의 기울어진 직선 변으로 둘러싸인 평행사변형이 됩니다. 오른쪽 주황 직사각형(\(-28^{\circ} \le \gamma \le -10^{\circ}\), \(40^{\circ} \le \beta \le 70^{\circ}\))은 왼쪽에서 세로 변 둘과 \(\theta = \beta + \arcsin(s/D)\) 곡선 변 둘로 둘러싸입니다. 팬빔 sinogram의 가로축은 \(t\) 대신 \(\gamma\)로 그렸습니다. 점선 평행사변형은 파란 광선들을 선원의 반대편에서 다시 잰 두 번째 측정이 놓이는 곳이며, 꼭짓점 A′~D′는 각각 A~D와 같은 광선입니다.</figcaption>
+  </figure>
+
+
+  <p>직사각형의 네 변을 페이지 4의 역대응 \(\gamma = \arcsin(s/D)\), \(\beta = \theta - \gamma\)로 하나씩 옮기면 다음과 같습니다.</p>
+
+  <ol>
+    <li><b>\(s\)가 일정한 두 변.</b> \(s = \pm 0.4D\)이면 \(\gamma = \pm\arcsin 0.4 \approx \pm 23.6^{\circ}\)로 일정합니다. 팬빔 sinogram에서도 세로선입니다.</li>
+    <li><b>\(\theta\)가 일정한 두 변.</b> \(\beta = \theta - \gamma\)이므로 \(\gamma\)가 \(1^{\circ}\) 커질 때 \(\beta\)가 \(1^{\circ}\) 작아집니다. 팬빔 sinogram에서 기울어진 직선입니다.</li>
+    <li><b>마주 보는 변.</b> 마주 보는 변끼리 서로 평행하므로, 이 도형은 근사가 아니라 정확한 평행사변형입니다.</li>
+  </ol>
+
+  <p>그림의 점선 평행사변형은 같은 직선을 선원의 반대편에서 한 번 더 잰 측정이 놓이는 자리입니다. 꼭짓점 A′, B′, C′, D′는 각각 A, B, C, D와 <b>같은 광선</b>(같은 직선)입니다. 광선 \((\beta, \gamma)\)와 같은 직선을 재는 다른 광선은 \((\beta + \pi + 2\gamma,\ -\gamma)\)입니다. 이 식으로 꼭짓점을 옮기면 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>꼭짓점</th><th>\((\theta,\ s)\)</th><th>\((\gamma,\ \beta)\)</th><th>짝</th><th>짝의 \((\gamma',\ \beta')\)</th></tr>
+      <tr><td>A</td><td>\((70^{\circ},\ -0.4D)\)</td><td>\((-23.6^{\circ},\ 93.6^{\circ})\)</td><td>A′</td><td>\((+23.6^{\circ},\ 226.4^{\circ})\)</td></tr>
+      <tr><td>B</td><td>\((70^{\circ},\ +0.4D)\)</td><td>\((+23.6^{\circ},\ 46.4^{\circ})\)</td><td>B′</td><td>\((-23.6^{\circ},\ 273.6^{\circ})\)</td></tr>
+      <tr><td>C</td><td>\((130^{\circ},\ +0.4D)\)</td><td>\((+23.6^{\circ},\ 106.4^{\circ})\)</td><td>C′</td><td>\((-23.6^{\circ},\ 333.6^{\circ})\)</td></tr>
+      <tr><td>D</td><td>\((130^{\circ},\ -0.4D)\)</td><td>\((-23.6^{\circ},\ 153.6^{\circ})\)</td><td>D′</td><td>\((+23.6^{\circ},\ 286.4^{\circ})\)</td></tr>
+    </table>
+  </div>
+
+  <p>예를 들어 A는 \(\beta = 93.6^{\circ}\), \(\gamma = -23.6^{\circ}\)이므로 짝 A′은 \(\gamma' = +23.6^{\circ}\), \(\beta' = 93.6^{\circ} + 180^{\circ} + 2(-23.6^{\circ}) = 226.4^{\circ}\)입니다. 짝은 \(\gamma\)의 부호가 뒤집히므로 A′은 점선 도형의 왼쪽이 아니라 <b>오른쪽</b> 위 꼭짓점에 놓입니다. 도형 전체는 파란 도형을 \(\beta\) 방향으로 \(180^{\circ}\) 옮긴 모양이지만, 꼭짓점 하나하나의 짝은 그렇게 옮긴 자리가 아닙니다. 파란 도형의 A를 \(180^{\circ}\) 옮기면 B′의 자리에 닿고, 이것은 B의 짝입니다. 같은 직선끼리 이어지는 것은 이름이 같은 꼭짓점입니다.</p>
+
+  <p>그림은 중심 근처에서 \(s/D \approx \gamma\)(rad)이므로 두 sinogram의 가로 눈금이 같게 그렸습니다. 이 눈금에서 팬빔 sinogram은 평행빔 sinogram의 각 열을 그 열의 \(\gamma\)만큼 세로로 밀어 놓은 모양입니다. \(\gamma > 0\)인 오른쪽 열은 \(\gamma\)만큼 위로, \(\gamma < 0\)인 왼쪽 열은 \(|\gamma|\)만큼 아래로 움직입니다. 이처럼 한 방향의 좌표에 비례하는 만큼 다른 방향으로 밀어 기울이는 변형을 전단(<span class="term" data-term="shear">Shear</span>)이라고 합니다.</p>
+
+  <p>거꾸로 팬빔 sinogram의 직사각형(그림의 오른쪽 주황)은 평행빔 sinogram에서 평행사변형이 되지 않습니다. 세로 변은 \(s = D\sin\gamma\)로 세로선이 되지만, \(\beta\)가 일정한 변은 \(\theta = \beta + \arcsin(s/D)\)로 휘어집니다. \(\arcsin\)이 직선이 아니기 때문입니다. \(\gamma\)가 작은 구간에서는 거의 직선이어서 휨이 작습니다.</p>
+
+  <details class="fold">
+    <summary>변마다 계산한 값</summary>
+    <div class="fold-body">
+      <p>그림의 주황 도형을 이루는 변을 하나씩 옮긴 결과입니다. 파란 도형의 변은 위의 목록과 표에 있습니다. \(\theta = \beta + \gamma\), \(s = D\sin\gamma\)를 씁니다. 각도의 단위는 도입니다.</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>출발한 도형</th><th>변</th><th>옮긴 좌표계에서의 식</th><th>모양</th></tr>
+          <tr><td rowspan="4">주황<br>(\(\gamma\), \(\beta\))의 직사각형</td><td>\(\gamma = -28\)</td><td>\(s = -0.469D\)로 일정, \(\theta = \beta - 28\)은 \(12\)에서 \(42\)까지</td><td>세로선</td></tr>
+          <tr><td>\(\gamma = -10\)</td><td>\(s = -0.174D\)로 일정, \(\theta = \beta - 10\)은 \(30\)에서 \(60\)까지</td><td>세로선</td></tr>
+          <tr><td>\(\beta = 40\)</td><td>\(\theta = 40 + \arcsin(s/D)\), \(s/D\)가 \(-0.469\)에서 \(-0.174\)로 갈 때 \(\theta\)는 \(12\)에서 \(30\)으로</td><td>휜 곡선</td></tr>
+          <tr><td>\(\beta = 70\)</td><td>\(\theta = 70 + \arcsin(s/D)\), \(\theta\)는 \(42\)에서 \(60\)으로</td><td>휜 곡선</td></tr>
+        </table>
+      </div>
+      <p>주황 도형은 세로선 둘과 곡선 둘이어서 평행사변형이 아닙니다. 두 곡선은 같은 모양을 \(\theta\) 방향으로 \(30^{\circ}\) 옮긴 것입니다.</p>
+    </div>
+  </details>
+
+  <div class="box note">
+    <p class="box-t">이후 페이지와의 관계</p>
+    <p>그림의 점선 평행사변형은 파란 광선들을 선원의 반대편에서 두 번째로 잰 측정이 놓이는 자리입니다. 이 페이지의 역대응 \(\gamma = \arcsin(s/D)\), \(\beta = \theta - \gamma\)는 rebinning에서 팬빔 측정값을 읽을 위치를 정하는 데 그대로 쓰입니다.</p>
+  </div>
+
+<script>
+window.r10 = (function () {
+  var PI = Math.PI, D2R = PI / 180;
+  // Shepp-Logan 타원: [x0, y0, A, B, α(도), ρ] (3장 페이지 4의 표)
+  var SL = [
+    [0, 0, 0.92, 0.69, 90, 2.0], [0, -0.0184, 0.874, 0.6624, 90, -0.98],
+    [0.22, 0, 0.31, 0.11, 72, -0.02], [-0.22, 0, 0.41, 0.16, 108, -0.02],
+    [0, 0.35, 0.25, 0.21, 90, 0.01], [0, 0.1, 0.046, 0.046, 0, 0.01],
+    [0, -0.1, 0.046, 0.046, 0, 0.01], [-0.08, -0.605, 0.046, 0.023, 0, 0.01],
+    [0, -0.605, 0.023, 0.023, 0, 0.01], [0.06, -0.605, 0.046, 0.023, 90, 0.01]
+  ];
+  var HALF = 1.1;
+  function ellMu(x, y) {
+    var v = 0, i, e, c, s, u, w;
+    for (i = 0; i < SL.length; i++) {
+      e = SL[i]; c = Math.cos(e[4] * D2R); s = Math.sin(e[4] * D2R);
+      u = (x - e[0]) * c + (y - e[1]) * s; w = -(x - e[0]) * s + (y - e[1]) * c;
+      if (u * u / (e[2] * e[2]) + w * w / (e[3] * e[3]) <= 1) v += e[5];
+    }
+    return v;
+  }
+  function ellP(th, s) {                  // 3장 페이지 5의 닫힌 식을 타원마다 더한다
+    var v = 0, i, e, t, ph, a2;
+    for (i = 0; i < SL.length; i++) {
+      e = SL[i];
+      t = s - e[0] * Math.cos(th) - e[1] * Math.sin(th);
+      ph = th - e[4] * D2R;
+      a2 = e[2] * e[2] * Math.pow(Math.cos(ph), 2) + e[3] * e[3] * Math.pow(Math.sin(ph), 2);
+      if (t * t < a2) v += 2 * e[5] * e[2] * e[3] / a2 * Math.sqrt(a2 - t * t);
+    }
+    return v;
+  }
+  // ---- 팬빔 측정값: 선원 각 β, 팬 각 γ 의 광선 = 평행빔 직선 (β + γ, D sinγ)
+  function fanVal(D, beta, gamma) { return ellP(beta + gamma, D * Math.sin(gamma)); }
+  // 평면(가상) 검출기 팬빔 데이터 R[j][i]: β_j = 2πj/Nb, t_i = (i − (Nt−1)/2)Δt
+  function fanData(D, Nb, Nt, dt) {
+    var R = [], j, i, b, t, c0 = (Nt - 1) / 2;
+    for (j = 0; j < Nb; j++) {
+      b = 2 * PI * j / Nb; R.push(new Float64Array(Nt));
+      for (i = 0; i < Nt; i++) { t = (i - c0) * dt; R[j][i] = fanVal(D, b, Math.atan(t / D)); }
+    }
+    return { D: D, Nb: Nb, Nt: Nt, dt: dt, R: R };
+  }
+  // 평행빔 sinogram 의 정확한 값: θ_k = kπ/Nth, s_m = (m − (Ns−1)/2)ds
+  function parData(Nth, ds, Ns) {
+    var P = [], k, m, c0 = (Ns - 1) / 2;
+    for (k = 0; k < Nth; k++) { P.push(new Float64Array(Ns)); for (m = 0; m < Ns; m++) P[k][m] = ellP(k * PI / Nth, (m - c0) * ds); }
+    return P;
+  }
+  // rebinning: 격자점 (θ_k, s_m) 마다 γ = asin(s/D), β = θ − γ, t = D tanγ 를 구해 (β, t) 에서 보간한다
+  function rebin(fan, Nth, ds, Ns, interp) {
+    var P = [], k, m, c0 = (Ns - 1) / 2, ct = (fan.Nt - 1) / 2, D = fan.D, Nb = fan.Nb, Nt = fan.Nt, dB = 2 * PI / Nb,
+        th, s, g, b, t, bj, tj, j0, j1, fb, i0, ft, a, row;
+    for (k = 0; k < Nth; k++) {
+      P.push(new Float64Array(Ns)); th = k * PI / Nth;
+      for (m = 0; m < Ns; m++) {
+        s = (m - c0) * ds;
+        if (Math.abs(s) >= D) { P[k][m] = 0; continue; }
+        g = Math.asin(s / D); b = th - g; t = D * Math.tan(g);
+        b = ((b % (2 * PI)) + 2 * PI) % (2 * PI);
+        bj = b / dB; tj = t / fan.dt + ct;
+        if (tj < 0 || tj > Nt - 1) { P[k][m] = NaN; continue; }
+        if (interp === 'nearest') { P[k][m] = fan.R[Math.round(bj) % Nb][Math.round(tj)]; continue; }
+        j0 = Math.floor(bj); fb = bj - j0; j1 = (j0 + 1) % Nb; j0 = j0 % Nb;
+        i0 = Math.min(Math.floor(tj), Nt - 2); ft = tj - i0;
+        P[k][m] = (1 - fb) * ((1 - ft) * fan.R[j0][i0] + ft * fan.R[j0][i0 + 1]) + fb * ((1 - ft) * fan.R[j1][i0] + ft * fan.R[j1][i0 + 1]);
+      }
+    }
+    return P;
+  }
+  // 6장의 Ram-Lak 커널 h[n] 과 직접 컨볼루션, 선형 보간 역투영(Pixel-driven 방식)
+  function hRL(n, d) { return n === 0 ? 1 / (4 * d * d) : (n % 2 ? -1 / (PI * PI * n * n * d * d) : 0); }
+  function filterRow(p, d) {
+    var ns = p.length, q = new Float64Array(ns), n, m, a;
+    for (n = 0; n < ns; n++) { a = 0; for (m = 0; m < ns; m++) a += p[m] * hRL(n - m, d); q[n] = d * a; }
+    return q;
+  }
+  function fbp(P, d, n, half) {
+    var K = P.length, ns = P[0].length, c0 = (ns - 1) / 2, out = new Float64Array(n * n), px = 2 * half / n, w = PI / K,
+        k, i, j, x, y, t, i0, f, c, s, q;
+    for (k = 0; k < K; k++) {
+      q = filterRow(P[k], d); c = Math.cos(k * PI / K); s = Math.sin(k * PI / K);
+      for (j = 0; j < n; j++) {
+        y = half - (j + 0.5) * px;
+        for (i = 0; i < n; i++) {
+          x = -half + (i + 0.5) * px; t = (x * c + y * s) / d + c0; i0 = Math.floor(t); f = t - i0;
+          if (i0 >= 0 && i0 + 1 < ns) out[j * n + i] += w * ((1 - f) * q[i0] + f * q[i0 + 1]);
+        }
+      }
+    }
+    return out;
+  }
+  // ---- 위젯 도우미
+  function image(w, h, val) {                          // val(i, j) → 0~1 회색 또는 [r, g, b]
+    var cv = document.createElement('canvas'), ctx, im, i, j, g, k;
+    cv.width = w; cv.height = h; ctx = cv.getContext('2d'); im = ctx.createImageData(w, h);
+    for (j = 0; j < h; j++) for (i = 0; i < w; i++) {
+      g = val(i, j); k = 4 * (j * w + i);
+      if (typeof g === 'number') {
+        g = Math.round(255 * Math.max(0, Math.min(1, g)));
+        im.data[k] = im.data[k + 1] = im.data[k + 2] = g;
+      } else { im.data[k] = g[0]; im.data[k + 1] = g[1]; im.data[k + 2] = g[2]; }
+      im.data[k + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+  var BTN = 'font-size:.86rem;padding:.25rem .8rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer';
+  function styleButtons(root) { var b = root.querySelectorAll('button[data-ui]'), i; for (i = 0; i < b.length; i++) b[i].style.cssText = BTN; }
+  function paint(btn, on) {
+    btn.style.background = on ? 'var(--accent-bg)' : 'var(--card)';
+    btn.style.borderColor = on ? 'var(--accent)' : 'var(--rule)';
+    btn.style.fontWeight = on ? '700' : '400';
+  }
+  function onShow(el, fn) {                            // 이 페이지가 처음 열릴 때 한 번 실행한다
+    var sec = el.closest('.screen');
+    if (sec.classList.contains('is-active')) fn();
+    else new MutationObserver(function (_, ob) { if (sec.classList.contains('is-active')) { ob.disconnect(); fn(); } }).observe(sec, { attributes: true, attributeFilter: ['class'] });
+  }
+  function fx(v, dec) { return v.toFixed(dec).replace('-', '−'); }   // 음수는 유니코드 마이너스로
+  return { PI: PI, SL: SL, HALF: HALF, ellMu: ellMu, ellP: ellP, fanVal: fanVal, fanData: fanData, parData: parData, rebin: rebin, filterRow: filterRow, fbp: fbp, hRL: hRL,
+           image: image, styleButtons: styleButtons, paint: paint, onShow: onShow, fx: fx };
+})();
+</script>
+<script>
+(function () {
+  var r = window.r10, D = 3, GM = 22, NS = 151, sm = D * Math.sin(GM * Math.PI / 180);
+  function build() {
+    var P = [], F = [], k, n, pm = 0, v, row;
+    for (k = 0; k < 180; k++) {
+      row = new Float64Array(NS);
+      for (n = 0; n < NS; n++) { row[n] = r.ellP(k * Math.PI / 180, (n - 75) * 2 * sm / 150); if (row[n] > pm) pm = row[n]; }
+      P.push(row);
+    }
+    for (k = 0; k < 360; k++) {
+      row = new Float64Array(NS);
+      for (n = 0; n < NS; n++) { row[n] = r.fanVal(D, k * Math.PI / 180, (n - 75) * 2 * GM / 150 * Math.PI / 180); if (row[n] > pm) pm = row[n]; }
+      F.push(row);
+    }
+    document.getElementById('r10s-p').setAttribute('href', r.image(NS, 180, function (i, j) { return P[j][i] / pm; }));
+    document.getElementById('r10s-f').setAttribute('href', r.image(NS, 360, function (i, j) { return F[j][i] / pm; }));
+  }
+  r.onShow(document.getElementById('r10s-p'), build);
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 6 -->
+<section class="screen" data-title="같은 직선의 두 측정">
+  <p class="kicker">7장 · 페이지 6</p>
+  <h2>같은 직선의 두 측정</h2>
+
+  <p>3장 페이지 9에서 평행빔의 \((\theta, s)\)와 \((\theta + \pi,\ -s)\)는 같은 직선이었습니다. 팬빔에서는 같은 직선을 재는 두 광선이 어떤 \((\beta, \gamma)\)일까요? 아래 그림과 식으로 답을 구합니다(심화 페이지 5의 sinogram 그림에서는 이 답이 점선 평행사변형으로 보입니다).</p>
+
+  <h3>한 직선과 선원 궤도의 두 교점</h3>
+
+  <p>선원은 O를 중심으로 반지름 \(D\)인 원 위를 돕니다. 이 원 안으로 들어오는 직선은 원과 두 점에서 만납니다. 선원이 한 교점 S에 있을 때 직선을 따라 나가는 광선이 이 직선을 재고, 선원이 다른 교점 S′에 있을 때 반대 방향으로 나가는 광선이 같은 직선을 한 번 더 잽니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="선원이 도는 원 위의 두 점 S와 S′. 주황 직선은 S에서 팬 각 20도로 나가 원을 다시 만나는 S′까지 이어진다. S의 선원 각은 30도이고 S′의 선원 각은 250도이다. 같은 직선이 선원 원과 만나는 두 점이 같은 직선을 재는 두 선원 위치이다. 초록 선은 O에서 직선까지의 거리 s">
+      <defs>
+        <marker id="r10f-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r10f-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="r10f-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <circle cx="143" cy="150" r="108" fill="none" stroke-width="1" stroke-dasharray="4 4" style="stroke:var(--muted)"/>
+      <path d="M21 150 H265 M143 272 V28" fill="none" stroke-width="1" opacity=".5" style="stroke:var(--muted)"/>
+      <circle cx="143" cy="150" r="36" fill="none" stroke-width="1" stroke-dasharray="3 3" opacity=".55" style="stroke:var(--muted)"/>
+      <path d="M89.0 56.5 L244.5 186.9" fill="none" stroke-width="1" style="stroke:var(--warn)"/>
+      <path d="M93.6 60.3 L186.7 138.4" fill="none" stroke-width="2.4" style="stroke:var(--warn)" marker-end="url(#r10f-wa)"/>
+      <path d="M239.9 183.1 L146.8 105.0" fill="none" stroke-width="2.4" stroke-dasharray="6 4" style="stroke:var(--warn)" marker-end="url(#r10f-wa)"/>
+      <path d="M143 150 L166.7 121.7" fill="none" stroke-width="2.2" style="stroke:var(--good)"/>
+      <circle cx="89.0" cy="56.5" r="5.5" class="svg-fg"/>
+      <circle cx="244.5" cy="186.9" r="5.5" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <circle cx="143" cy="150" r="3" class="svg-fg"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="11.0" y="54.5">S (β = 30°)</text>
+        <text x="254.5" y="200.9" style="fill:var(--warn)">S′ (β′ = 250°)</text>
+        <text x="129" y="166" text-anchor="end">O</text>
+        <text x="160.9" y="149.9" style="fill:var(--good)">s</text>
+        <text x="271" y="154" class="svg-muted">x</text><text x="149" y="24" class="svg-muted">y</text>
+        <text x="330" y="56" font-weight="700">같은 직선을 재는 두 선원 위치</text>
+        <text x="330" y="84">S: 선원 각 β = 30°, 팬 각 γ = 20°</text>
+        <text x="330" y="104" style="fill:var(--warn)">S′: 선원 각 β′ = β + 180° + 2γ = 250°,</text>
+        <text x="330" y="122" style="fill:var(--warn)">    팬 각 γ′ = −γ = −20°</text>
+        <text x="330" y="154" class="svg-muted">S′는 주황 직선이 선원이 도는 원과</text>
+        <text x="330" y="172" class="svg-muted">다시 만나는 점이다.</text>
+        <text x="330" y="204" class="svg-muted">S에서 S′ 쪽으로 나가는 광선(실선)과</text>
+        <text x="330" y="222" class="svg-muted">S′에서 S 쪽으로 나가는 광선(점선)은</text>
+        <text x="330" y="240" class="svg-muted">방향만 반대인 같은 직선이다.</text>
+      </g>
+    </svg>
+    <figcaption>선원 궤도(점선 원)와 만나는 주황 직선의 두 교점이 S와 S′입니다. S에서 나간 광선(실선 화살표)과 S′에서 나간 광선(점선 화살표)은 방향만 반대인 같은 직선이고, 초록 선은 O에서 이 직선까지의 거리 \(s\)입니다. 점선 원 안쪽의 작은 점선 원은 물체가 놓이는 영역입니다.</figcaption>
+  </figure>
+
+  <h3>두 측정의 좌표</h3>
+
+  <p>그림의 S′은 선원 각 \(\beta + \pi + 2\gamma\)에 있고, S′에서 이 직선으로 나가는 광선의 팬 각은 \(-\gamma\)입니다. 곧 선원 각 \(\beta\), 팬 각 \(\gamma\)인 광선과 같은 직선을 재는 다른 광선은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[(\beta,\ \gamma)\ \longleftrightarrow\ (\beta + \pi + 2\gamma,\ -\gamma)\]</p>
+
+  <p>페이지 4의 대응식에 넣어 확인합니다. 새 광선의 \(\theta' = (\beta + \pi + 2\gamma) + (-\gamma) = \theta + \pi\)이고 \(s' = D\sin(-\gamma) = -s\)입니다. 3장 페이지 9의 대칭 \(p(\theta + \pi, -s) = p(\theta, s)\)에 따라 두 광선은 같은 직선이므로, 이상적인 데이터에서는 두 측정값이 같습니다.</p>
+
+  <p style="text-align:center">\[R_{\beta + \pi + 2\gamma}(-\gamma) = R_\beta(\gamma)\]</p>
+
+  <h3>평행빔과 다른 점</h3>
+
+  <p>평행빔에서는 같은 직선을 재는 두 각도의 차이가 항상 \(\pi\)였습니다. 팬빔에서는 두 선원 각의 차이가 \(\pi + 2\gamma\)이고, 팬 각 \(\gamma\)가 광선마다 다르므로 차이도 광선마다 다릅니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>첫 측정 \((\beta, \gamma)\)</th><th>같은 직선의 다른 측정 \((\beta + \pi + 2\gamma,\ -\gamma)\)</th><th>선원 각의 차이</th></tr>
+      <tr><td>\((30^{\circ},\ 20^{\circ})\)</td><td>\((250^{\circ},\ -20^{\circ})\)</td><td>\(220^{\circ} = 180^{\circ} + 40^{\circ}\)</td></tr>
+      <tr><td>\((30^{\circ},\ 0^{\circ})\)</td><td>\((210^{\circ},\ 0^{\circ})\)</td><td>\(180^{\circ}\)</td></tr>
+      <tr><td>\((30^{\circ},\ -20^{\circ})\)</td><td>\((170^{\circ},\ 20^{\circ})\)</td><td>\(140^{\circ} = 180^{\circ} - 40^{\circ}\)</td></tr>
+    </table>
+  </div>
+
+  <p>이 차이 때문에 두 가지 결과가 나옵니다.</p>
+
+  <ul>
+    <li><b>선원을 \(180^{\circ}\)만 돌리면 측정되지 않는 직선이 남습니다.</b> 중심 광선(\(\gamma = 0\))의 짝은 정확히 \(180^{\circ}\) 뒤에 있지만, 다른 광선의 짝은 \(2\gamma\)만큼 어긋나 있어서 \(180^{\circ}\) 범위 밖에 놓일 수 있습니다.</li>
+    <li><b>선원을 \(360^{\circ}\) 돌리면 팬이 덮는 모든 직선을 정확히 두 번씩 잽니다.</b> 360° 스캔의 재구성 식에 \(\tfrac{1}{2}\)이 붙는 이유입니다. 독립인 잡음이 섞였다면 두 측정을 평균해 잡음의 표준편차를 \(1/\sqrt{2}\)배로 줄일 수 있습니다(3장 페이지 9).</li>
+  </ul>
+
+  <h3>sinogram에서의 모양</h3>
+
+  <p>짝을 찾는 변환 \((\gamma, \beta) \to (-\gamma,\ \beta + \pi + 2\gamma)\)는 팬빔 sinogram 위에서 \(\gamma\)의 부호를 뒤집고 \(\beta\)를 \(\pi + 2\gamma\)만큼 옮깁니다. 이 변환을 거친 점의 좌표 \((\gamma', \beta')\)은 \(\gamma' = -\gamma\)이고 \(\beta' + \gamma' = \theta + \pi\)입니다. 위 표의 세 광선이 그 예입니다.</p>
+
+  <p>이 절의 나머지는 심화 페이지 5의 sinogram 그림(파란 평행사변형과 점선 평행사변형)으로 이 변환을 읽어 보는 내용입니다. 페이지 5를 건너뛰었다면 넘어가도 됩니다. 그 그림의 점선 평행사변형은 파란 평행사변형을 \(\beta\) 방향으로 \(180^{\circ}\) 옮긴 모양입니다.</p>
+
+  <p>파란 직사각형은 \(|s| \le 0.4D\)로 \(s = 0\)에 대해 대칭이어서, \(\gamma'\)의 범위가 \(\gamma\)의 범위와 같습니다. \(\theta\) 범위는 \(180^{\circ}\) 옮겨지므로, 짝이 놓이는 곳은 파란 평행사변형을 \(\beta\) 방향으로 \(180^{\circ}\) 옮긴 평행사변형입니다. 다만 꼭짓점 하나하나의 짝은 좌우가 바뀝니다. 페이지 5 그림에서 A의 짝 A′은 점선 도형의 오른쪽 위 꼭짓점이며, B–B′, C–C′, D–D′도 같은 방식으로 \(\gamma\)의 부호가 뒤집힌 자리에 놓입니다.
+  \(s\) 범위가 대칭이 아니면 이렇게 되지 않습니다. 예를 들어 페이지 5의 주황 직사각형(\(-28^{\circ} \le \gamma \le -10^{\circ}\))의 짝은 \(10^{\circ} \le \gamma' \le 28^{\circ}\)에 놓여서, \(\beta\) 방향의 평행이동만으로는 겹치지 않습니다.</p>
+
+  <div class="box note">
+    <p class="box-t">뒷장에서 다루는 것</p>
+    <p>이 두 측정이 필요한 선원 회전 범위를 어떻게 정하는지, 두 측정을 어떤 비중으로 합치는지는 <span class="later">10장과 11장에서 다룹니다</span>. 이 장에서는 두 측정이 있다는 사실과 좌표만 씁니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 7 -->
+<section class="screen" data-title="팬빔 기하 탐색">
+  <p class="kicker">7장 · 페이지 7 · 심화</p>
+  <h2>팬빔 기하 탐색</h2>
+
+  <p>페이지 2~6에서 본 관계를 한 화면에서 움직여 봅니다. 선원 각 \(\beta\)와 팬 각 \(\gamma\)를 고르면, 같은 광선이 세 곳에 나타납니다. 왼쪽은 팬빔 기하, 가운데는 평행빔 sinogram(\(\theta\)는 \(0^{\circ}\)~\(180^{\circ}\)), 오른쪽은 팬빔 sinogram입니다. 이 위젯은 \(D = 3\) cm, \(\mathrm{SDD} = 5\) cm, 팬 반각 \(\gamma_m = 30^{\circ}\)입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 372" role="img" aria-label="왼쪽은 선원과 팬, 검출기(곡면 또는 평면), 고른 광선(주황), O에서 그 광선에 내린 수선(초록), 같은 직선을 다시 재는 선원 위치가 속이 빈 주황 원으로 보임. 가운데는 가로 s, 세로 θ(0도에서 180도, 위에서 아래로)의 평행빔 sinogram 평면에 현재 선원 각의 광선들이 그리는 곡선과 고른 광선의 점. 오른쪽은 가로 γ, 세로 β(0도에서 360도)의 팬빔 sinogram 평면에 현재 선원 각의 행과 고른 광선의 점, 그리고 같은 직선을 재는 짝의 점이 속이 빈 원으로 보임">
+      <defs><clipPath id="r10w-clip"><rect x="6" y="30" width="262" height="262"/></clipPath></defs>
+      <rect x="6" y="30" width="262" height="262" fill="none" stroke-width="1" style="stroke:var(--rule)"/>
+      <g clip-path="url(#r10w-clip)">
+        <path d="M6 161 H268 M137 30 V292" fill="none" stroke-width="1" opacity=".5" style="stroke:var(--muted)"/>
+        <circle cx="137" cy="161" r="108" fill="none" stroke-width="1" stroke-dasharray="4 4" style="stroke:var(--muted)"/>
+        <circle cx="137" cy="161" r="36" fill="none" stroke-width="1" stroke-dasharray="3 3" opacity=".55" style="stroke:var(--muted)"/>
+        <path id="r10w-fan" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+        <path id="r10w-cen" fill="none" stroke-width="1" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+        <path id="r10w-det" fill="none" stroke-width="3" style="stroke:var(--muted)"/>
+        <g id="r10w-cells" style="fill:var(--accent)"></g>
+        <path id="r10w-ray2" fill="none" stroke-width="1.6" stroke-dasharray="6 4" style="stroke:var(--warn)"/>
+        <path id="r10w-ray" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+        <path id="r10w-nrm" fill="none" stroke-width="2.2" style="stroke:var(--good)"/>
+        <circle id="r10w-src2" r="5" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+        <circle id="r10w-src" r="5.5" class="svg-fg"/>
+        <circle cx="137" cy="161" r="3" class="svg-fg"/>
+        <g font-size="11.5">
+          <text id="r10w-lS" class="svg-fg">S</text>
+          <text id="r10w-lS2" style="fill:var(--warn)">S′</text>
+          <text id="r10w-ls" style="fill:var(--good)">s</text>
+          <text x="124" y="177" class="svg-fg">O</text>
+        </g>
+      </g>
+      <rect x="316" y="60" width="130" height="135" fill="none" stroke-width="1" style="stroke:var(--rule)"/>
+      <path d="M381 60 V195 M316 127.5 H446" fill="none" stroke-width="1" opacity=".35" style="stroke:var(--muted)"/>
+      <path id="r10w-cv" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <circle id="r10w-pt2" r="8" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+      <circle id="r10w-pt" r="4.5" style="fill:var(--good)"/>
+      <rect x="500" y="60" width="130" height="270" fill="none" stroke-width="1" style="stroke:var(--rule)"/>
+      <path d="M565 60 V330 M500 127.5 H630 M500 195 H630 M500 262.5 H630" fill="none" stroke-width="1" opacity=".35" style="stroke:var(--muted)"/>
+      <g id="r10w-ticks" style="stroke:var(--accent)" stroke-width="1.4"></g>
+      <path id="r10w-row" fill="none" stroke-width="1.4" style="stroke:var(--warn)"/>
+      <circle id="r10w-f2" r="5" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <circle id="r10w-f1" r="4.5" style="fill:var(--good)"/>
+      <g font-size="12" class="svg-fg" text-anchor="middle" font-weight="700">
+        <text x="137" y="22">팬빔 기하 (D = 3 cm)</text><text x="381" y="22">평행빔 sinogram</text><text x="565" y="22">팬빔 sinogram</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="middle">
+        <text x="381" y="40">가로 s, 세로 θ</text><text x="565" y="40">가로 γ, 세로 β</text>
+        <text x="316" y="210">−1.5</text><text x="381" y="210">0</text><text x="446" y="210">1.5</text><text x="381" y="224">s (cm)</text>
+        <text x="500" y="346">−30°</text><text x="565" y="346">0</text><text x="630" y="346">30°</text><text x="565" y="360">γ</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="end">
+        <text x="310" y="64">0°</text><text x="310" y="131">90°</text><text x="310" y="199">180°</text>
+        <text x="494" y="64">0°</text><text x="494" y="131">90°</text><text x="494" y="199">180°</text><text x="494" y="266">270°</text><text x="494" y="334">360°</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽: 진한 점 S가 선원, 회색 선이 팬의 양 끝(\(\gamma = \pm 30^{\circ}\)), 회색 굵은 선이 검출기, 파란 점이 검출기 칸 13개의 위치, 주황 실선이 고른 광선입니다. 초록 선은 O에서 그 광선에 내린 수선이며 길이가 \(|s|\)입니다. 속이 빈 주황 원 S′은 같은 직선을 다시 재는 선원 위치입니다.
+    가운데: 주황 곡선은 지금 선원 위치의 모든 광선이 평행빔 sinogram에서 놓이는 곳이고, 초록 점은 고른 광선입니다. \(\theta \ge 180^{\circ}\)인 광선은 \((\theta - 180^{\circ},\ -s)\)로 옮겨 그렸습니다(3장 페이지 9). 속이 빈 원은 S′의 측정이 놓이는 곳으로, 같은 직선이므로 초록 점과 같은 자리입니다.
+    오른쪽: 주황 가로선이 현재 선원 위치의 투영(행 하나)이고, 초록 점이 고른 광선, 속이 빈 주황 원이 같은 직선의 다른 측정입니다. 위쪽 파란 눈금이 검출기 칸의 \(\gamma\) 위치입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="r10w-b">선원 각 β</label>
+    <input id="r10w-b" type="range" min="0" max="359" step="1" value="40" style="width:10rem">
+    <b id="r10w-b-val">40°</b>
+    <label for="r10w-g">팬 각 γ</label>
+    <input id="r10w-g" type="range" min="-30" max="30" step="1" value="12" style="width:8rem">
+    <b id="r10w-g-val">12°</b>
+  </div>
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.5rem">
+    <span>검출기</span>
+    <button type="button" data-ui id="r10w-bc">곡면 검출기</button>
+    <button type="button" data-ui id="r10w-bf">평면 검출기</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r10w-note"></p>
+
+<script>
+(function () {
+  var r = window.r10, R = Math.PI / 180, D = 3, SDD = 5, GM = 30, NC = 6, cx = 137, cy = 161, K = 36, type = 'curved';
+  function el(id) { return document.getElementById(id); }
+  function LX(x) { return cx + K * x; }
+  function LY(y) { return cy - K * y; }
+  function pt(x, y) { return LX(x).toFixed(1) + ' ' + LY(y).toFixed(1); }
+  function mod(a) { return ((a % 360) + 360) % 360; }
+  function MX(s) { return 316 + (s + 1.5) / 3 * 130; }
+  function MY(th) { return 60 + th * 0.75; }
+  function FX(g) { return 500 + (g + GM) / (2 * GM) * 130; }
+  function FY(b) { return 60 + b * 0.75; }
+  function src(b) { return [-D * Math.sin(b * R), D * Math.cos(b * R)]; }
+  function dir(b, g) { var a = (b + g) * R; return [Math.sin(a), -Math.cos(a)]; }
+  function rayLen(g) { return type === 'curved' ? SDD : SDD / Math.cos(g * R); }          // 선원에서 검출기까지의 광선 길이
+  function cellGamma(i) { return type === 'curved' ? i * GM / NC : Math.atan(SDD * Math.tan(GM * R) * i / NC / SDD) / R; }   // 칸 i 의 팬 각(도)
+  function wrapped(b, g) {                       // 광선 (β, γ) 의 평행빔 sinogram 위치. θ 는 0~180° 로 접는다
+    var th = mod(b + g), s = D * Math.sin(g * R);
+    return th >= 180 ? [th - 180, -s] : [th, s];
+  }
+  function curve(b) {
+    var d = '', prev = null, g, w;
+    for (g = -GM; g <= GM; g += 0.5) {
+      w = wrapped(b, g);
+      d += (prev === null || Math.abs(w[0] - prev) > 60 ? 'M' : 'L') + MX(w[1]).toFixed(1) + ' ' + MY(w[0]).toFixed(1) + ' ';
+      prev = w[0];
+    }
+    return d;
+  }
+  var bs = el('r10w-b'), gs = el('r10w-g'), bc = el('r10w-bc'), bf = el('r10w-bf');
+  function draw() {
+    var b = +bs.value, g = +gs.value, S = src(b), i, k, fan = '', e, d, l, ticks = '', cells = '', cg, p, d0 = dir(b, 0), et = [Math.cos(b * R), Math.sin(b * R)];
+    el('r10w-b-val').textContent = b + '°'; el('r10w-g-val').textContent = r.fx(g, 0) + '°';
+    [-GM, GM].forEach(function (e2) { d = dir(b, e2); l = rayLen(e2); fan += 'M' + pt(S[0], S[1]) + ' L' + pt(S[0] + l * d[0], S[1] + l * d[1]) + ' '; });
+    el('r10w-fan').setAttribute('d', fan);
+    el('r10w-cen').setAttribute('d', 'M' + pt(S[0], S[1]) + ' L' + pt(S[0] + SDD * d0[0], S[1] + SDD * d0[1]));
+    var det = '';
+    if (type === 'curved') {
+      for (k = -GM; k <= GM; k += 1) { d = dir(b, k); det += (k === -GM ? 'M' : 'L') + pt(S[0] + SDD * d[0], S[1] + SDD * d[1]) + ' '; }
+    } else {
+      var c = [S[0] + SDD * d0[0], S[1] + SDD * d0[1]], w = SDD * Math.tan(GM * R);
+      det = 'M' + pt(c[0] - w * et[0], c[1] - w * et[1]) + ' L' + pt(c[0] + w * et[0], c[1] + w * et[1]);
+    }
+    el('r10w-det').setAttribute('d', det);
+    for (i = -NC; i <= NC; i++) {
+      cg = cellGamma(i); d = dir(b, cg); l = rayLen(cg);
+      cells += '<circle cx="' + LX(S[0] + l * d[0]).toFixed(1) + '" cy="' + LY(S[1] + l * d[1]).toFixed(1) + '" r="2.8"/>';
+      ticks += '<path d="M' + FX(cg).toFixed(1) + ' 52 V60"/>';
+    }
+    el('r10w-cells').innerHTML = cells; el('r10w-ticks').innerHTML = ticks;
+    d = dir(b, g); l = rayLen(g);
+    el('r10w-ray').setAttribute('d', 'M' + pt(S[0], S[1]) + ' L' + pt(S[0] + l * d[0], S[1] + l * d[1]));
+    var th = mod(b + g), s = D * Math.sin(g * R), t = D * Math.tan(g * R), n = [Math.cos(th * R), Math.sin(th * R)];
+    el('r10w-nrm').setAttribute('d', 'M' + pt(0, 0) + ' L' + pt(s * n[0], s * n[1]));
+    var b2 = mod(b + 180 + 2 * g), S2 = src(b2), d2 = dir(b2, -g), l2 = rayLen(-g);
+    el('r10w-ray2').setAttribute('d', 'M' + pt(S2[0], S2[1]) + ' L' + pt(S2[0] + l2 * d2[0], S2[1] + l2 * d2[1]));
+    el('r10w-src').setAttribute('cx', LX(S[0])); el('r10w-src').setAttribute('cy', LY(S[1]));
+    el('r10w-src2').setAttribute('cx', LX(S2[0])); el('r10w-src2').setAttribute('cy', LY(S2[1]));
+    function lab(id, x, y) { el(id).setAttribute('x', (LX(x) - 5).toFixed(1)); el(id).setAttribute('y', (LY(y) + 4).toFixed(1)); }
+    lab('r10w-lS', 1.2 * S[0], 1.2 * S[1]); lab('r10w-lS2', 1.2 * S2[0], 1.2 * S2[1]);
+    var sl = Math.abs(s) < 0.2 ? 0.3 : 0.5 * s;
+    lab('r10w-ls', sl * n[0] - 0.25 * n[1] * (s < 0 ? -1 : 1), sl * n[1] + 0.25 * n[0] * (s < 0 ? -1 : 1));
+    el('r10w-ls').style.display = Math.abs(s) < 0.08 ? 'none' : '';
+    el('r10w-cv').setAttribute('d', curve(b));
+    var w1 = wrapped(b, g);
+    el('r10w-pt').setAttribute('cx', MX(w1[1])); el('r10w-pt').setAttribute('cy', MY(w1[0]));
+    el('r10w-pt2').setAttribute('cx', MX(w1[1])); el('r10w-pt2').setAttribute('cy', MY(w1[0]));
+    el('r10w-row').setAttribute('d', 'M500 ' + FY(b).toFixed(1) + ' H630');
+    el('r10w-f1').setAttribute('cx', FX(g)); el('r10w-f1').setAttribute('cy', FY(b));
+    el('r10w-f2').setAttribute('cx', FX(-g)); el('r10w-f2').setAttribute('cy', FY(b2));
+    var real = type === 'curved' ? '곡면 검출기의 호 길이 SDD·γ = ' + r.fx(SDD * g * R, 2) + ' cm' : '평면 검출기의 위치 SDD·tanγ = ' + r.fx(SDD * Math.tan(g * R), 2) + ' cm';
+    el('r10w-note').textContent = 'θ = β + γ = ' + th + '°,  s = D sinγ = ' + r.fx(s, 2) + ' cm,  t = D tanγ = ' + r.fx(t, 2) + ' cm  ·  ' + real +
+      '  ·  같은 직선의 다른 측정: β′ = ' + b2 + '°, γ′ = ' + r.fx(-g, 0) + '°';
+    r.paint(bc, type === 'curved'); r.paint(bf, type === 'flat');
+  }
+  r.styleButtons(el('r10w-bc').parentNode);
+  bs.addEventListener('input', draw); gs.addEventListener('input', draw);
+  bc.addEventListener('click', function () { type = 'curved'; draw(); });
+  bf.addEventListener('click', function () { type = 'flat'; draw(); });
+  draw();
+})();
+</script>
+
+  <ul>
+    <li><b>팬 각을 움직이면</b> 가운데와 오른쪽의 초록 점이 함께 움직입니다. 가운데 점은 주황 곡선 위를, 오른쪽 점은 주황 가로선 위를 움직입니다.</li>
+    <li><b>선원 각을 움직이면</b> 가운데의 주황 곡선 전체가 세로로 이동하고, 오른쪽의 가로선도 같이 내려갑니다. 한 선원 위치의 투영은 평행빔 sinogram에서 한 행이 아니라 곡선 하나입니다.</li>
+    <li><b>속이 빈 주황 원(S′)을 보면</b> 가운데에서는 초록 점과 같은 자리에 있고, 오른쪽에서는 다른 자리에 있습니다. 같은 직선이 평행빔 sinogram에서는 한 점이고 팬빔 sinogram에서는 두 점이라는 뜻입니다.</li>
+    <li><b>검출기 종류를 바꾸면</b> 파란 점의 위치가 달라집니다. 곡면 검출기는 오른쪽 위의 파란 눈금이 고르게 놓이고, 평면 검출기는 가장자리로 갈수록 눈금이 촘촘해집니다(페이지 3).</li>
+  </ul>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 8 -->
+<section class="screen" data-title="팬빔을 평행빔처럼: rebinning">
+  <p class="kicker">7장 · 페이지 8</p>
+  <h2>팬빔 데이터를 평행빔처럼 바꿔 쓰기: rebinning</h2>
+
+  <p>페이지 4에서 팬빔 측정값 하나하나가 평행빔 sinogram의 한 점과 같은 값이라는 것을 보았습니다. 그렇다면 팬빔 데이터를 평행빔 sinogram의 격자에 옮겨 놓고, 6장의 평행빔 FBP를 그대로 쓸 수 있지 않을까요?</p>
+
+  <h3>재배열의 계산</h3>
+
+  <p>평행빔 FBP에는 \(\theta\)와 \(s\)가 고른 간격으로 놓인 격자의 값이 필요합니다. 격자점 \((\theta, s)\)마다 페이지 4의 역대응으로 그 직선을 잰 팬빔 광선을 찾을 수 있습니다.</p>
+
+  <p style="text-align:center">\[\gamma = \arcsin\frac{s}{D},\qquad \beta = \theta - \gamma,\qquad t = D\tan\gamma\]</p>
+
+  <p>문제는 이렇게 구한 \((\beta, t)\)가 대부분 실제로 측정한 위치와 일치하지 않는다는 것입니다. 측정은 정해진 선원 각과 검출기 칸에서만 했으므로, 격자점의 값은 이웃한 측정값을 보간해서 얻습니다.
+  이처럼 팬빔 측정값을 평행빔 좌표의 격자로 옮겨 놓는 일을 rebinning(<span class="term" data-term="rebinning">재배열</span>)이라고 합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 372" role="img" aria-label="가로 s, 세로 θ(위에서 아래로) 평면. 주황 곡선은 선원 각 15도 간격의 팬빔 투영이고 곡선 위의 주황 점이 측정값. 파란 십자는 평행빔 FBP에 필요한 고른 격자점으로, 대부분 주황 점과 겹치지 않음">
+      <rect x="200.0" y="40.0" width="240" height="288.0" fill="none" stroke-width="1" style="stroke:var(--rule)"/>
+      <path d="M320.0 40.0 V328.0" fill="none" stroke-width="1" opacity=".4" style="stroke:var(--muted)"/>
+      <path d="M320.0 40.0 L325.2 42.4 L330.5 44.8 L335.7 47.2 L340.9 49.6 L346.1 52.0 L351.4 54.4 L356.6 56.8 L361.8 59.2 L366.9 61.6 L372.1 64.0 L377.2 66.4 L382.4 68.8 L387.5 71.2 L392.6 73.6 L397.6 76.0 L402.7 78.4 L407.7 80.8 L412.7 83.2 L417.7 85.6 L422.6 88.0 M242.4 40.0 L247.4 42.4 L252.5 44.8 L257.6 47.2 L262.8 49.6 L267.9 52.0 L273.1 54.4 L278.2 56.8 L283.4 59.2 L288.6 61.6 L293.9 64.0 L299.1 66.4 L304.3 68.8 L309.5 71.2 L314.8 73.6 L320.0 76.0 L325.2 78.4 L330.5 80.8 L335.7 83.2 L340.9 85.6 L346.1 88.0 L351.4 90.4 L356.6 92.8 L361.8 95.2 L366.9 97.6 L372.1 100.0 L377.2 102.4 L382.4 104.8 L387.5 107.2 L392.6 109.6 L397.6 112.0 L402.7 114.4 L407.7 116.8 L412.7 119.2 L417.7 121.6 L422.6 124.0 M217.4 64.0 L222.3 66.4 L227.3 68.8 L232.3 71.2 L237.3 73.6 L242.4 76.0 L247.4 78.4 L252.5 80.8 L257.6 83.2 L262.8 85.6 L267.9 88.0 L273.1 90.4 L278.2 92.8 L283.4 95.2 L288.6 97.6 L293.9 100.0 L299.1 102.4 L304.3 104.8 L309.5 107.2 L314.8 109.6 L320.0 112.0 L325.2 114.4 L330.5 116.8 L335.7 119.2 L340.9 121.6 L346.1 124.0 L351.4 126.4 L356.6 128.8 L361.8 131.2 L366.9 133.6 L372.1 136.0 L377.2 138.4 L382.4 140.8 L387.5 143.2 L392.6 145.6 L397.6 148.0 L402.7 150.4 L407.7 152.8 L412.7 155.2 L417.7 157.6 L422.6 160.0 M217.4 100.0 L222.3 102.4 L227.3 104.8 L232.3 107.2 L237.3 109.6 L242.4 112.0 L247.4 114.4 L252.5 116.8 L257.6 119.2 L262.8 121.6 L267.9 124.0 L273.1 126.4 L278.2 128.8 L283.4 131.2 L288.6 133.6 L293.9 136.0 L299.1 138.4 L304.3 140.8 L309.5 143.2 L314.8 145.6 L320.0 148.0 L325.2 150.4 L330.5 152.8 L335.7 155.2 L340.9 157.6 L346.1 160.0 L351.4 162.4 L356.6 164.8 L361.8 167.2 L366.9 169.6 L372.1 172.0 L377.2 174.4 L382.4 176.8 L387.5 179.2 L392.6 181.6 L397.6 184.0 L402.7 186.4 L407.7 188.8 L412.7 191.2 L417.7 193.6 L422.6 196.0 M217.4 136.0 L222.3 138.4 L227.3 140.8 L232.3 143.2 L237.3 145.6 L242.4 148.0 L247.4 150.4 L252.5 152.8 L257.6 155.2 L262.8 157.6 L267.9 160.0 L273.1 162.4 L278.2 164.8 L283.4 167.2 L288.6 169.6 L293.9 172.0 L299.1 174.4 L304.3 176.8 L309.5 179.2 L314.8 181.6 L320.0 184.0 L325.2 186.4 L330.5 188.8 L335.7 191.2 L340.9 193.6 L346.1 196.0 L351.4 198.4 L356.6 200.8 L361.8 203.2 L366.9 205.6 L372.1 208.0 L377.2 210.4 L382.4 212.8 L387.5 215.2 L392.6 217.6 L397.6 220.0 L402.7 222.4 L407.7 224.8 L412.7 227.2 L417.7 229.6 L422.6 232.0 M217.4 172.0 L222.3 174.4 L227.3 176.8 L232.3 179.2 L237.3 181.6 L242.4 184.0 L247.4 186.4 L252.5 188.8 L257.6 191.2 L262.8 193.6 L267.9 196.0 L273.1 198.4 L278.2 200.8 L283.4 203.2 L288.6 205.6 L293.9 208.0 L299.1 210.4 L304.3 212.8 L309.5 215.2 L314.8 217.6 L320.0 220.0 L325.2 222.4 L330.5 224.8 L335.7 227.2 L340.9 229.6 L346.1 232.0 L351.4 234.4 L356.6 236.8 L361.8 239.2 L366.9 241.6 L372.1 244.0 L377.2 246.4 L382.4 248.8 L387.5 251.2 L392.6 253.6 L397.6 256.0 L402.7 258.4 L407.7 260.8 L412.7 263.2 L417.7 265.6 L422.6 268.0 M217.4 208.0 L222.3 210.4 L227.3 212.8 L232.3 215.2 L237.3 217.6 L242.4 220.0 L247.4 222.4 L252.5 224.8 L257.6 227.2 L262.8 229.6 L267.9 232.0 L273.1 234.4 L278.2 236.8 L283.4 239.2 L288.6 241.6 L293.9 244.0 L299.1 246.4 L304.3 248.8 L309.5 251.2 L314.8 253.6 L320.0 256.0 L325.2 258.4 L330.5 260.8 L335.7 263.2 L340.9 265.6 L346.1 268.0 L351.4 270.4 L356.6 272.8 L361.8 275.2 L366.9 277.6 L372.1 280.0 L377.2 282.4 L382.4 284.8 L387.5 287.2 L392.6 289.6 L397.6 292.0 L402.7 294.4 L407.7 296.8 L412.7 299.2 L417.7 301.6 L422.6 304.0 M217.4 244.0 L222.3 246.4 L227.3 248.8 L232.3 251.2 L237.3 253.6 L242.4 256.0 L247.4 258.4 L252.5 260.8 L257.6 263.2 L262.8 265.6 L267.9 268.0 L273.1 270.4 L278.2 272.8 L283.4 275.2 L288.6 277.6 L293.9 280.0 L299.1 282.4 L304.3 284.8 L309.5 287.2 L314.8 289.6 L320.0 292.0 L325.2 294.4 L330.5 296.8 L335.7 299.2 L340.9 301.6 L346.1 304.0 L351.4 306.4 L356.6 308.8 L361.8 311.2 L366.9 313.6 L372.1 316.0 L377.2 318.4 L382.4 320.8 L387.5 323.2 L392.6 325.6 L397.6 328.0" fill="none" stroke-width="1.2" style="stroke:var(--warn)"/>
+      <g style="fill:var(--warn)"><circle cx="320.0" cy="40.0" r="3"/><circle cx="354.8" cy="56.0" r="3"/><circle cx="388.2" cy="71.5" r="3"/><circle cx="419.1" cy="86.3" r="3"/><circle cx="251.8" cy="44.5" r="3"/><circle cx="285.2" cy="60.0" r="3"/><circle cx="320.0" cy="76.0" r="3"/><circle cx="354.8" cy="92.0" r="3"/><circle cx="388.2" cy="107.5" r="3"/><circle cx="419.1" cy="122.3" r="3"/><circle cx="220.9" cy="65.7" r="3"/><circle cx="251.8" cy="80.5" r="3"/><circle cx="285.2" cy="96.0" r="3"/><circle cx="320.0" cy="112.0" r="3"/><circle cx="354.8" cy="128.0" r="3"/><circle cx="388.2" cy="143.5" r="3"/><circle cx="419.1" cy="158.3" r="3"/><circle cx="220.9" cy="101.7" r="3"/><circle cx="251.8" cy="116.5" r="3"/><circle cx="285.2" cy="132.0" r="3"/><circle cx="320.0" cy="148.0" r="3"/><circle cx="354.8" cy="164.0" r="3"/><circle cx="388.2" cy="179.5" r="3"/><circle cx="419.1" cy="194.3" r="3"/><circle cx="220.9" cy="137.7" r="3"/><circle cx="251.8" cy="152.5" r="3"/><circle cx="285.2" cy="168.0" r="3"/><circle cx="320.0" cy="184.0" r="3"/><circle cx="354.8" cy="200.0" r="3"/><circle cx="388.2" cy="215.5" r="3"/><circle cx="419.1" cy="230.3" r="3"/><circle cx="220.9" cy="173.7" r="3"/><circle cx="251.8" cy="188.5" r="3"/><circle cx="285.2" cy="204.0" r="3"/><circle cx="320.0" cy="220.0" r="3"/><circle cx="354.8" cy="236.0" r="3"/><circle cx="388.2" cy="251.5" r="3"/><circle cx="419.1" cy="266.3" r="3"/><circle cx="220.9" cy="209.7" r="3"/><circle cx="251.8" cy="224.5" r="3"/><circle cx="285.2" cy="240.0" r="3"/><circle cx="320.0" cy="256.0" r="3"/><circle cx="354.8" cy="272.0" r="3"/><circle cx="388.2" cy="287.5" r="3"/><circle cx="419.1" cy="302.3" r="3"/><circle cx="220.9" cy="245.7" r="3"/><circle cx="251.8" cy="260.5" r="3"/><circle cx="285.2" cy="276.0" r="3"/><circle cx="320.0" cy="292.0" r="3"/><circle cx="354.8" cy="308.0" r="3"/><circle cx="388.2" cy="323.5" r="3"/></g>
+      <path d="M226.5 40.0 H233.5 M230.0 36.5 V43.5 M256.5 40.0 H263.5 M260.0 36.5 V43.5 M286.5 40.0 H293.5 M290.0 36.5 V43.5 M316.5 40.0 H323.5 M320.0 36.5 V43.5 M346.5 40.0 H353.5 M350.0 36.5 V43.5 M376.5 40.0 H383.5 M380.0 36.5 V43.5 M406.5 40.0 H413.5 M410.0 36.5 V43.5 M226.5 76.0 H233.5 M230.0 72.5 V79.5 M256.5 76.0 H263.5 M260.0 72.5 V79.5 M286.5 76.0 H293.5 M290.0 72.5 V79.5 M316.5 76.0 H323.5 M320.0 72.5 V79.5 M346.5 76.0 H353.5 M350.0 72.5 V79.5 M376.5 76.0 H383.5 M380.0 72.5 V79.5 M406.5 76.0 H413.5 M410.0 72.5 V79.5 M226.5 112.0 H233.5 M230.0 108.5 V115.5 M256.5 112.0 H263.5 M260.0 108.5 V115.5 M286.5 112.0 H293.5 M290.0 108.5 V115.5 M316.5 112.0 H323.5 M320.0 108.5 V115.5 M346.5 112.0 H353.5 M350.0 108.5 V115.5 M376.5 112.0 H383.5 M380.0 108.5 V115.5 M406.5 112.0 H413.5 M410.0 108.5 V115.5 M226.5 148.0 H233.5 M230.0 144.5 V151.5 M256.5 148.0 H263.5 M260.0 144.5 V151.5 M286.5 148.0 H293.5 M290.0 144.5 V151.5 M316.5 148.0 H323.5 M320.0 144.5 V151.5 M346.5 148.0 H353.5 M350.0 144.5 V151.5 M376.5 148.0 H383.5 M380.0 144.5 V151.5 M406.5 148.0 H413.5 M410.0 144.5 V151.5 M226.5 184.0 H233.5 M230.0 180.5 V187.5 M256.5 184.0 H263.5 M260.0 180.5 V187.5 M286.5 184.0 H293.5 M290.0 180.5 V187.5 M316.5 184.0 H323.5 M320.0 180.5 V187.5 M346.5 184.0 H353.5 M350.0 180.5 V187.5 M376.5 184.0 H383.5 M380.0 180.5 V187.5 M406.5 184.0 H413.5 M410.0 180.5 V187.5 M226.5 220.0 H233.5 M230.0 216.5 V223.5 M256.5 220.0 H263.5 M260.0 216.5 V223.5 M286.5 220.0 H293.5 M290.0 216.5 V223.5 M316.5 220.0 H323.5 M320.0 216.5 V223.5 M346.5 220.0 H353.5 M350.0 216.5 V223.5 M376.5 220.0 H383.5 M380.0 216.5 V223.5 M406.5 220.0 H413.5 M410.0 216.5 V223.5 M226.5 256.0 H233.5 M230.0 252.5 V259.5 M256.5 256.0 H263.5 M260.0 252.5 V259.5 M286.5 256.0 H293.5 M290.0 252.5 V259.5 M316.5 256.0 H323.5 M320.0 252.5 V259.5 M346.5 256.0 H353.5 M350.0 252.5 V259.5 M376.5 256.0 H383.5 M380.0 252.5 V259.5 M406.5 256.0 H413.5 M410.0 252.5 V259.5 M226.5 292.0 H233.5 M230.0 288.5 V295.5 M256.5 292.0 H263.5 M260.0 288.5 V295.5 M286.5 292.0 H293.5 M290.0 288.5 V295.5 M316.5 292.0 H323.5 M320.0 288.5 V295.5 M346.5 292.0 H353.5 M350.0 288.5 V295.5 M376.5 292.0 H383.5 M380.0 288.5 V295.5 M406.5 292.0 H413.5 M410.0 288.5 V295.5 M226.5 328.0 H233.5 M230.0 324.5 V331.5 M256.5 328.0 H263.5 M260.0 324.5 V331.5 M286.5 328.0 H293.5 M290.0 324.5 V331.5 M316.5 328.0 H323.5 M320.0 324.5 V331.5 M346.5 328.0 H353.5 M350.0 324.5 V331.5 M376.5 328.0 H383.5 M380.0 324.5 V331.5 M406.5 328.0 H413.5 M410.0 324.5 V331.5" fill="none" stroke-width="1.6" style="stroke:var(--accent)"/>
+      <g font-size="10.5" class="svg-muted" text-anchor="end">
+        <text x="194.0" y="44.0" text-anchor="end">0°</text><text x="194.0" y="116.0" text-anchor="end">30°</text><text x="194.0" y="188.0" text-anchor="end">60°</text><text x="194.0" y="260.0" text-anchor="end">90°</text><text x="194.0" y="332.0" text-anchor="end">120°</text>
+        <text x="194.0" y="30">θ</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="middle">
+        <text x="220.0" y="344.0">−1</text><text x="320.0" y="344.0">0</text><text x="420.0" y="344.0">1</text>
+        <text x="470.0" y="344.0">s (cm)</text>
+      </g>
+      <g font-size="11" class="svg-fg">
+        <text x="456" y="72" style="fill:var(--warn)">● 팬빔 측정값</text>
+        <text x="456" y="96" style="fill:var(--accent)">+ 평행빔 FBP에</text>
+        <text x="456" y="112" style="fill:var(--accent)">   필요한 격자점</text>
+      </g>
+    </svg>
+    <figcaption>가로축은 \(s\)(cm), 세로축은 \(\theta\)(위에서 아래로)이고 \(D = 3\) cm입니다. 주황 곡선 하나가 선원 각 하나(\(15^{\circ}\) 간격)의 투영이고, 곡선 위의 점은 가상 검출기에서 고른 간격으로 놓인 검출기 칸 7개의 측정값입니다. 파란 십자는 \(\theta\)와 \(s\)가 고른 간격인 격자점입니다. 주황 점과 겹치지 않는 십자의 값은 이웃한 주황 점들로 보간해야 합니다.</figcaption>
+  </figure>
+
+
+  <h3>계산 순서</h3>
+
+  <p>격자점마다 위 식으로 팬빔 좌표를 구하고, 그 둘레의 측정값 네 개를 선형 보간합니다. 평행빔 sinogram이 완성되면 3~6장의 FBP를 그대로 적용합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 112" role="img" aria-label="rebinning의 순서도. 팬빔 데이터 R[j, i]에서 평행빔 격자점마다 팬 각, 선원 각, 가상 검출기 좌표를 구하고 이웃한 네 측정값으로 보간해 평행빔 sinogram의 값을 얻은 뒤, 3장부터 6장까지의 평행빔 FBP를 그대로 적용해 영상을 얻는다">
+      <defs>
+        <marker id="r10h-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r10h-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="r10h-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1.4" class="svg-line">
+        <rect x="10" y="24" width="112" height="62" rx="6"/>
+        <rect x="150" y="24" width="150" height="62" rx="6" style="stroke:var(--accent)"/>
+        <rect x="328" y="24" width="138" height="62" rx="6" style="stroke:var(--accent)"/>
+        <rect x="494" y="24" width="136" height="62" rx="6"/>
+        <path d="M124 55 L148 55" marker-end="url(#r10h-mu)"/>
+        <path d="M302 55 L326 55" marker-end="url(#r10h-mu)"/>
+        <path d="M468 55 L492 55" marker-end="url(#r10h-mu)"/>
+      </g>
+      <g font-size="12" text-anchor="middle" class="svg-fg" font-weight="700">
+        <text x="66" y="53">팬빔 데이터</text>
+        <text x="225" y="53">격자점마다</text>
+        <text x="397" y="53">네 값으로 보간</text>
+        <text x="562" y="53">평행빔 FBP</text>
+      </g>
+      <g font-size="10.5" text-anchor="middle" class="svg-muted">
+        <text x="66" y="69">R[j, i]</text>
+        <text x="225" y="69">γ, β, t 를 구함</text>
+        <text x="397" y="69">평행빔 sinogram</text>
+        <text x="562" y="69">3~6장 그대로</text>
+        <text x="397" y="106">rebinning (페이지 8)</text>
+        <text x="562" y="106">영상 μ</text>
+      </g>
+    </svg>
+    <figcaption>rebinning의 순서입니다. 파란 테두리 두 단계가 rebinning이 평행빔 FBP 앞에 더하는 일이고, 아래 의사코드가 그 두 단계를 자세히 쓴 것입니다.</figcaption>
+  </figure>
+
+<pre><span class="cap">rebinning의 의사코드 (평면 검출기, 선원 360° 스캔)</span><code>입력  R[j, i],  D
+출력  p̃[k, m]
+
+ 1  각도 번호 k = 0 … N_θ−1 마다:
+ 2      검출기 번호 m = 0 … N_s−1 마다:
+ 3          θ ← kπ/N_θ,   s ← s_m
+ 4          γ ← arcsin(s/D)
+ 5          β ← (θ − γ) mod 2π,   t ← D·tanγ
+ 6          a ← β/Δβ,   b ← t/Δt + (N_t−1)/2
+ 7          j ← a 의 정수 부분,   f ← a − j
+ 8          i ← b 의 정수 부분,   g ← b − i
+ 9          i 가 0 … N_t−2 에 들면:
+10              u ← (1−g)·R[j, i] + g·R[j, i+1]
+11              v ← (1−g)·R[j+1, i] + g·R[j+1, i+1]
+12              p̃[k, m] ← (1−f)·u + f·v
+13          아니면:  p̃[k, m] ← 0
+</code></pre>
+
+  <ol class="notes">
+    <li><span class="ln">입력·출력</span> 입력은 팬빔 sinogram \(R[j, i]\)(\(\beta_j = j\,\Delta\beta\), \(\Delta\beta = 2\pi/N_\beta\), \(t_i = (i - (N_t - 1)/2)\,\Delta t\))이고, 출력은 평행빔 격자의 값 \(\tilde p[k, m]\)입니다. 격자는 \(\theta_k = k\pi/N_\theta\), \(s_m = (m - (N_s - 1)/2)\,\Delta s\)로 3장 페이지 10, 9장과 같습니다(검출기 번호는 3장의 \(n\) 대신 \(m\)을 씁니다). \(\Delta s\)는 팬빔의 \(\Delta t\)와 따로 정합니다. \(|s_m|\)는 팬이 덮는 범위 \(D\sin\gamma_m\) 안에 있어야 합니다.</li>
+    <li><span class="ln">1~3행</span> 격자점 \((\theta_k, s_m)\)마다 한 번씩 계산합니다.</li>
+    <li><span class="ln">4~5행</span> 페이지 4의 역대응입니다. \(\theta - \gamma\)가 음수일 수 있으므로 한 바퀴(\(2\pi\))를 더해 \(0\) 이상 \(2\pi\) 미만으로 맞춥니다.</li>
+    <li><span class="ln">6~8행</span> \(\beta\)와 \(t\)를 팬빔 sinogram의 칸 번호 \(a\), \(b\)로 바꿉니다. 칸 번호의 정수 부분 \(j\), \(i\)가 이웃한 측정을 가리키고 소수 부분 \(f\), \(g\)가 보간 비중입니다.</li>
+    <li><span class="ln">9~13행</span> 네 값을 선형 보간합니다. 10~11행이 \(t\) 방향, 12행이 \(\beta\) 방향입니다. \(j + 1\)은 \(N_\beta\)로 나눈 나머지로 읽어 한 바퀴를 돈 위치로 이어 붙입니다. 칸 번호가 검출기 밖이면 측정이 없으므로 0을 둡니다.</li>
+  </ol>
+
+  <p>다음 두 보충은 건너뛰어도 뒤의 내용을 읽는 데 지장이 없습니다.</p>
+
+  <details class="fold">
+    <summary>선원 각의 범위와 곡면 검출기의 특별한 경우</summary>
+    <div class="fold-body">
+  <p><b>필요한 선원 각의 범위.</b> 평행빔 sinogram은 \(0 \le \theta < \pi\)면 충분하므로 \(\beta = \theta - \gamma\)는 \(-\gamma_m\)에서 \(\pi + \gamma_m\)까지입니다. 폭이 \(180^{\circ} + 2\gamma_m\)입니다. 이상적인 데이터라면 선원을 이만큼만 돌려도 rebinning으로 평행빔 sinogram의 모든 칸을 채울 수 있습니다. \(360^{\circ}\)를 돌렸다면 모든 직선의 두 측정 가운데 하나만 골라 쓰는 셈입니다.</p>
+
+  <p><b>선원 각 간격과 팬 각 간격이 같은 곡면 검출기.</b> 곡면 검출기에서 선원 각 간격과 팬 각 간격이 같으면(\(\Delta\beta = \Delta\gamma\), \(\beta_j = j\,\Delta\gamma\), \(\gamma_i = i\,\Delta\gamma\)) 광선 \((j, i)\)의 \(\theta = (j + i)\,\Delta\gamma\)가 격자 위에 놓입니다. 각도 방향의 보간이 필요 없고, 각도마다 \(s = D\sin(i\,\Delta\gamma)\)가 고르지 않은 간격이라 \(s\) 방향의 1차원 보간만 하면 됩니다. 평면 검출기에서는 \(\gamma_i = \arctan(t_i/D)\)가 고른 간격이 아니므로 두 방향 모두 보간합니다.</p>
+    </div>
+  </details>
+
+  <h3>보간의 대가</h3>
+
+  <p>선형 보간은 이웃한 두 샘플의 가중 평균입니다. 간격 \(\Delta s\)로 샘플한 사인파를 두 샘플의 한가운데에서 읽으면, 주파수 \(\omega\)인 사인파의 진폭이 \(\cos(\pi\omega\Delta s)\)배가 됩니다.</p>
+
+  <p style="text-align:center">\[\text{한가운데에서 읽은 값의 진폭} = \cos(\pi\omega\Delta s)\times\text{원래 진폭}\]</p>
+
+  <p>\(\omega = 1/(4\Delta s)\)에서 \(0.71\)배, 나이퀴스트 주파수 \(\omega = 1/(2\Delta s)\)에서 \(0\)배입니다. 샘플 위에 떨어지는 격자점에서는 \(1\)배입니다. 곧 높은 주파수 성분이 줄어들고, 줄어드는 정도가 격자점의 위치에 따라 다릅니다.</p>
+
+  <p>실제로 얼마나 틀리는지 Shepp-Logan 팬텀으로 계산합니다. 평행빔 격자는 \(N_\theta = 180\), \(\Delta s = 0.02\) cm, \(N_s = 101\)로 고정했고, \(D = 3\) cm, 팬 반각은 \(20^{\circ}\)입니다. 팬빔 데이터는 팬텀의 닫힌 식으로 계산한 값이어서 잡음이 없습니다.
+  위젯의 세 그림은 정확한 평행빔 sinogram \(p\), 재배열한 sinogram \(\tilde p\)와 \(p\)의 차이 \(\tilde p - p\), 그리고 \(\tilde p\)와 \(p\)를 각각 6장의 FBP로 재구성한 영상의 차이입니다.</p>
+
+  <p>차이의 크기는 rms(root mean square)로 나타냅니다. 차이를 제곱해 평균한 뒤 제곱근을 취한 값으로, 차이의 평균적인 크기입니다. sinogram 오차의 rms는 \(N_\theta \times N_s\)개 칸 전체에서, 재구성 영상의 rms는 머리 안쪽(타원 \(x^{2}/0.60^{2} + y^{2}/0.80^{2} < 1\))의 화소에서 계산합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 238" role="img" aria-label="왼쪽은 정확한 평행빔 sinogram p(가로 s, 세로 θ 0에서 180도). 가운데는 rebinning한 sinogram과 p의 차이로 양수는 흰색, 음수는 파랑. 오른쪽은 재배열한 데이터와 정확한 데이터를 각각 재구성한 영상의 차이">
+      <image id="r10b-p" x="14" y="40" width="180" height="150" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <image id="r10b-e" x="214" y="40" width="180" height="150" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <image id="r10b-r" x="434" y="40" width="150" height="150" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <rect x="14" y="40" width="180" height="150"/><rect x="214" y="40" width="180" height="150"/><rect x="434" y="40" width="150" height="150"/>
+      </g>
+      <g font-size="11.5" class="svg-fg" font-weight="700">
+        <text x="14" y="30">정확한 sinogram p</text><text x="214" y="30">재배열 오차 p̃ − p</text><text x="434" y="30">재구성 영상의 차이</text>
+      </g>
+      <g font-size="10.5" class="svg-muted">
+        <text x="14" y="206">가로 s (−1~1 cm), 세로 θ (0°~180°)</text>
+        <text x="214" y="206">p̃ − p, 흰색 양수 · 파랑 음수</text>
+        <text x="214" y="220" id="r10b-sc1"></text>
+        <text x="434" y="206">재구성(p̃) − 재구성(p)</text>
+        <text x="434" y="220" id="r10b-sc2"></text>
+      </g>
+    </svg>
+    <figcaption>가운데와 오른쪽은 차이가 작아서 밝기를 크게 키워 보였습니다. 키운 정도는 그림 아래에 적었습니다. 흰색에 가까울수록 차이가 큽니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <span>검출기 칸 간격 Δt</span>
+    <button type="button" data-ui data-dt="0.04">0.04 cm</button>
+    <button type="button" data-ui data-dt="0.02">0.02 cm</button>
+    <button type="button" data-ui data-dt="0.01">0.01 cm</button>
+  </div>
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.5rem">
+    <span>선원 각 수 N_β</span>
+    <button type="button" data-ui data-nb="90">90 (4° 간격)</button>
+    <button type="button" data-ui data-nb="180">180 (2° 간격)</button>
+    <button type="button" data-ui data-nb="360">360 (1° 간격)</button>
+    <span style="margin-left:.6rem">보간</span>
+    <button type="button" data-ui data-ip="nearest">최근접</button>
+    <button type="button" data-ui data-ip="linear">선형</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r10b-note"></p>
+
+<script>
+(function () {
+  var r = window.r10, D = 3, NTH = 180, DS = 0.02, NS = 101, N = 128, HALF = 1.1, GMR = 20 * Math.PI / 180;
+  var st = { dt: 0.02, nb: 360, ip: 'linear' }, base = null, inner = [];
+  var root = document.getElementById('r10b-note').parentNode;
+  function el(id) { return document.getElementById(id); }
+  function prepare() {
+    var j, i, x, y, px = 2 * HALF / N, pm = 0, k, m;
+    base = { P: r.parData(NTH, DS, NS) };
+    for (k = 0; k < NTH; k++) for (m = 0; m < NS; m++) if (base.P[k][m] > pm) pm = base.P[k][m];
+    base.pm = pm; base.rec = r.fbp(base.P, DS, N, HALF);
+    for (j = 0; j < N; j++) for (i = 0; i < N; i++) {
+      x = -HALF + (i + 0.5) * px; y = HALF - (j + 0.5) * px;
+      if (x * x / 0.36 + y * y / 0.64 < 1) inner.push(j * N + i);   // 머리 안쪽: 타원 x²/0.60² + y²/0.80² < 1
+    }
+    el('r10b-p').setAttribute('href', r.image(NS, NTH, function (c, rw) { return base.P[rw][c] / pm; }));
+  }
+  function run() {
+    if (!base) prepare();
+    var Nt = 2 * Math.floor(D * Math.tan(GMR) / st.dt) + 1, fan = r.fanData(D, st.nb, Nt, st.dt), Pr = r.rebin(fan, NTH, DS, NS, st.ip), k, m, e = 0, v, d, s2 = 0, ESC = 0.1, RSC = 0.06;
+    for (k = 0; k < NTH; k++) for (m = 0; m < NS; m++) { if (isNaN(Pr[k][m])) Pr[k][m] = 0; d = Pr[k][m] - base.P[k][m]; e += d * d; }
+    var erms = Math.sqrt(e / (NTH * NS)), rec = r.fbp(Pr, DS, N, HALF), q;
+    for (q = 0; q < inner.length; q++) { d = rec[inner[q]] - base.rec[inner[q]]; s2 += d * d; }
+    var rrms = Math.sqrt(s2 / inner.length);
+    function col(x, sc) { x = x / sc; if (x >= 0) { x = Math.min(1, x); return [255 * x, 255 * x, 255 * x]; } x = Math.min(1, -x); return [40 * x, 120 * x, 255 * x]; }
+    el('r10b-e').setAttribute('href', r.image(NS, NTH, function (c, rw) { return col(Pr[rw][c] - base.P[rw][c], ESC * base.pm); }));
+    el('r10b-r').setAttribute('href', r.image(N, N, function (c, rw) { return col(rec[rw * N + c] - base.rec[rw * N + c], RSC); }));
+    el('r10b-sc1').textContent = '흰색·파랑 최대 밝기 = ±' + r.fx(ESC * base.pm, 2);
+    el('r10b-sc2').textContent = '흰색·파랑 최대 밝기 = ±' + r.fx(RSC, 2);
+    el('r10b-note').textContent = '간격 Δt = ' + st.dt + ' cm, 칸 ' + Nt + '개, 선원 각 ' + st.nb + '개, ' + (st.ip === 'linear' ? '선형' : '최근접') + ' 보간 · sinogram 오차 rms = ' + r.fx(erms, 4) +
+      ' (p 최댓값 ' + r.fx(base.pm, 2) + '의 ' + r.fx(100 * erms / base.pm, 2) + '%) · 재구성 영상의 차이 rms (머리 안쪽) = ' + r.fx(rrms, 4);
+    var b = root.querySelectorAll('button[data-ui]'), i;
+    for (i = 0; i < b.length; i++) {
+      if (b[i].hasAttribute('data-dt')) r.paint(b[i], +b[i].getAttribute('data-dt') === st.dt);
+      if (b[i].hasAttribute('data-nb')) r.paint(b[i], +b[i].getAttribute('data-nb') === st.nb);
+      if (b[i].hasAttribute('data-ip')) r.paint(b[i], b[i].getAttribute('data-ip') === st.ip);
+    }
+  }
+  r.styleButtons(root);
+  root.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t.hasAttribute || !t.hasAttribute('data-ui') || !root.contains(t)) return;
+    if (t.hasAttribute('data-dt')) st.dt = +t.getAttribute('data-dt');
+    if (t.hasAttribute('data-nb')) st.nb = +t.getAttribute('data-nb');
+    if (t.hasAttribute('data-ip')) st.ip = t.getAttribute('data-ip');
+    run();
+  });
+  r.onShow(el('r10b-note'), run);
+})();
+</script>
+
+  <p>선원 각 수 \(N_\beta = 360\)일 때 위젯이 계산하는 값은 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th rowspan="2">칸 간격 \(\Delta t\)</th><th colspan="2">sinogram 오차 rms</th><th colspan="2">재구성 영상의 차이 rms</th></tr>
+      <tr><th>최근접</th><th>선형</th><th>최근접</th><th>선형</th></tr>
+      <tr><td>0.04 cm</td><td>0.0494</td><td>0.0330</td><td>0.0596</td><td>0.0020</td></tr>
+      <tr><td>0.02 cm</td><td>0.0251</td><td>0.0139</td><td>0.0280</td><td>0.0011</td></tr>
+      <tr><td>0.01 cm</td><td>0.0143</td><td>0.0074</td><td>0.0147</td><td>0.0005</td></tr>
+    </table>
+  </div>
+
+  <ul>
+    <li><b>보간 방법.</b> 같은 칸 간격에서 sinogram 오차는 선형 보간이 최근접 보간의 0.5~0.7배입니다. 재구성 영상의 차이는 선형 보간이 최근접 보간의 1/25 이하로, 데이터의 오차 비보다 훨씬 더 벌어집니다.</li>
+    <li><b>칸 간격.</b> 칸 간격을 절반으로 줄이면 두 지표의 오차가 대략 절반 안팎이 됩니다.</li>
+    <li><b>선원 각 간격.</b> \(N_\beta\)를 90에서 360으로 바꾸는 영향은 칸 간격에 따라 다릅니다. 선형 보간에서 \(\Delta t = 0.04\) cm이면 sinogram 오차 rms가 0.0326과 0.0330으로 거의 같고, \(\Delta t = 0.02\) cm이면 0.0154와 0.0139, \(\Delta t = 0.01\) cm이면 0.0108과 0.0074입니다. 칸 간격이 작아질수록 선원 각 간격의 영향이 커집니다. 이 위젯의 결과로는 두 방향 중 더 거친 쪽의 보간 오차가 전체 오차를 크게 좌우하는 경향이 보입니다. 다른 팬텀과 설정에서도 그렇다고 할 수는 없습니다.</li>
+    <li><b>오차의 위치.</b> 가운데 그림에서 오차는 투영값이 급하게 변하는 곳, 곧 타원 경계에 해당하는 곡선 근처에 모입니다.</li>
+  </ul>
+
+  <p>재배열이 만드는 오차는 사라지지 않고 이후 FBP를 거쳐 영상에 남습니다. 평행빔 FBP를 그대로 쓸 수 있다는 편리함의 대가입니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 9 -->
+<section class="screen" data-title="직접 재구성의 예고">
+  <p class="kicker">7장 · 페이지 9</p>
+  <h2>직접 재구성의 예고</h2>
+
+  <p>rebinning은 데이터를 평행빔 격자로 옮겨서 식을 그대로 씁니다. 반대로 데이터는 그대로 두고 식을 팬빔 좌표로 바꾸면 어떻게 될까요? 이 페이지는 그 방법을 직접 방식이라고 부르고, 결과의 구조만 미리 보입니다. 식의 유도는 하지 않습니다.</p>
+
+  <h3>식을 바꾸는 방법</h3>
+
+  <p>평행빔 FBP는 직선 \((\theta, s)\)에 대한 적분으로 쓸 수 있습니다. 이 적분의 변수를 페이지 4의 대응으로 \((\beta, \gamma)\)에 옮기면, 팬빔 측정값에 바로 쓰는 식이 됩니다. 측정값은 같은 직선의 선적분이므로 \(R_\beta(\gamma) = p(\theta, s)\)이고, 값은 그대로입니다. 바뀌는 것은 두 가지입니다.</p>
+
+  <ul>
+    <li><b>적분의 작은 조각의 넓이.</b> \((\beta, \gamma)\) 평면의 작은 칸 \(d\beta\,d\gamma\)는 \((\theta, s)\) 평면에서 넓이가 \(D\cos\gamma\)배인 조각이 되어 \(d\theta\,ds = D\cos\gamma\,d\gamma\,d\beta\)입니다. 변수를 바꿀 때 생기는 이 배율이 1장 페이지 2의 야코비안입니다.</li>
+    <li><b>필터링에 쓰는 거리.</b> 평행빔 FBP의 필터는 화소와 광선 사이의 거리를 입력으로 받습니다. 팬빔에서는 이 거리를 검출기 위의 거리로 바꾸어 읽어야 합니다.</li>
+  </ul>
+
+  <h3>결과의 구조</h3>
+
+  <p>두 가지가 바뀐 결과, 팬빔 데이터에 바로 쓰는 재구성은 다음 세 단계가 됩니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 244" role="img" aria-label="두 방법의 순서 비교. 위쪽 rebinning은 팬빔 데이터를 보간으로 재배열해 평행빔 sinogram을 만든 뒤 평행빔 FBP를 적용한다. 아래쪽 직접 방식은 팬빔 데이터에 가중을 곱하고, 램프 필터링을 하고, 가중을 곱하며 역투영한다">
+      <defs>
+        <marker id="r10i-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r10i-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="r10i-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1.4" class="svg-line">
+        <rect x="10" y="34" width="118" height="58" rx="6"/>
+        <rect x="160" y="34" width="150" height="58" rx="6" style="stroke:var(--accent)"/>
+        <rect x="342" y="34" width="130" height="58" rx="6"/>
+        <rect x="504" y="34" width="126" height="58" rx="6"/>
+        <rect x="10" y="154" width="118" height="58" rx="6"/>
+        <rect x="160" y="154" width="150" height="58" rx="6" style="stroke:var(--accent)"/>
+        <rect x="342" y="154" width="130" height="58" rx="6"/>
+        <rect x="504" y="154" width="126" height="58" rx="6" style="stroke:var(--accent)"/>
+        <path d="M130 63 L158 63" marker-end="url(#r10i-mu)"/>
+        <path d="M312 63 L340 63" marker-end="url(#r10i-mu)"/>
+        <path d="M474 63 L502 63" marker-end="url(#r10i-mu)"/>
+        <path d="M130 183 L158 183" marker-end="url(#r10i-mu)"/>
+        <path d="M312 183 L340 183" marker-end="url(#r10i-mu)"/>
+        <path d="M474 183 L502 183" marker-end="url(#r10i-mu)"/>
+      </g>
+      <g font-size="12" text-anchor="middle" class="svg-fg" font-weight="700">
+        <text x="69" y="61">팬빔 데이터</text>
+        <text x="235" y="61">재배열(보간)</text>
+        <text x="407" y="61">평행빔 sinogram</text>
+        <text x="567" y="61">평행빔 FBP</text>
+        <text x="69" y="181">팬빔 데이터</text>
+        <text x="235" y="181">가중</text>
+        <text x="407" y="181">램프 필터링</text>
+        <text x="567" y="181">가중 역투영</text>
+      </g>
+      <g font-size="10.5" text-anchor="middle" class="svg-muted">
+        <text x="69" y="77">R<tspan font-size="70%" dy="0.25em">β</tspan><tspan dy="-0.175em"></tspan></text>
+        <text x="235" y="77">평행빔 격자로</text>
+        <text x="407" y="77">격자 위의 값</text>
+        <text x="567" y="77">필터링 → 역투영</text>
+        <text x="69" y="197">R<tspan font-size="70%" dy="0.25em">β</tspan><tspan dy="-0.175em"></tspan></text>
+        <text x="235" y="197">필터링 앞에서</text>
+        <text x="407" y="197">같은 램프 커널</text>
+        <text x="567" y="197">화소마다 가중</text>
+        <text x="320" y="22">rebinning (페이지 8)</text>
+        <text x="320" y="142">직접 방식</text>
+        <text x="320" y="236">굵은 파란 테두리는 평행빔 FBP에 없던 단계</text>
+      </g>
+    </svg>
+    <figcaption>위쪽은 rebinning, 아래쪽은 직접 방식의 순서입니다. 직접 방식은 필터링의 앞과 뒤에 가중이 하나씩 더해진 것이고, 평면 검출기에서는 필터링에 평행빔과 같은 램프 커널을 씁니다.</figcaption>
+  </figure>
+
+  <ol>
+    <li><b>가중.</b> 필터링 전에 측정값마다 팬 각에 따라 정해지는 값을 곱합니다. 팬 각이 클수록 작은 값입니다. 코사인 가중(<span class="term" data-term="cosweight">Cosine Weighting</span>)이라고 합니다.</li>
+    <li><b>필터링.</b> 램프 필터를 검출기 위치 방향으로 적용합니다. 평면 검출기에서는 평행빔의 필터와 같은 커널입니다.</li>
+    <li><b>가중 역투영.</b> 역투영할 때 화소마다 선원–화소 거리에 따라 정해지는 값을 곱해 더합니다. 거리 가중(<span class="term" data-term="distweight">Distance Weighting</span>)이라고 합니다.</li>
+  </ol>
+
+  <p>3~6장에서는 필터링과 역투영 두 단계였습니다. 팬빔의 직접 방식은 두 단계 앞뒤에 가중이 하나씩 붙은 세 단계입니다. 두 가중의 식은 이 페이지에서 유도하지 않습니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">가중과 선량 보정의 구분</p>
+    <p>이 가중들은 세기를 고치는 보정이 아니라 적분 변수를 바꿀 때 생기는 인자입니다.</p>
+  </div>
+
+  <h3>두 방법의 비교</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>비교 항목</th><th>rebinning</th><th>직접 방식</th></tr>
+      <tr><td>데이터에 하는 일</td><td>보간으로 평행빔 격자에 옮김</td><td>팬빔 좌표를 그대로 씀</td></tr>
+      <tr><td>재구성 식</td><td>3~6장의 평행빔 FBP를 그대로 씀</td><td>가중, 필터링, 가중 역투영으로 바꿈</td></tr>
+      <tr><td>새로 필요한 것</td><td>재배열 단계와 평행빔 sinogram을 담을 배열</td><td>두 가중의 식과 구현</td></tr>
+      <tr><td>보간이 일어나는 곳</td><td>재배열과 역투영, 두 번</td><td>역투영 한 번</td></tr>
+      <tr><td>연속 데이터에서의 정확성</td><td>정확함</td><td>정확함</td></tr>
+    </table>
+  </div>
+
+  <p>두 방법은 연속 데이터에서는 같은 영상을 줍니다. 이산 데이터에서는 보간의 횟수와 위치가 다르므로 오차의 모양이 달라집니다(페이지 8). 어느 쪽이 항상 낫다고 할 수는 없습니다. 기존의 평행빔 코드를 쓸 수 있으면 rebinning이 간단하고, 보간 오차를 줄이려면 직접 방식이 유리할 수 있습니다.</p>
+
+  <h3>두 방법에 필요한 선원 각</h3>
+
+  <p>직접 방식은 페이지 6의 사실, 곧 선원이 \(360^{\circ}\) 돌면 모든 직선을 두 번씩 잰다는 점을 전제로 합니다. rebinning은 평행빔 격자의 칸을 한 번씩만 채우면 되므로 원리적으로는 한 바퀴를 다 돌지 않아도 됩니다(필요한 범위는 11장에서 봅니다). 직접 방식에서 \(360^{\circ}\)를 돌릴 수 없을 때는 두 측정을 어떻게 나누어 쓸지 따로 정해야 합니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 10 -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">7장 · 페이지 10</p>
+  <h2>7장 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>팬빔은 점광원(선원)과 검출기 칸의 배열로 부채꼴 광선을 한꺼번에 재는 방식입니다. 광선은 선원 각 \(\beta\)와 팬 각 \(\gamma\)로 정해지고, 선원–회전 중심 거리가 \(D\), 선원–검출기 거리가 \(\mathrm{SDD}\)입니다. 이 기하는 광선의 경로에만 쓰이며 세기 차이는 플랫필드 보정이 이미 정리했습니다.</li>
+      <li>광선 \((\beta, \gamma)\)는 평행빔 직선 \(\theta = \beta + \gamma\), \(s = D\sin\gamma\)와 같습니다. 곡면 검출기는 \(\gamma\)의 간격이 같고, 평면 검출기는 가상 검출기 좌표 \(t = D\tan\gamma\)의 간격이 같습니다(실제 위치는 \(\mathrm{SDD}\tan\gamma\)).</li>
+      <li>(심화) 팬빔 sinogram은 평행빔 sinogram을 \(\gamma\)에 비례해 \(\beta\) 방향으로 전단한 모양입니다.</li>
+      <li>같은 직선은 \((\beta, \gamma)\)와 \((\beta + \pi + 2\gamma,\ -\gamma)\)의 두 측정이며, \(360^{\circ}\)를 돌리면 정확히 두 번씩 잰 셈입니다.</li>
+      <li>rebinning은 격자점마다 \(\gamma = \arcsin(s/D)\), \(\beta = \theta - \gamma\), \(t = D\tan\gamma\)를 구해 팬빔 데이터를 보간하고, 3~6장의 평행빔 FBP를 그대로 씁니다. 보간 오차가 영상에 남습니다.</li>
+      <li>직접 방식은 평행빔 FBP 식의 변수를 팬빔 좌표로 바꾸어 가중, 필터링, 가중 역투영의 세 단계로 만듭니다. 가중은 변수변환에서 나온 인자입니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="qn">마무리 퀴즈 1</p>
+    <p class="q">\(D = 4\) cm일 때 선원 각 \(\beta = 50^{\circ}\), 팬 각 \(\gamma = -30^{\circ}\)인 광선을 평행빔 좌표 \((\theta, s)\)로 나타내면 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. θ = β + γ = 20° 입니다. 80° 는 β − γ 로 팬 각의 부호를 반대로 적용한 값입니다.">\(\theta = 80^{\circ}\), \(s = -2.0\) cm</li>
+      <li data-why="틀립니다. −2.31 cm 는 가상 검출기 좌표 t = D tanγ 입니다. 평행빔 좌표 s 는 O 에서 광선까지의 수선 길이 D sinγ = 4 × (−0.5) = −2.0 cm 입니다.">\(\theta = 20^{\circ}\), \(s = -2.31\) cm</li>
+      <li data-why="틀립니다. 팬 각이 음수이면 s 도 음수입니다. γ > 0 인 광선이 s > 0 이 되도록 부호를 정한 규약이므로 s = D sinγ 의 부호는 γ 의 부호와 같습니다.">\(\theta = 20^{\circ}\), \(s = +2.0\) cm</li>
+      <li data-why="맞습니다. θ = β + γ = 50° − 30° = 20° 이고, s = D sinγ = 4 × sin(−30°) = −2.0 cm 입니다.">\(\theta = 20^{\circ}\), \(s = -2.0\) cm</li>
+    </ol>
+    <div class="explain">
+      <p>이 광선의 측정값은 평행빔 sinogram의 \((20^{\circ},\ -2.0\ \mathrm{cm})\)에 놓입니다. 이 경우는 \(\theta\)가 \(0^{\circ}\)~\(180^{\circ}\) 안이어서 그대로 읽지만, \(\beta + \gamma\)가 \(180^{\circ}\) 이상이거나 음수이면 3장 페이지 9의 대칭 \(p(\theta, s) = p(\theta \mp \pi,\ -s)\)를 써서 \(0^{\circ}\)~\(180^{\circ}\) 안의 \(\theta\)로 옮겨 읽습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="qn">마무리 퀴즈 2</p>
+    <p class="q">평면 검출기의 칸 간격이 모두 같을 때, 팬 각 \(\gamma = 30^{\circ}\) 근처 칸 하나가 맡는 팬 각은 중심 칸 하나가 맡는 팬 각의 몇 배일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 0.87 은 cos30° 로 한 번만 곱한 값입니다. t = D tanγ 를 미분하면 dt/dγ = D/cos²γ 이므로 팬 각 간격에는 cos²γ 가 곱해집니다.">약 0.87배</li>
+      <li data-why="틀립니다. 1.33 은 1/cos²30° 로 역수입니다. dt/dγ = D/cos²γ 이므로 같은 Δt 에 대한 Δγ 는 cos²γ 배로 줄어듭니다.">약 1.33배</li>
+      <li data-why="맞습니다. dt/dγ = D/cos²γ 이므로 Δγ ≈ cos²γ · Δt/D 입니다. cos²30° = 0.75 이므로 중심 칸의 0.75배입니다.">약 0.75배</li>
+      <li data-why="틀립니다. 0.50 은 sin30° 이고 이 계산에는 쓰이지 않습니다. 팬 각 간격은 t 의 변화율 D/cos²γ 의 역수에서 나옵니다.">약 0.50배</li>
+    </ol>
+    <div class="explain">
+      <p>곡면 검출기는 칸마다 맡는 팬 각이 같고, 평면 검출기는 가장자리로 갈수록 좁아진다는 차이입니다. 이 차이가 팬 각 방향의 샘플링 간격과 나이퀴스트 한계를 가장자리에서 다르게 만듭니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="qn">마무리 퀴즈 3</p>
+    <p class="q">선원 각 \(\beta = 100^{\circ}\), 팬 각 \(\gamma = -15^{\circ}\)인 광선과 같은 직선을 재는 다른 측정은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 평행빔처럼 180° 만 더하면 β' = 280° 가 되지만, 팬빔의 짝은 2γ 만큼 더 움직입니다. 팬 각의 부호가 같으면 s' 이 처음 s 와 같아져서 −s 여야 하는 조건에 맞지 않습니다.">\(\beta' = 280^{\circ}\), \(\gamma' = -15^{\circ}\)</li>
+      <li data-why="맞습니다. β' = β + 180° + 2γ = 100° + 180° − 30° = 250° 이고 γ' = −γ = 15° 입니다. 그러면 θ' = 265° = θ + 180°, s' = D sin15° = −s 이므로 같은 직선입니다.">\(\beta' = 250^{\circ}\), \(\gamma' = 15^{\circ}\)</li>
+      <li data-why="틀립니다. 2γ 의 부호를 반대로 적용해 100° + 180° + 30° = 310° 로 계산한 값입니다. γ 가 음수이므로 2γ = −30° 를 더해야 합니다.">\(\beta' = 310^{\circ}\), \(\gamma' = 15^{\circ}\)</li>
+      <li data-why="틀립니다. 팬 각의 부호가 같으면 θ' = 235° 가 되어 처음 직선의 θ + 180° = 265° 와 다른 직선입니다. 맞은편에서는 광선이 반대쪽으로 기울어야 합니다.">\(\beta' = 250^{\circ}\), \(\gamma' = -15^{\circ}\)</li>
+    </ol>
+    <div class="explain">
+      <p>두 선원 각의 차이는 \(180^{\circ} + 2\gamma = 150^{\circ}\)입니다. 팬 반각이 \(\gamma_m\)이면 차이는 \(180^{\circ} - 2\gamma_m\)에서 \(180^{\circ} + 2\gamma_m\) 사이를 오갑니다. 예를 들어 \(\gamma_m = 25^{\circ}\)이면 \(130^{\circ}\)에서 \(230^{\circ}\)까지입니다. 이 차이가 한 광선마다 다르다는 점이 페이지 6의 결과(180°만 돌리면 빈 직선이 남는다)의 원인입니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="qn">마무리 퀴즈 4</p>
+    <p class="q">rebinning으로 팬빔 데이터를 평행빔 격자에 옮긴 뒤 6장의 FBP를 쓰는 방법에 대한 설명으로 맞는 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 코사인 가중과 거리 가중은 직접 방식에서 변수를 바꿀 때 생기는 인자입니다. rebinning 은 데이터를 평행빔 좌표로 옮기므로 이후에는 평행빔 FBP 의 필터링과 역투영만 씁니다.">재배열한 sinogram에도 코사인 가중과 거리 가중을 곱한 뒤 평행빔 FBP의 필터링과 역투영을 한다.</li>
+      <li data-why="틀립니다. 격자점 (θ, s) 에 대응하는 팬빔 위치 (β, t) 는 대개 실제 측정 위치 사이에 떨어지므로 보간이 필요합니다. 보간 오차는 이후 FBP 를 거쳐 영상에 남습니다.">팬빔 측정값이 평행빔 격자점에 그대로 놓이므로 보간이 필요 없고 영상에 오차도 생기지 않는다.</li>
+      <li data-why="틀립니다. s = D sinγ 이므로 역대응은 γ = arcsin(s/D) 입니다. arctan(s/D) 는 s 를 t 와 혼동한 값으로, t = D tanγ 일 때의 γ 입니다.">격자점의 팬 각을 \(\gamma = \arctan(s/D)\)로 구한 뒤 그 팬 각에 맞는 선원 각을 찾아 보간한다.</li>
+      <li data-why="맞습니다. 평행빔 FBP 가 필요로 하는 값은 (θ_k, s_m) 격자의 값이므로, 격자점마다 팬빔 위치를 구해 이웃한 측정값으로 보간합니다. 이 보간이 rebinning 의 대가입니다.">격자점마다 \(\gamma = \arcsin(s/D)\), \(\beta = \theta - \gamma\)를 구해 이웃한 측정값을 보간한다.</li>
+    </ol>
+    <div class="explain">
+      <p>보간으로 만든 값이므로, 평행빔 격자의 검출기 간격 \(\Delta s\)를 팬빔의 칸 간격 \(\Delta t\)보다 훨씬 촘촘하게 잡아도 정보는 늘어나지 않습니다. 격자만 커지고 계산량이 늘 뿐입니다. 격자 간격은 팬빔 데이터가 담고 있는 해상도에 맞춰 정합니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>평면 검출기를 쓰는 장치에서 \(D = 4\) cm, \(\mathrm{SDD} = 6\) cm입니다. 선원 각 \(\beta = 70^{\circ}\)에서 검출기 가운데로부터 \(3\) cm 떨어진 칸에 닿는 광선에 대해, (가) 팬 각 \(\gamma\), (나) 가상 검출기 좌표 \(t\), (다) 평행빔 좌표 \((\theta, s)\), (라) 같은 직선을 다시 재는 측정의 \((\beta', \gamma')\)를 구하세요.</li>
+      <li>\(D = 3\) cm인 장치의 팬빔 데이터를 rebinning합니다. 평행빔 격자점 \((\theta, s) = (50^{\circ},\ 1.2\ \mathrm{cm})\)에 대해, (가) 읽어야 하는 \(\gamma\), \(\beta\), \(t\)를 구하세요. (나) 선원 각이 \(\beta_j = j \times 1^{\circ}\)(\(N_\beta = 360\)), 칸 간격이 \(\Delta t = 0.02\) cm이고 \(t = 0\)이 가운데 칸이라면, 이 점을 둘러싼 선원 각 번호 \(j\), \(j + 1\)과 \(t\) 방향의 두 칸은 가운데 칸에서 몇 번째이고 보간 비중 \(f\), \(g\)는 얼마인가요?</li>
+      <li>곡면 검출기에서 선원 각 간격과 팬 각 간격이 모두 \(1^{\circ}\)이고 \(D = 4\) cm입니다. 광선 \((\beta_j, \gamma_i) = (30^{\circ},\ 10^{\circ})\)의 평행빔 좌표를 구하세요. 같은 \(\theta\)에서 팬 각이 \(10^{\circ}\)인 광선과 \(11^{\circ}\)인 광선의 \(s\) 간격은 얼마이고, 이 값은 팬 각이 \(0^{\circ}\)와 \(1^{\circ}\)인 광선의 \(s\) 간격과 같은가요? 평면 검출기에서도 각도 방향의 보간이 필요 없는지 이유와 함께 답하세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> (가) \(\tan\gamma = 3/\mathrm{SDD} = 0.5\)이므로 \(\gamma \approx 26.57^{\circ}\)입니다. (나) \(t = D\tan\gamma = 4 \times 0.5 = 2.0\) cm이고, 실제 위치 \(3\) cm에 \(D/\mathrm{SDD} = 2/3\)를 곱한 값과 같습니다. (다) \(\theta = \beta + \gamma \approx 96.57^{\circ}\), \(s = D\sin\gamma = 4 \times 0.4472 \approx 1.789\) cm입니다. (라) \(\beta' = \beta + 180^{\circ} + 2\gamma \approx 70^{\circ} + 180^{\circ} + 53.13^{\circ} = 303.13^{\circ}\), \(\gamma' = -26.57^{\circ}\)입니다.</p>
+      <p><b>2번.</b> (가) \(\gamma = \arcsin(1.2/3) = \arcsin 0.4 \approx 23.58^{\circ}\), \(\beta = \theta - \gamma \approx 26.42^{\circ}\), \(t = 3\tan 23.58^{\circ} \approx 1.309\) cm입니다. (나) 선원 각 번호는 \(26.42^{\circ}/1^{\circ}\)에서 \(j = 26\), \(j + 1 = 27\)이고 \(f \approx 0.42\)입니다. \(t/\Delta t = 1.309/0.02 \approx 65.47\)이므로 가운데 칸에서 65번째와 66번째 칸 사이이고 \(g \approx 0.47\)입니다. 네 값은 \(R[26, \cdot]\), \(R[27, \cdot]\)의 두 칸씩이며 비중은 \((1-f)(1-g)\), \((1-f)g\), \(f(1-g)\), \(fg\)입니다.</p>
+      <p><b>3번.</b> \(\theta = 30^{\circ} + 10^{\circ} = 40^{\circ}\), \(s = 4\sin 10^{\circ} \approx 0.695\) cm입니다. 팬 각 \(10^{\circ}\)와 \(11^{\circ}\)의 \(s\) 간격은 \(4(\sin 11^{\circ} - \sin 10^{\circ}) \approx 0.0686\) cm이고, \(0^{\circ}\)와 \(1^{\circ}\)의 간격은 \(4\sin 1^{\circ} \approx 0.0698\) cm이므로 같지 않습니다. 팬 각이 클수록 \(s\) 간격이 좁아집니다(\(25^{\circ}\)와 \(26^{\circ}\) 사이는 약 \(0.0630\) cm). 그래서 각도마다 \(s\) 방향으로 고른 격자에 보간해야 합니다. 평면 검출기에서는 \(\gamma_i = \arctan(t_i/D)\)가 고른 간격이 아니어서 \(\theta = \beta_j + \gamma_i\)가 \(1^{\circ}\)의 배수가 되지 않으므로, 각도 방향도 보간해야 합니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번 (다)에서 \(s\)를 \(t\)와 같은 2.0 cm로 쓰는 것입니다. \(t = D\tan\gamma\)는 가상 검출기 위의 위치이고, \(s = D\sin\gamma\)는 O에서 광선까지의 거리입니다.</li>
+        <li>1번 (나)에서 실제 위치 3 cm를 그대로 \(t\)로 쓰는 것입니다. 실제 검출기 위치에는 \(\mathrm{SDD}/D\)가 곱해져 있으므로 \(D/\mathrm{SDD}\)를 곱해야 합니다.</li>
+        <li>1번 (라)에서 선원 각에 \(180^{\circ}\)만 더하는 것입니다. 팬빔의 짝은 \(180^{\circ} + 2\gamma\)만큼 떨어져 있습니다.</li>
+        <li>2번에서 \(\beta = \theta + \gamma\)로 계산하는 것입니다. 역대응은 \(\beta = \theta - \gamma\)입니다.</li>
+        <li>3번에서 평면 검출기도 곡면 검출기처럼 각도 방향의 보간이 필요 없다고 답하는 것입니다. 칸 사이의 팬 각이 같은 경우는 곡면 검출기뿐입니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch08.html"><span>다음 장</span>8장 — 팬빔 FBP 공식 유도해 보기 (연속)</a>
+  </div>
+</section>
+
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

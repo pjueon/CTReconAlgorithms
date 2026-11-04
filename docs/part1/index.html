@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1편 · 해석적 재구성</title>
+<script src="../assets/theme.js"></script><link rel="stylesheet" href="../assets/base.css"><link rel="stylesheet" href="../assets/book.css">
+<style>
+:root{--q:var(--accent);--d:var(--fg-strong)}
+*{box-sizing:border-box}
+body{margin:0}
+.wrap{max-width:46rem;margin:0 auto;padding:1.1rem 1rem 1.5rem}
+.back{margin:0 0 .8rem;font-size:.86rem}
+.kicker{margin:0 0 .15rem;font-size:.8rem}
+h1.title{font-size:1.6rem;line-height:1.2;letter-spacing:-.03em;margin:0 0 .25rem;color:var(--fg-strong);border:0;padding:0}
+.sub{font-size:.92rem;color:var(--muted);margin:0 0 1rem}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem}
+.card{display:flex;flex-direction:column;gap:.35rem;min-width:0;padding:.8rem 1rem;border:1px solid var(--rule);border-radius:12px;background:var(--card);text-decoration:none;color:var(--fg)}
+a.card:hover{border-color:var(--cc,var(--accent))}
+.card.q{--cc:var(--q)} .card.d{--cc:var(--d)}
+.card .top{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.card .name{font-weight:800;color:var(--fg-strong);font-size:1rem}
+.card .top .pill{margin-left:auto}
+.card p{margin:0;font-size:.86rem;color:var(--muted);line-height:1.45}
+.card .meta{font-size:.8rem;color:var(--fg);font-weight:600}
+.card .go{font-size:.84rem;font-weight:700;color:var(--cc)}
+.cb{display:inline-block;font-size:.72rem;font-weight:800;padding:.08rem .55rem;border-radius:5px;white-space:nowrap}
+.cb.q{background:var(--q);color:#fff} .cb.d{background:var(--d);color:var(--bg)}
+.pill{display:inline-block;font-size:.72rem;font-weight:700;padding:.06rem .6rem;border-radius:99px;border:1px solid var(--rule);color:var(--muted);background:var(--bg-soft);white-space:nowrap}
+.pill.open{color:var(--good);background:var(--good-bg);border-color:var(--good)}
+.card.soon{border-style:dashed;background:transparent}
+@media (max-width:640px){.wrap{padding:.8rem .9rem 1.5rem}h1.title{font-size:1.4rem}.grid{grid-template-columns:minmax(0,1fr)}}
+</style></head><body>
+<div class="wrap">
+<p class="back"><a href="../index.html">← 홈으로</a></p>
+<p class="kicker">CT 재구성 알고리즘</p>
+<h1 class="title">1편 · 해석적 재구성</h1>
+<p class="sub">Radon 변환에서 FBP, 팬빔, 데이터 완전성, FDK까지 해석적 재구성을 다룹니다. 읽는 속도에 맞춰 두 코스 중 하나를 고르세요.</p>
+<p class="sub"><b>대상 독자</b> 미적분·푸리에 해석·선형대수의 기초를 배운 적이 있고 CT 재구성을 처음 배우는 학습자에게 맞습니다. 주 참고서와 인용 문헌은 <a href="../refs.html">참고문헌 페이지</a>에 있습니다.</p>
+<p class="sub"><b>먼저</b> <a href="../part0/index.html">0편 — 기초편</a>(CT란 무엇인가, 투영과 선적분, 재구성의 두 갈래)을 읽고 오면 좋습니다. 0편은 3장 · 약 4시간이며 1편과 2편의 공통 출발점입니다.</p>
+<div class="grid">
+  <a class="card q" href="quick/index.html">
+   <div class="top"><span class="cb q">빠르게</span><span class="name">빠르게 보기</span><span class="pill open">공개</span></div>
+   <p>핵심 흐름만 일주일에 훑는 코스입니다. 하루 1시간씩 일차 단위로 읽습니다.</p>
+   <div class="meta">7일 · 37페이지 · 약 7시간</div>
+   <div class="go">빠르게 보기 시작 →</div></a>
+  <a class="card d" href="detail/index.html">
+   <div class="top"><span class="cb d">자세히</span><span class="name">자세히 보기</span><span class="pill open">공개</span></div>
+   <p>유도와 이산화까지 빠짐없이 다루는 정식 코스입니다. 수학 복습 장도 있습니다.</p>
+   <div class="meta">15장 · 144페이지 · 약 26시간</div>
+   <div class="go">자세히 보기 시작 →</div></a>
+</div>
+</div></body></html>

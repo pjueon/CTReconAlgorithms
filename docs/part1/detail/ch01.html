@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch01">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1장 · 복습: 좌표 변환과 적분 — CT 재구성 알고리즘1 - 해석적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="좌표 회전과 극좌표">
+  <p class="kicker">1장 · 페이지 1</p>
+  <h1>복습: 좌표 변환과 적분</h1>
+
+  <p class="lead">뒷장의 유도에서 좌표를 바꾸는 계산이 여러 번 나옵니다. 이 장은 그 계산에 필요한 좌표 회전, 극좌표, 야코비안을 복습합니다.
+  좌표 회전은 2장, 3장, 4장에서 쓰고, 극좌표와 야코비안은 2장의 2차원 푸리에 변환과 5장, 8장의 변수변환에서 씁니다.
+  이미 아는 내용이면 건너뛰고 2장으로 가도 되며, 막힐 때 돌아오면 됩니다.</p>
+
+  <h2>좌표 회전과 극좌표</h2>
+
+  <p>같은 점도 어떤 기준으로 재느냐에 따라 좌표가 달라집니다. 이 페이지에서는 축을 돌린 좌표와 원점에서의 거리와 각으로 잰 좌표를 봅니다.
+  0편 3장의 규약대로 각은 \(x\) 축에서 반시계 방향이 양이고 단위는 라디안입니다.</p>
+
+  <h3>회전 좌표</h3>
+
+  <p>\(x\) 축과 \(y\) 축을 원점을 중심으로 반시계 방향으로 \(\theta\)만큼 돌린 축을 \(x'\) 축, \(y'\) 축이라고 하겠습니다.
+  \(x'\) 축의 방향은 \((\cos\theta,\ \sin\theta)\)이고 \(y'\) 축의 방향은 \((-\sin\theta,\ \cos\theta)\)입니다.
+  길이가 1인 방향은 이런 꼴로 쓸 수 있으므로, 0편 2장의 광선 방향 \((u_x,\ u_y)\)도 어떤 \(\theta\)에 대한 \((\cos\theta,\ \sin\theta)\)입니다.</p>
+  <p>점 \((x,\ y)\)에서 새 축에 수선을 내린 발의 위치가 새 좌표 \((x',\ y')\)입니다. 이 좌표를 회전 좌표(Rotated Coordinates)라고 하고, 원래 좌표에서 다음처럼 구합니다.</p>
+  <p style="text-align:center">\[x' = x\cos\theta + y\sin\theta,\qquad y' = -x\sin\theta + y\cos\theta\]</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="원래 축 x, y와 반시계 방향으로 θ 돌린 축 x′, y′, 점 P에서 새 축에 내린 수선">
+      <defs>
+        <marker id="r2-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="r2-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1.2" style="stroke:var(--muted)">
+        <path d="M150 215 H430" marker-end="url(#r2-mu)"/>
+        <path d="M150 215 V20" marker-end="url(#r2-mu)"/>
+      </g>
+      <g fill="none" stroke-width="2.4" style="stroke:var(--accent)">
+        <path d="M150 215 L349 100" marker-end="url(#r2-ac)"/>
+        <path d="M150 215 L55 50" marker-end="url(#r2-ac)"/>
+      </g>
+      <g fill="none" stroke-width="1.4" stroke-dasharray="5 3" style="stroke:var(--muted)">
+        <path d="M240 80 L275.9 142.3"/>
+        <path d="M240 80 L114 152.7"/>
+      </g>
+      <path d="M200 215 A50 50 0 0 0 193.3 190" fill="none" stroke-width="1.2" style="stroke:var(--muted)"/>
+      <circle cx="240" cy="80" r="4" style="fill:var(--warn)"/>
+      <g font-size="13" class="svg-fg">
+        <text x="248" y="76">P = (x, y)</text>
+        <text x="354" y="98" font-weight="700">x′</text>
+        <text x="40" y="44" font-weight="700">y′</text>
+        <text x="206" y="208" class="svg-muted">θ</text>
+        <text x="284" y="156">x′ 좌표</text>
+        <text x="50" y="170">y′ 좌표</text>
+      </g>
+      <g font-size="12" class="svg-muted">
+        <text x="424" y="234">x</text>
+        <text x="158" y="28">y</text>
+      </g>
+    </svg>
+    <figcaption>회색 축은 원래의 \(x\) 축과 \(y\) 축이고, 굵은 축은 이를 반시계 방향으로 \(\theta\)만큼 돌린 \(x'\) 축과 \(y'\) 축입니다. 점 \(P\)에서 새 축에 내린 수선의 발이 새 좌표 \(x'\), \(y'\)의 위치입니다.</figcaption>
+  </figure>
+
+  <p>식이 맞는지 \(x'\) 축 위의 점으로 확인합니다. 이 축 위의 점은 \((x,\ y) = (t\cos\theta,\ t\sin\theta)\)입니다. 식에 넣으면 다음과 같습니다.</p>
+  <p style="text-align:center">\[x' = t\cos^{2}\theta + t\sin^{2}\theta = t,\qquad y' = -t\cos\theta\sin\theta + t\sin\theta\cos\theta = 0\]</p>
+  <p>이 점의 새 좌표는 \((t,\ 0)\)이어서 \(x'\) 축 위에 있다는 뜻과 맞습니다. 반대로 새 좌표에서 원래 좌표를 구하는 식은 다음과 같습니다.</p>
+  <p style="text-align:center">\[x = x'\cos\theta - y'\sin\theta,\qquad y = x'\sin\theta + y'\cos\theta\]</p>
+  <p>축을 돌려도 원점에서의 거리는 변하지 않으므로 \(x'^{2} + y'^{2} = x^{2} + y^{2}\)입니다.
+  직선 \(x\cos\theta + y\sin\theta = s\)는 새 좌표에서 \(x' = s\)인 직선입니다. 광선은 이 직선으로 나타냅니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">축을 돌리는 것과 점을 돌리는 것</p>
+    <p>축을 반시계 방향으로 \(\theta\)만큼 돌리면 점의 새 좌표는 점을 시계 방향으로 \(\theta\)만큼 돌린 것과 같습니다.
+    예를 들어 \(\theta = 90^{\circ}\)이면 점 \((1,\ 0)\)의 새 좌표는 \((0,\ -1)\)입니다.</p>
+  </div>
+
+  <h3>극좌표</h3>
+
+  <p>점을 원점에서의 거리 \(r\)과 \(x\) 축에서 잰 각 \(\theta\)로 나타낼 수도 있습니다. 이 좌표를 극좌표(Polar Coordinates)라고 합니다.
+  극좌표 \((r,\ \theta)\)에서 직교좌표 \((x,\ y)\)로 가는 변환과 그 반대의 변환은 다음과 같습니다.</p>
+  <p style="text-align:center">\[x = r\cos\theta,\quad y = r\sin\theta,\qquad r = \sqrt{x^{2}+y^{2}}\]</p>
+  <p>\(\theta\)는 \(\tan\theta = y/x\)를 만족하는 각 가운데 점이 있는 사분면에 맞는 것입니다. 같은 점을 두 번 세지 않도록 \(0 \le \theta &lt; 2\pi\)로 잡습니다.
+  예를 들어 \((1,\ 1)\)은 \(r = \sqrt2,\ \theta = \pi/4\)입니다. 원점은 \(r = 0\)이고 \(\theta\)가 정해지지 않습니다.
+  프로그램에서는 <code>atan2(y, x)</code>가 사분면까지 반영한 각을 주고, <code>atan(y / x)</code>는 \(-\pi/2\)와 \(\pi/2\) 사이의 각만 주어서 제2·3사분면의 점에서 틀립니다.</p>
+  <p>두 좌표는 서로 이어집니다. 점의 극좌표가 \((r,\ \theta)\)이면 \(\theta\)만큼 돌린 회전 좌표에서 그 점은 \((x',\ y') = (r,\ 0)\)입니다. 위의 \(x'\) 축 위 점의 확인에서 \(t = r\)로 둔 경우입니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="다중적분과 변수변환">
+  <p class="kicker">1장 · 페이지 2</p>
+  <h2>다중적분과 변수변환</h2>
+
+  <p>영상의 값을 영역 \(D\) 전체에서 더하는 것이 이중적분(Double Integral)입니다. 영역을 작은 조각으로 나누어 \(f\)에 조각의 넓이 \(dA\)를 곱해 더한 값이고, 직교좌표에서는 \(dA = dx\,dy\)입니다.</p>
+  <p style="text-align:center">\[\iint_{D} f(x, y)\,dx\,dy\]</p>
+  <p>원판처럼 경계가 곡선인 영역에서는 좌표를 바꾸는 편이 쉽습니다. 좌표를 바꾸면 조각의 넓이를 나타내는 식도 달라지므로 그 변화를 알아야 합니다.</p>
+
+  <h3>극좌표의 넓이 요소</h3>
+
+  <p>극좌표에서 \(r\)과 \(\theta\)를 각각 \(dr\), \(d\theta\)만 늘린 작은 조각은 변의 길이가 \(dr\)과 \(r\,d\theta\)인 직사각형에 가깝습니다. 호의 길이가 \(r\)에 비례하기 때문입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="극좌표에서 반지름 r에서 r+dr, 각도 θ에서 θ+dθ 사이의 작은 조각이 변 dr과 r dθ를 가지는 그림과, 직교좌표의 dx dy 조각">
+      <defs>
+        <marker id="p3-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M120 210 H330" marker-end="url(#p3-mu)"/>
+        <path d="M120 210 V30" marker-end="url(#p3-mu)"/>
+        <path d="M120 210 L216.4 95.1" stroke-dasharray="4 3"/>
+        <path d="M160 210 A40 40 0 0 0 145.7 179.4"/>
+      </g>
+      <path d="M206.6 160.0 L249.9 135.0 A150 150 0 0 0 216.4 95.1 L184.3 133.4 A100 100 0 0 1 206.6 160.0 Z" stroke-width="1.6" class="svg-line" style="fill:var(--accent)" fill-opacity=".35"/>
+      <g font-size="13" class="svg-fg">
+        <text x="172" y="198" class="svg-muted">θ</text>
+        <text x="150" y="156">r</text>
+        <text x="244" y="164">dr</text>
+        <text x="244" y="108">r dθ</text>
+        <text x="324" y="228" class="svg-muted">x</text>
+        <text x="128" y="38" class="svg-muted">y</text>
+      </g>
+      <text x="420" y="60" font-size="13" font-weight="700" class="svg-fg">직교좌표의 조각</text>
+      <rect x="450" y="82" width="70" height="46" stroke-width="1.6" class="svg-line" style="fill:var(--accent)" fill-opacity=".35"/>
+      <g font-size="13" class="svg-fg">
+        <text x="478" y="146">dx</text>
+        <text x="526" y="109">dy</text>
+        <text x="400" y="176" font-weight="700">넓이 dx dy</text>
+        <text x="400" y="200" font-weight="700">극좌표 조각의 넓이 ≈ r dr dθ</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽은 극좌표의 작은 조각이고 변이 \(dr\)과 \(r\,d\theta\)입니다. 오른쪽은 직교좌표의 조각 \(dx\times dy\)입니다. 같은 \(d\theta\)라도 \(r\)이 클수록 조각의 호가 길어집니다.</figcaption>
+  </figure>
+
+  <p>그래서 극좌표에서는 넓이 요소가 \(dr\,d\theta\)가 아니라 \(r\,dr\,d\theta\)입니다.</p>
+  <p style="text-align:center">\[dx\,dy = r\,dr\,d\theta\]</p>
+  <p>예를 들어 반지름 \(R\)인 원판에서 \(x^{2} + y^{2} = r^{2}\)이므로 다음과 같이 계산됩니다.</p>
+  <p style="text-align:center">\[\iint_{x^2+y^2\le R^2}(x^{2}+y^{2})\,dx\,dy = \int_{0}^{2\pi}\!\!\int_{0}^{R} r^{2}\,r\,dr\,d\theta = 2\pi\times\frac{R^{4}}{4} = \frac{\pi R^{4}}{2}\]</p>
+  <p>피적분함수 \(r^{2}\)에 넓이 요소의 인자 \(r\)이 곱해져 \(\int r^{3}\,dr\)이 됩니다. 이 인자를 빠뜨리면 \(\int r^{2}\,dr\)이 되어 값이 달라집니다.</p>
+
+  <h3>야코비안</h3>
+
+  <p>좌표를 바꿀 때 조각의 넓이가 몇 배가 되는지를 알아야 합니다. 가장 단순한 예는 \(x = 2u,\ y = 3v\)입니다.
+  \((u, v)\)는 새로 도입하는 변수이고 0편 2장의 광선 방향 \(u\)와 무관합니다.
+  \((u, v)\) 평면에서 변이 \(du\)와 \(dv\)인 조각은 \((x, y)\) 평면에서 변이 \(2\,du\)와 \(3\,dv\)인 직사각형이 되므로 \(dx\,dy = 6\,du\,dv\)입니다.
+  극좌표에서 넓이가 \(r\)배가 되는 것도 같은 원리입니다.</p>
+  <p>\(x,\ y\)가 \(u,\ v\)의 일차식 \(x = m_{11}u + m_{12}v,\ y = m_{21}u + m_{22}v\)이면, 조각은 두 변 \((m_{11},\ m_{21})\,du\)와 \((m_{12},\ m_{22})\,dv\)가 이루는 평행사변형이 됩니다.
+  이 평행사변형의 넓이는 아래 식의 절댓값에 \(du\,dv\)를 곱한 것입니다. 계수를 \(\begin{pmatrix}m_{11}&m_{12}\\m_{21}&m_{22}\end{pmatrix}\)로 모은 것을 행렬(Matrix)이라 하고, 아래 식의 값을 행렬식(<span class="term" data-term="det">Determinant</span>)이라고 합니다.</p>
+  <p style="text-align:center">\[\det\begin{pmatrix}m_{11}&m_{12}\\m_{21}&m_{22}\end{pmatrix} = m_{11}m_{22} - m_{12}m_{21}\]</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 230" role="img" aria-label="왼쪽은 단위 정사각형, 오른쪽은 열 (2, 0)과 (1, 3)이 이루는 평행사변형으로 넓이가 6배가 됨">
+      <defs>
+        <marker id="d3-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="d3-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M50 190 H170" marker-end="url(#d3-mu)"/>
+        <path d="M70 200 V100" marker-end="url(#d3-mu)"/>
+        <path d="M310 190 H540" marker-end="url(#d3-mu)"/>
+        <path d="M330 200 V20" marker-end="url(#d3-mu)"/>
+        <path d="M200 140 H270" marker-end="url(#d3-mu)"/>
+      </g>
+      <rect x="70" y="140" width="50" height="50" stroke-width="1.6" class="svg-line" style="fill:var(--accent)" fill-opacity=".30"/>
+      <path d="M330 190 L430 190 L480 40 L380 40 Z" stroke-width="1.6" class="svg-line" style="fill:var(--accent)" fill-opacity=".30"/>
+      <g fill="none" stroke-width="2.4" style="stroke:var(--accent)">
+        <path d="M330 190 L430 190" marker-end="url(#d3-ac)"/>
+        <path d="M330 190 L380 40" marker-end="url(#d3-ac)"/>
+      </g>
+      <g font-size="12" class="svg-fg">
+        <text x="76" y="170">넓이 1</text>
+        <text x="408" y="120">넓이 6</text>
+        <text x="436" y="206">(2, 0)</text>
+        <text x="338" y="32">(1, 3)</text>
+        <text x="204" y="132" class="svg-muted">변환</text>
+      </g>
+      <g font-size="12" class="svg-muted">
+        <text x="56" y="218">(u, v) 평면의 단위 정사각형</text>
+        <text x="408" y="222">(x, y) 평면의 평행사변형</text>
+      </g>
+    </svg>
+    <figcaption>\(x = 2u + v,\ y = 3v\)는 \((u, v)\) 평면의 단위 정사각형을 두 변 \((2,\ 0)\), \((1,\ 3)\)이 이루는 평행사변형으로 보냅니다. 행렬식은 \(2\times3 - 1\times0 = 6\)이어서 넓이가 6배가 됩니다.</figcaption>
+  </figure>
+
+  <p>\(x = 2u,\ y = 3v\)도 행렬식이 \(2\times3 - 0\times0 = 6\)이어서, 모양이 달라도 넓이의 배율은 같습니다. 행렬식이 음수이면 도형이 뒤집힌 것이고 넓이의 배율은 그 절댓값입니다.</p>
+  <p>일차식이 아닌 변수변환도 \((u, v)\) 근처의 아주 작은 조각에서는 일차식에 가깝게 바뀝니다. 그 자리에서 조각의 넓이가 몇 배가 되는지를 같은 방식으로 구한 값을 야코비안(<span class="term" data-term="jacobian">Jacobian</span>)이라고 합니다.
+  일차식이면 야코비안은 행렬식의 절댓값이고, 변수를 바꿀 때는 이 야코비안을 곱합니다.</p>
+  <p style="text-align:center">\[dx\,dy = (\text{야코비안})\,du\,dv\]</p>
+  <p>극좌표의 야코비안은 \(r\)입니다. 극좌표의 넓이 요소 \(r\,dr\,d\theta\)에서 곱해진 \(r\)이 이 값입니다.</p>
+
+  <details class="fold">
+    <summary>극좌표의 야코비안 계산</summary>
+    <div class="fold-body">
+      <p>\(r\)을 \(dr\)만큼 늘리면 점은 \((\cos\theta,\ \sin\theta)\,dr\)만큼 움직이고, \(\theta\)를 \(d\theta\)만큼 늘리면 \((-r\sin\theta,\ r\cos\theta)\,d\theta\)만큼 움직입니다. 이 두 변이 이루는 평행사변형의 넓이는 다음과 같습니다.</p>
+      <p style="text-align:center">\[\left|\det\begin{pmatrix}\cos\theta&-r\sin\theta\\\sin\theta&r\cos\theta\end{pmatrix}\right| = \left|r\cos^{2}\theta + r\sin^{2}\theta\right| = r\]</p>
+      <p>두 변이 서로 수직이어서 직사각형이 되고 변의 길이가 \(dr\)과 \(r\,d\theta\)라는 앞의 설명과 같은 결과입니다.</p>
+    </div>
+  </details>
+
+  <div class="box note">
+    <p class="box-t">이후 장과의 연결</p>
+    <p>푸리에 공간의 좌표를 극좌표로 바꾸면 \(d\omega_x\,d\omega_y = |\omega|\,d\omega\,d\theta\) 꼴의 식이 나옵니다. 이때 위의 \(r\) 자리에 \(|\omega|\)가 놓입니다.
+    광선의 좌표를 바꿀 때도 야코비안이 가중으로 나타납니다. 변수를 바꾸는 식에 낯선 곱셈 인자가 보이면 야코비안일 가능성이 큽니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">1장 · 페이지 3</p>
+  <h2>1장 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>축을 반시계 방향으로 \(\theta\)만큼 돌린 회전 좌표는 \(x' = x\cos\theta + y\sin\theta,\ y' = -x\sin\theta + y\cos\theta\)입니다. 직선 \(x\cos\theta + y\sin\theta = s\)는 \(x' = s\)인 직선입니다.</li>
+      <li>극좌표와 직교좌표는 \(x = r\cos\theta,\ y = r\sin\theta\)와 \(r = \sqrt{x^{2}+y^{2}}\)로 오가며, \(\theta\)는 점이 있는 사분면에 맞게 정합니다.</li>
+      <li>극좌표의 넓이 요소는 \(dx\,dy = r\,dr\,d\theta\)이고, 곱해진 \(r\)을 빠뜨리지 않아야 합니다.</li>
+      <li>야코비안은 변수변환에서 작은 조각의 넓이가 몇 배가 되는지를 주고, 일차식이면 행렬식 \(m_{11}m_{22} - m_{12}m_{21}\)의 절댓값입니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="qn">마무리 퀴즈 1</p>
+    <p class="q">타원 영역 \(\dfrac{x^{2}}{4} + \dfrac{y^{2}}{9} \le 1\)의 넓이를 구하려고 합니다. \(x = 2u,\ y = 3v\)로 놓으면 이 영역은 \(u^{2} + v^{2} \le 1\)이 됩니다. 타원의 넓이는 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. x = 2u, y = 3v의 야코비안은 2 × 3 − 0 × 0 = 6이어서 dx dy = 6 du dv입니다. 단위 원판의 넓이 π에 6을 곱한 6π입니다.">\(6\pi\)</li>
+      <li data-why="틀립니다. 단위 원판 u² + v² ≤ 1의 넓이입니다. 야코비안 6을 곱하지 않았습니다.">\(\pi\)</li>
+      <li data-why="틀립니다. 야코비안 6을 두 번 곱한 값입니다. 넓이 요소에는 야코비안이 한 번만 곱해집니다.">\(36\pi\)</li>
+      <li data-why="틀립니다. 2 + 3으로 더한 값입니다. 야코비안은 행렬식 2 × 3 − 0 × 0 = 6입니다.">\(5\pi\)</li>
+    </ol>
+    <div class="explain">
+      <p>반축이 \(a,\ b\)인 타원의 넓이 \(\pi ab\)가 이 계산의 일반형입니다. 타원 하나의 투영값을 식으로 구할 때도 타원을 단위 원으로 옮기는 같은 변수변환을 쓸 수 있습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="qn">마무리 퀴즈 2</p>
+    <p class="q">\(\cos\theta = 0.6,\ \sin\theta = 0.8\)인 \(\theta\)만큼 축을 돌렸을 때 점 \((5,\ 5)\)의 회전 좌표 \((x',\ y')\)는 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. x′ 와 y′ 의 자리를 바꾼 값입니다. x′ = 0.6×5 + 0.8×5 = 7입니다.">\((1,\ 7)\)</li>
+      <li data-why="틀립니다. y′ 의 부호가 틀렸습니다. y′ = −0.6×5 + 0.8×5 = 1로 양수입니다.">\((7,\ -1)\)</li>
+      <li data-why="틀립니다. 각 성분에 0.6과 0.8을 따로 곱하기만 하고 더하지 않은 값입니다. x′ 는 두 곱의 합입니다.">\((3,\ 4)\)</li>
+      <li data-why="맞습니다. x′ = 0.6×5 + 0.8×5 = 7이고 y′ = −0.6×5 + 0.8×5 = 1입니다. 거리도 7² + 1² = 50 = 5² + 5²로 같습니다.">\((7,\ 1)\)</li>
+    </ol>
+    <div class="explain">
+      <p>\(x' = 7\)이므로 이 점은 직선 \(0.6x + 0.8y = 7\) 위에 있고, \(y' = 1\)은 그 직선을 따라 잰 위치입니다. 광선 하나를 따라 더하는 적분이 이 \(y'\)에 대한 적분이 됩니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="qn">마무리 퀴즈 3</p>
+    <p class="q">\(\displaystyle\iint_{x^2+y^2\le4}(x^{2}+y^{2})\,dx\,dy\)의 값은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 야코비안 r을 빠뜨린 값입니다. ∫₀^{2π}∫₀² r² dr dθ = 2π × 8/3 = 16π/3입니다.">\(16\pi/3\)</li>
+      <li data-why="맞습니다. 극좌표에서 ∫₀^{2π}∫₀² r² × r dr dθ = 2π × (2⁴/4) = 8π입니다.">\(8\pi\)</li>
+      <li data-why="틀립니다. 야코비안을 r²으로 잘못 쓰면 ∫ r² × r² dr = 32/5이고 64π/5가 됩니다. 야코비안은 r입니다.">\(64\pi/5\)</li>
+      <li data-why="틀립니다. 4π는 피적분함수를 1로 본 원판의 넓이입니다. 피적분함수 x² + y² = r²이 곱해져야 합니다.">\(4\pi\)</li>
+    </ol>
+    <div class="explain">
+      <p>적분 영역이 원, 부채꼴, 고리처럼 중심이 같은 모양이거나 피적분함수가 \(x^{2}+y^{2}\)에만 의존하면 극좌표가 쉽습니다. 영역이 직사각형이면 직교좌표가 쉽습니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>점 \((\sqrt3,\ 1)\)의 극좌표 \((r,\ \theta)\)를 구하세요. 이 \(\theta\)만큼 축을 돌린 회전 좌표 \((x',\ y')\)도 구하고, 극좌표와 어떤 관계인지 설명하세요.</li>
+      <li>극좌표로 \(\displaystyle\iint_{x^2+y^2\le R^2}e^{-(x^2+y^2)}\,dx\,dy\)를 구하고, \(R\to\infty\)일 때의 값을 쓰세요.</li>
+      <li>\(x = 2u + v,\ y = 3u + v\)일 때 \(dx\,dy\)는 \(du\,dv\)의 몇 배인지 구하세요. \((u, v)\)의 단위 정사각형이 이 변환으로 어떤 도형이 되는지도 설명하세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> \(r = \sqrt{3 + 1} = 2\)이고 점이 제1사분면에 있으며 \(\tan\theta = 1/\sqrt3\)이므로 \(\theta = \pi/6\)(\(30^{\circ}\))입니다.
+      \(\theta = \pi/6\)에서 \(\cos\theta = \sqrt3/2,\ \sin\theta = 1/2\)이므로 \(x' = \sqrt3\times\tfrac{\sqrt3}{2} + 1\times\tfrac12 = 2\), \(y' = -\sqrt3\times\tfrac12 + 1\times\tfrac{\sqrt3}{2} = 0\)입니다.
+      회전 좌표는 \((2,\ 0)\)으로 \((r,\ 0)\)이고, 점이 새 \(x'\) 축 위에 있어서 \(x'\)가 곧 \(r\)입니다.</p>
+      <p><b>2번.</b> 극좌표에서 \(\displaystyle\int_{0}^{2\pi}\!\!\int_{0}^{R}e^{-r^{2}}\,r\,dr\,d\theta = 2\pi\left[-\tfrac12e^{-r^{2}}\right]_{0}^{R} = \pi\left(1-e^{-R^{2}}\right)\)입니다.
+      \(R\to\infty\)이면 \(e^{-R^{2}}\to0\)이어서 값은 \(\pi\)입니다.</p>
+      <p><b>3번.</b> 행렬식은 \(2\times1 - 1\times3 = -1\)이고 절댓값이 1이므로 \(dx\,dy = du\,dv\)입니다.
+      단위 정사각형은 두 변 \((2,\ 3)\)과 \((1,\ 1)\)이 이루는 평행사변형이 됩니다. 넓이는 그대로 1이지만 도형이 뒤집힌 모양입니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 \(\tan\theta = 1/\sqrt3\)의 각을 도와 라디안으로 섞어 쓰는 것입니다. 0편 3장의 규약대로 각은 라디안으로 쓰고, \(30^{\circ} = \pi/6\)입니다.</li>
+        <li>1번에서 \(y'\)의 부호를 바꾸어 \(-\sqrt3\times\tfrac12 - 1\times\tfrac{\sqrt3}{2}\)처럼 계산하는 것입니다. \(y' = -x\sin\theta + y\cos\theta\)에서 부호가 붙는 것은 \(x\sin\theta\) 항입니다.</li>
+        <li>2번에서 야코비안 \(r\)을 빠뜨려 \(\int e^{-r^{2}}dr\)을 쓰는 것입니다. 이 적분은 초등함수로 나타낼 수 있는 원시함수가 없어서 막히고, 막힐 때 \(r\)이 빠졌는지 확인합니다.</li>
+        <li>3번에서 행렬식을 \(m_{11}m_{12} - m_{21}m_{22}\)처럼 첨자를 잘못 짝지어 계산하는 것입니다. 곱하는 것은 대각선 \(m_{11}m_{22}\)와 \(m_{12}m_{21}\)입니다.</li>
+        <li>3번에서 \(-1\)을 넓이의 배율로 그대로 쓰는 것입니다. 넓이는 음수가 될 수 없고, 부호는 뒤집힘을 뜻하므로 절댓값 1을 씁니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch02.html"><span>다음 장</span>2장 — 복습: 푸리에 해석, 이 책에 필요한 만큼만</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

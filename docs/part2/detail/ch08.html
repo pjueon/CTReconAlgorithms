@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch08">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8장 · 잡음 크기를 제약으로 바로 쓸 수는 없을까요? ASD-POCS 알고리즘 — CT 재구성 알고리즘2 - 대수적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="제약형 TV 다시 보기">
+  <p class="kicker">8장 · 페이지 1</p>
+  <h1>잡음 크기 ε를 제약으로 바로 쓸 수는 없을까요? ASD-POCS 알고리즘</h1>
+
+  <p class="lead">7장의 GPBB는 벌점형 TV 식을 풀었고, 잡음의 크기는 \(\lambda\)를 고르는 과정에만 간접적으로 들어갔습니다.
+  이 장은 <a href="ch04.html#s5">4장 페이지 5</a>의 다른 형태인 제약형을 그대로 푸는 알고리즘 ASD-POCS를 봅니다.
+  잡음 크기 \(\varepsilon\)을 식에 직접 넣고, 7장과 같은 Shepp-Logan 예제로 GPBB와 나란히 비교합니다.</p>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>제약형 식을 다시 보고, GPBB와 무엇이 다른지 표와 상자 그림으로 정리합니다(페이지 1).</li>
+      <li>여러 볼록 집합의 공통 부분을 사영을 번갈아 써서 찾는 방법(POCS)을 2차원 그림으로 봅니다(페이지 2).</li>
+      <li>데이터 제약을 ART 한 바퀴와 비음수 사영으로 맞추는 단계를 봅니다(페이지 3).</li>
+      <li>TV를 줄이는 걸음과 그 걸음의 크기를 정하는 방법을 봅니다(페이지 4).</li>
+      <li>두 단계의 균형을 반복마다 다시 맞추는 적응 걸음 규칙을 봅니다(페이지 5, 심화).</li>
+      <li>순서도를 완성하고, 심화 페이지의 결과를 표로 모은 뒤, 반복이 진행되는 모습을 위젯으로 따라갑니다(페이지 6).</li>
+      <li>의사코드로 반복마다 어떤 연산이 몇 번 쓰이는지 셉니다(페이지 7, 심화).</li>
+      <li>언제 멈추는지, 결과가 제약을 얼마나 지키는지 봅니다(페이지 8, 심화).</li>
+      <li>\(\varepsilon\)과 걸음 매개변수를 바꾸며 결과가 어떻게 달라지는지, 어떤 실패가 생기는지 봅니다(페이지 9).</li>
+      <li>7장과 같은 조건에서 FBP·GPBB·ASD-POCS를 비교합니다(페이지 10).</li>
+      <li>수렴이 증명되지 않았다는 말의 뜻과, 같은 제약형을 정확히 푸는 후속 연구를 봅니다(페이지 11, 심화).</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지(5, 7, 8, 11)는 처음 읽을 때 건너뛰어도 됩니다. 건너뛰어도 이어서 읽을 수 있도록, 이 페이지들의 결과는 페이지 6에 표로 모아 두었습니다.</p>
+  </div>
+
+  <h2>제약형 식과 잡음 크기</h2>
+
+  <p><a href="ch04.html#s5">4장 페이지 5</a>는 TV 최소화를 두 형태로 썼습니다. 그 가운데 제약형은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\min_{\mathbf{x}\ge\mathbf{0}}\ \mathrm{TV}(\mathbf{x}) \quad \text{s.t.} \quad \lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert \le \varepsilon\]</p>
+
+  <p>데이터와는 \(\varepsilon\) 안쪽으로만 맞으면 되고, 그런 영상 가운데 TV가 가장 작은 것을 고른다는 뜻입니다.
+  \(\varepsilon\)에는 <a href="ch02.html#s8">2장 페이지 8</a>의 불일치 원칙과 같은 값, 곧 측정 잡음의 기대 크기 \(\sqrt{\textstyle\sum_i\sigma_i^2}\)를 쓸 수 있습니다.
+  이 책의 \(K=40\) 예제(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>(심화)의 \(\sigma_p\))에서는 이 값이 \(0.2577\)입니다.
+  잡음이 없으면 데이터와 정확히 맞아야 하므로 \(\varepsilon=0\)으로 둡니다.</p>
+
+  <p>여기서 TV는 평활화하지 않은 원래의 TV입니다. 7장의 \(\mathrm{TV}_\delta\)처럼 꺾인 곳을 둥글게 바꾸지 않습니다.
+  다만 TV를 줄이는 방향을 계산할 때는 기울기가 필요하므로, 그 계산에만 아주 작은 평활 상수를 씁니다(페이지 4).</p>
+
+  <h2>GPBB와 나란히 놓기</h2>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:6.5rem">항목</th><th>GPBB(7장)</th><th>ASD-POCS(이 장)</th></tr>
+      <tr><td>푸는 식</td><td>벌점형: \(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert^2+\lambda\,\mathrm{TV}_\delta(\mathbf{x})\)를 \(\mathbf{x}\ge\mathbf{0}\)에서 최소화</td><td>제약형: \(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert\le\varepsilon\), \(\mathbf{x}\ge\mathbf{0}\)에서 \(\mathrm{TV}\) 최소화</td></tr>
+      <tr><td>잡음 크기가 들어가는 곳</td><td>\(\lambda\)를 고를 때 간접적으로</td><td>\(\varepsilon\)로 식에 직접</td></tr>
+      <tr><td>사람이 정하는 값</td><td>\(\lambda\), \(\delta\)</td><td>\(\varepsilon\), 그리고 걸음을 조절하는 값 여섯 개(대부분 원 논문의 값을 그대로 씀)</td></tr>
+      <tr><td>한 반복</td><td>기울기 한 걸음 → 사영 → 선 탐색</td><td>ART 한 바퀴 → 비음수 사영 → TV 하강 몇 걸음 → 걸음 조절</td></tr>
+      <tr><td>근거</td><td>목적함수가 볼록이라 멈춘 점이 최솟값</td><td>제약형 해로 간다는 증명은 없음(페이지 11)</td></tr>
+    </table>
+  </div>
+
+  <h2>ASD-POCS를 블랙박스 알고리즘으로 보기</h2>
+
+  <p>7장에서 GPBB를 상자로 보았듯이, 처음 읽을 때는 ASD-POCS도 안쪽이 보이지 않는 상자로 두어도 됩니다. 상자에 넣는 것은
+  \(\mathbf{A}\), \(\mathbf{b}\), 잡음 크기 \(\varepsilon\), 그리고 걸음 매개변수이고, 꺼내는 것은 재구성 영상입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 210" role="img" aria-label="ASD-POCS를 상자로 본 그림. 시스템 행렬 A, 측정 데이터 b, 잡음 크기 ε와 걸음 매개변수가 상자로 들어가고, 상자는 데이터 맞추기와 TV 줄이기를 번갈아 하는 반복을 하며, 재구성 영상 x가 나온다. 상자 안쪽의 세부는 페이지 3, 4와 심화 페이지 5, 7, 8에 있다">
+      <defs><marker id="c8-bb-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-line" fill="none" stroke-width="1.3">
+        <rect x="10" y="22" width="140" height="42" rx="6"/>
+        <rect x="10" y="84" width="140" height="42" rx="6"/>
+        <rect x="10" y="146" width="140" height="42" rx="6"/>
+        <rect x="210" y="22" width="270" height="166" rx="10" stroke-width="1.8"/>
+        <rect x="540" y="78" width="130" height="54" rx="6"/>
+      </g>
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.3">
+        <path d="M150 43 H208" marker-end="url(#c8-bb-ar)"/>
+        <path d="M150 105 H208" marker-end="url(#c8-bb-ar)"/>
+        <path d="M150 167 H208" marker-end="url(#c8-bb-ar)"/>
+        <path d="M480 105 H538" marker-end="url(#c8-bb-ar)"/>
+      </g>
+      <g text-anchor="middle" font-size="11" class="svg-fg">
+        <text x="80" y="40">A (시스템 행렬)</text><text x="80" y="102">b (측정 데이터)</text>
+        <text x="80" y="160">ε (잡음 크기)</text><text x="80" y="176">걸음 매개변수</text>
+        <text x="605" y="102">재구성 영상</text><text x="605" y="118">x̂ ≥ 0</text>
+      </g>
+      <g text-anchor="middle" font-size="13" font-weight="700" class="svg-fg"><text x="345" y="50">ASD-POCS</text></g>
+      <g text-anchor="middle" font-size="11" class="svg-fg">
+        <text x="345" y="78">데이터 맞추기(ART·비음수)와</text>
+        <text x="345" y="96">TV 줄이기를 번갈아 하는 반복</text>
+      </g>
+      <g text-anchor="middle" font-size="10" class="svg-muted">
+        <text x="345" y="126">안쪽 세부: 두 단계(페이지 3, 4), 걸음 조절(5),</text>
+        <text x="345" y="141">의사코드(7), 멈춤 판정(8)</text>
+        <text x="345" y="167">5, 7, 8은 심화 — 건너뛰어도 됩니다</text>
+      </g>
+    </svg>
+    <figcaption>ASD-POCS를 상자로 본 그림. 입력은 \(\mathbf{A}\), \(\mathbf{b}\), \(\varepsilon\)과 걸음 매개변수이고 출력은 재구성 영상입니다.</figcaption>
+  </figure>
+
+  <p>상자 밖에서 알아 두면 되는 것은 세 가지입니다. 첫째, 한 반복은 데이터 쪽으로 한 번 당기고 TV가 줄어드는 쪽으로 몇 걸음 가는 것입니다.
+  둘째, 반복마다 ART 한 바퀴(\(\mathbf{A}\)와 \(\mathbf{A}^{\mathsf T}\) 한 번씩에 해당)와 잔차 계산(\(\mathbf{A}\) 한 번), TV 기울기 \(20\)번을 쓰고, 반복 수는 걸음 매개변수가 정합니다(페이지 7, 10).
+  셋째, 결과를 가장 크게 바꾸는 값은 \(\varepsilon\)입니다(페이지 9).</p>
+
+  <div class="box warn">
+    <p class="box-t">출처</p>
+    <p>ASD-POCS(<span class="term" data-term="asdpocs">Adaptive Steepest Descent - Projection Onto Convex Sets</span>)는 E. Y. Sidky, X. Pan,
+    <i>Image reconstruction in circular cone-beam computed tomography by constrained, total-variation minimization</i>, Physics in Medicine and Biology 53(17), 2008, 4777–4807에서 제안되었습니다
+    (<a href="ch05.html#s7">5장 페이지 7</a>에서 인용한 논문입니다). 그 바탕은 잡음 없는 경우(\(\varepsilon=0\))를 다룬 E. Y. Sidky, C.-M. Kao, X. Pan,
+    <i>Accurate image reconstruction from few-views and limited-angle data in divergent-beam CT</i>, Journal of X-Ray Science and Technology 14(2), 2006, 119–139입니다.
+    이 장의 단계 순서와 걸음 매개변수는 2008년 논문의 의사코드를 따랐고, TV 기울기의 계산 방식과 멈춤 규칙은 이 책이 정했습니다. 어느 쪽인지는 그 자리마다 밝힙니다.</p>
+  </div>
+</section>
+
+<!-- ─ 페이지 2 -->
+<section class="screen" data-title="볼록 집합으로의 사영">
+  <p class="kicker">8장 · 페이지 2</p>
+  <h2>번갈아 사영해서 공통 부분 찾기</h2>
+
+  <p>제약형 식의 조건은 두 개입니다. 데이터 조건 \(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert\le\varepsilon\)을 만족하는 영상의 모임과,
+  \(\mathbf{x}\ge\mathbf{0}\)을 만족하는 영상의 모임입니다. 두 모임은 모두 <span class="term" data-term="convexset">볼록 집합</span>이고,
+  우리가 찾는 영상은 두 집합에 동시에 들어 있어야 합니다. 그렇다면 두 집합의 공통 부분에 있는 점은 어떻게 찾을 수 있을까요?</p>
+
+  <p>이미 두 가지 사영을 알고 있습니다. <a href="ch02.html#s1">2장 페이지 1</a>은 현재 점을 직선(식 하나가 나타내는 초평면) 위로 사영하는 것을 광선마다 되풀이했고,
+  <a href="ch06.html#s2">6장 페이지 2</a>는 음수 성분을 \(0\)으로 자르는 사영 \(P_C\)를 썼습니다. 이 둘을 섞어, 집합마다 그 집합으로의 사영을 차례로 적용하고 이를 되풀이하면 됩니다.</p>
+
+  <p style="text-align:center">\[\mathbf{x} \ \leftarrow\ P_{C_m}\big(\cdots P_{C_2}\big(P_{C_1}(\mathbf{x})\big)\cdots\big)\]</p>
+
+  <p>\(C_1,\dots,C_m\)은 볼록 집합이고 \(P_{C_i}\)는 \(C_i\) 안에서 가장 가까운 점으로 보내는 사영입니다. 이 반복을 볼록 집합으로의 사영(<span class="term" data-term="pocs">POCS, Projection Onto Convex Sets</span>)이라고 합니다.
+  2장의 ART는 집합이 모두 초평면인 POCS이고, 2장 페이지 1의 그림이 바로 이 반복입니다.</p>
+
+  <h3>2차원에서 확인하기</h3>
+
+  <p>직선 두 개와 제1사분면(\(x_1\ge0,\ x_2\ge0\))을 세 집합으로 두고, 직선 \(L_1\) → 직선 \(L_2\) → 제1사분면 순서로 사영을 되풀이합니다.
+  세 집합의 공통 부분이 있으면 점은 그 공통 부분으로 다가갑니다. 아래 "공통 부분 있음"에서 \(L_1: x_1+2x_2=4\)와 \(L_2: 3x_1-x_2=5\)는 \((2,1)\)에서 만나고, \((0,4.5)\)에서 출발하면 두 바퀴(사영 여섯 번) 만에 \((2.003,\ 1.009)\), 네 바퀴 만에 소수 넷째 자리까지 \((2,1)\)이 됩니다.</p>
+
+  <p>공통 부분이 없으면 이야기가 다릅니다. "공통 부분 없음"에서는 \(L_2\)를 \(3x_1-x_2=-5.5\)로 옮겨 두 직선이 \((-1,\ 2.5)\)에서 만나게 했습니다. 이 점은 제1사분면 밖이라 세 집합에 동시에 들어 있는 점이 없습니다.
+  이때 점은 한 곳에 머물지 않고 세 점 \((-0.149,\ 2.074)\), \((-1.043,\ 2.372)\), \((0,\ 2.372)\)을 계속 돌아갑니다. <a href="ch02.html#s3">2장 페이지 3</a>에서 잡음 있는 데이터의 ART가 보인 극한 순환(Limit Cycle)과 같은 현상입니다.</p>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="c8-pc-case">
+    <button type="button" data-v="1">공통 부분 있음</button>
+    <button type="button" data-v="0">공통 부분 없음</button>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 330" role="img" aria-label="직선 L1, L2와 제1사분면을 번갈아 사영하는 점의 궤적. 공통 부분이 있으면 점이 두 직선의 교점으로 다가가고, 없으면 세 점을 돌아간다">
+      <defs><marker id="c8-pc-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker></defs>
+      <rect id="c8-pc-q" style="fill:var(--accent-bg)"/>
+      <g id="c8-pc-axes" style="stroke:var(--muted)" stroke-width="1.1"></g>
+      <path id="c8-pc-l1" fill="none" stroke-width="1.8" style="stroke:var(--muted)"/>
+      <path id="c8-pc-l2" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+      <path id="c8-pc-path" fill="none" stroke-width="1.4" style="stroke:var(--accent)"/>
+      <g id="c8-pc-dots"></g>
+      <g font-size="11" class="svg-fg" id="c8-pc-lab"></g>
+    </svg>
+    <figcaption>회색 직선이 \(L_1\), 주황 직선이 \(L_2\), 옅은 색 영역이 제1사분면입니다. 파란 선이 사영을 차례로 적용한 궤적이고, 큰 점이 출발점입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="c8-pc-n">사영 횟수</label>
+    <input id="c8-pc-n" type="range" min="0" max="18" step="1" value="6" style="width:14rem">
+    <b id="c8-pc-nv">6</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c8-pc-out"></p>
+
+  <h3>POCS 수렴 결과의 범위와 한계</h3>
+
+  <p>볼록 집합들의 공통 부분이 비어 있지 않으면, 이렇게 차례로 사영을 되풀이한 점은 공통 부분의 한 점으로 수렴한다고 알려져 있습니다.
+  이 결과는 L. M. Bregman, <i>The method of successive projection for finding a common point of convex sets</i>, Soviet Mathematics Doklady 6, 1965, 688–692와
+  L. G. Gubin, B. T. Polyak, E. V. Raik, <i>The method of projections for finding the common point of convex sets</i>, USSR Computational Mathematics and Mathematical Physics 7(6), 1967, 1–24에서 증명되었고,
+  영상 복원 분야에는 D. C. Youla, H. Webb, <i>Image restoration by the method of convex projections: Part 1—Theory</i>, IEEE Transactions on Medical Imaging 1(2), 1982, 81–94가 이 이름으로 소개했습니다. 증명은 이 책의 범위를 넘습니다.</p>
+
+  <p>보장하지 않는 것도 있습니다. 수렴한 점이 공통 부분 가운데 TV가 가장 작은 점이라는 보장은 없고, 일반적인 볼록 집합에서는 시작점에서 가장 가까운 점이라는 보장도 없습니다.
+  POCS는 "조건을 모두 만족하는 영상 하나"를 줄 뿐, 그 가운데 어느 것을 줄지는 정하지 않습니다. 각도가 적어 조건을 만족하는 영상이 많을 때(<a href="ch05.html#s1">5장</a>의 sparse-view) 이것이 문제가 됩니다.
+  ASD-POCS는 여기에 TV를 줄이는 걸음을 끼워 넣어, 그 가운데 TV가 작은 쪽으로 이끌려는 방법입니다(페이지 4).</p>
+
+<script>
+(function () {
+  var X0 = 130, Y0 = 290, S = 58;                      // 화면 좌표: x1 = -1.5 → 130, x2 = 0 → 290 (가로·세로 같은 축척)
+  function SX(v) { return X0 + (v + 1.5) * S; }
+  function SY(v) { return Y0 - v * S; }
+  var st = { c: 1, n: 6 };
+  var CASES = { 1: { b2: 5, start: [0, 4.5] }, 0: { b2: -5.5, start: [4, 4] } };
+  function projL(p, a, b) { var d = (b - (a[0] * p[0] + a[1] * p[1])) / (a[0] * a[0] + a[1] * a[1]); return [p[0] + d * a[0], p[1] + d * a[1]]; }
+  function line(a, b) {                                  // a·x = b 를 화면 범위에서 자른 선분
+    var x1 = -1.5, x2 = 5, pts = [];
+    [x1, x2].forEach(function (x) { pts.push([x, (b - a[0] * x) / a[1]]); });
+    return 'M' + SX(pts[0][0]).toFixed(1) + ' ' + SY(pts[0][1]).toFixed(1) + ' L' + SX(pts[1][0]).toFixed(1) + ' ' + SY(pts[1][1]).toFixed(1);
+  }
+  var q = document.getElementById('c8-pc-q');
+  q.setAttribute('x', SX(0)); q.setAttribute('y', 10); q.setAttribute('width', SX(5) - SX(0)); q.setAttribute('height', SY(0) - 10);
+  document.getElementById('c8-pc-axes').innerHTML = '<path d="M' + SX(-1.5) + ' ' + SY(0) + ' H' + SX(5) + '"/><path d="M' + SX(0) + ' 4 V326"/>';
+  function fmt(v) { return (Math.abs(v) < 5e-4 ? 0 : v).toFixed(3).replace('-', '−'); }
+  function draw() {
+    var cs = CASES[st.c], p = cs.start.slice(), pts = [p.slice()], i;
+    for (i = 0; i < st.n; i++) {
+      var r = i % 3;
+      if (r === 0) p = projL(p, [1, 2], 4);
+      else if (r === 1) p = projL(p, [3, -1], cs.b2);
+      else p = [Math.max(p[0], 0), Math.max(p[1], 0)];
+      pts.push(p.slice());
+    }
+    document.getElementById('c8-pc-l1').setAttribute('d', line([1, 2], 4));
+    document.getElementById('c8-pc-l2').setAttribute('d', line([3, -1], cs.b2));
+    document.getElementById('c8-pc-path').setAttribute('d', pts.map(function (v, k) { return (k ? 'L' : 'M') + SX(v[0]).toFixed(1) + ' ' + SY(v[1]).toFixed(1); }).join(' '));
+    document.getElementById('c8-pc-dots').innerHTML = pts.map(function (v, k) {
+      return '<circle cx="' + SX(v[0]).toFixed(1) + '" cy="' + SY(v[1]).toFixed(1) + '" r="' + (k === 0 ? 5 : 3) + '" style="fill:var(--accent)"/>';
+    }).join('');
+    document.getElementById('c8-pc-lab').innerHTML =
+      '<text x="' + (SX(0) + 6) + '" y="16" class="svg-muted">x₂</text><text x="' + (SX(5) - 12) + '" y="' + (SY(0) - 6) + '" class="svg-muted">x₁</text>' +
+      '<text x="' + (SX(0) - 6) + '" y="' + (SY(0) + 14) + '" text-anchor="end" class="svg-muted">0</text>' +
+      '<text x="' + SX(4.6) + '" y="' + (SY((4 - 4.6) / 2) - 8) + '">L₁</text>' +
+      '<text x="' + (st.c ? SX(3.1) + 8 : SX(-0.45) + 8) + '" y="' + (st.c ? SY(3 * 3.1 - 5) : SY(3 * -0.45 + 5.5)) + '" style="fill:var(--warn)">L₂</text>' +
+      '<text x="' + SX(3.95) + '" y="' + SY(3.0) + '" class="svg-muted">제1사분면</text>';
+    var last = pts[pts.length - 1], names = ['출발점', 'L₁로 사영', 'L₂로 사영', '제1사분면으로 사영'];
+    document.getElementById('c8-pc-nv').textContent = st.n;
+    document.getElementById('c8-pc-out').textContent = '사영 ' + st.n + '번 뒤의 점 (' + fmt(last[0]) + ', ' + fmt(last[1]) + ') · 마지막 조작: ' + names[st.n === 0 ? 0 : ((st.n - 1) % 3) + 1] +
+      (st.c ? ' · 공통 부분의 점 (2, 1)까지 거리 ' + Math.hypot(last[0] - 2, last[1] - 1).toFixed(4) : ' · 공통 부분이 없어 세 점을 돌아갑니다');
+    var btns = document.querySelectorAll('#c8-pc-case button'), b;
+    for (b = 0; b < btns.length; b++) {
+      var on = +btns[b].getAttribute('data-v') === st.c;
+      btns[b].style.fontWeight = on ? '700' : '400'; btns[b].style.borderColor = on ? 'var(--accent)' : '';
+    }
+  }
+  document.getElementById('c8-pc-case').addEventListener('click', function (e) {
+    var t = e.target.closest('button[data-v]'); if (!t) return; st.c = +t.getAttribute('data-v'); draw();
+  });
+  document.getElementById('c8-pc-n').addEventListener('input', function () { st.n = +this.value; draw(); });
+  draw();
+})();
+</script>
+</section>
+
+<!-- ─ 페이지 3 -->
+<section class="screen" data-title="데이터 제약과 ART 서브반복">
+  <p class="kicker">8장 · 페이지 3</p>
+  <h2>데이터 쪽으로 당기기: ART 한 바퀴와 비음수 사영</h2>
+
+  <p>페이지 2의 방법을 제약형에 그대로 쓰려면 데이터 집합 \(D_\varepsilon := \{\mathbf{x} : \lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert\le\varepsilon\}\)으로의 사영이 필요합니다.
+  \(D_\varepsilon\)도 볼록 집합이지만, 그 안에서 현재 점에 가장 가까운 점을 구하는 일은 그 자체로 \(\mathbf{A}\)가 들어간 최적화 문제를 하나 더 푸는 것과 같습니다.
+  광선이 수십만 개인 CT에서는 반복마다 이것을 풀 수 없습니다.</p>
+
+  <p>ASD-POCS는 이 사영을 정확히 구하지 않습니다. 대신 2장의 ART를 모든 광선에 한 번씩 적용합니다. 광선 하나의 초평면 \(\mathbf{a}_i\cdot\mathbf{x}=b_i\)로의 사영은 닫힌 식이라 바로 계산됩니다.</p>
+
+  <p style="text-align:center">\[\mathbf{x} \ \leftarrow\ \mathbf{x} + \beta\,\frac{b_i-\mathbf{a}_i\cdot\mathbf{x}}{\lVert\mathbf{a}_i\rVert^2}\,\mathbf{a}_i \qquad (i = 1, \dots, m)\]</p>
+
+  <p>\(\beta\)는 <a href="ch02.html#s3">2장 페이지 3</a>의 완화 인자 \(\tau\)와 같은 역할을 하는 수이며, 이 장은 원 논문의 기호 \(\beta\)를 씁니다.
+  ART 한 바퀴가 끝나면 <a href="ch06.html#s2">6장 페이지 2</a>의 비음수 사영으로 음수 성분을 \(0\)으로 자릅니다. 원 논문은 이 두 조작(ART와 비음수 사영)을 합쳐 POCS 단계라고 부릅니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 120" role="img" aria-label="POCS 단계의 순서도. ART 한 바퀴로 모든 광선의 초평면에 차례로 사영한 뒤, 비음수 사영으로 음수 성분을 0으로 자른다. 이 두 상자를 합쳐 POCS 단계라고 부른다">
+      <defs><marker id="c8-p3-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g fill="none" style="stroke:var(--muted)" stroke-width="1.6">
+        <path d="M30 56 H58" marker-end="url(#c8-p3-ah)"/><path d="M290 56 H338" marker-end="url(#c8-p3-ah)"/><path d="M570 56 H608" marker-end="url(#c8-p3-ah)"/>
+      </g>
+      <g fill="none" stroke-width="1.8" style="stroke:var(--muted)">
+        <rect x="60" y="24" width="230" height="64" rx="8"/><rect x="340" y="24" width="230" height="64" rx="8"/>
+        <rect x="50" y="10" width="530" height="98" rx="12" stroke-dasharray="5 4" stroke-width="1"/>
+      </g>
+      <g text-anchor="middle" font-size="12.5" font-weight="700" class="svg-fg"><text x="175" y="50">① ART 한 바퀴</text><text x="455" y="50">② 비음수 사영</text></g>
+      <g text-anchor="middle" font-size="10.5" class="svg-muted">
+        <text x="175" y="70">광선 m개의 초평면에 차례로 사영(β배)</text><text x="455" y="70">음수 성분 → 0</text>
+        <text x="565" y="104" text-anchor="end">POCS 단계</text>
+      </g>
+    </svg>
+    <figcaption>POCS 단계. 반복마다 이 두 상자를 한 번씩 지납니다. 다음 페이지의 TV 하강이 그 뒤에 붙습니다.</figcaption>
+  </figure>
+
+  <h3>잡음이 있을 때 완화 인자를 줄이는 이유</h3>
+
+  <p>잡음이 있는 데이터에서는 모든 초평면을 동시에 지나는 점이 없습니다. <a href="ch02.html#s3">2장 페이지 3</a>에서 보았듯이 이때 ART는 한 점에 멈추지 않고 작은 영역을 계속 돌아갑니다.
+  ASD-POCS는 \(\beta\)를 \(1\)에서 시작해 반복마다 \(\beta_{\mathrm{red}}=0.995\)를 곱해 줄입니다. 걸음이 점점 작아지므로 이 순환도 점점 작아집니다.
+  원 논문은 \(\beta\)가 \(1\)에서 \(0\)을 향해 천천히 줄어든다고 적었고, 이 값이 전체 반복 수를 정한다고 밝혔습니다. 이 책은 \(\beta\)가 \(0.01\)보다 작아지면 멈추며, 그러면 반복은 \(919\)회입니다(페이지 8).</p>
+
+  <h3>POCS 단계의 한계</h3>
+
+  <p>POCS 단계에는 \(\varepsilon\)이 쓰이지 않습니다. ART 한 바퀴는 \(D_\varepsilon\)으로의 사영이 아니라 "잔차를 줄이는 쪽으로 한 번 당기기"일 뿐이고, 결과가 \(D_\varepsilon\) 안에 들어갔는지는 따로 확인해야 합니다.
+  그래서 POCS 단계가 끝나면 두 양을 잽니다.</p>
+
+  <ul>
+    <li>데이터 거리 \(d_{\mathrm{data}} := \lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert\). 이 값을 \(\varepsilon\)과 비교해 지금 영상이 \(D_\varepsilon\) 안에 있는지 판단합니다. 이 계산에 \(\mathbf{A}\)가 한 번 더 필요합니다.</li>
+    <li>POCS 이동 거리 \(d_{\mathrm{POCS}} := \lVert\mathbf{x}_{\text{POCS 뒤}}-\mathbf{x}_{\text{POCS 앞}}\rVert\). POCS 단계가 영상을 얼마나 움직였는지를 나타내며, 다음 페이지의 TV 걸음 크기의 기준이 됩니다.</li>
+  </ul>
+
+  <p>\(\varepsilon\)은 이 두 값을 쓰는 걸음 조절 규칙(페이지 5)에만 들어갑니다. ART 대신 각도 단위로 묶어 갱신하는 SART(<a href="ch02.html#s6">2장 페이지 6</a>)를 쓸 수도 있지만, 그러면 \(d_{\mathrm{POCS}}\)의 크기가 달라져 다음 페이지의 걸음 매개변수를 다시 맞춰야 합니다. 원 논문은 ART를 썼고 이 장도 ART를 씁니다.</p>
+</section>
+
+<!-- ─ 페이지 4 -->
+<section class="screen" data-title="TV 하강 단계">
+  <p class="kicker">8장 · 페이지 4</p>
+  <h2>TV를 줄이는 걸음과 그 크기</h2>
+
+  <p>POCS 단계만 되풀이하면 조건을 만족하는 영상 가운데 아무것이나 하나가 나옵니다(페이지 2). 그 가운데 TV가 작은 쪽으로 가려면 TV를 줄이는 방향으로 움직여야 합니다.
+  ASD-POCS는 POCS 단계 뒤에 다음 걸음을 \(n_{\mathrm{grad}}=20\)번 되풀이합니다.</p>
+
+  <p style="text-align:center">\[\mathbf{x} \ \leftarrow\ \mathbf{x} - \Delta_{\mathrm{TV}}\,\frac{\nabla\mathrm{TV}(\mathbf{x})}{\lVert\nabla\mathrm{TV}(\mathbf{x})\rVert}\]</p>
+
+  <p>\(\nabla\mathrm{TV}\)는 TV의 기울기이고, 그 크기로 나눈 \(\nabla\mathrm{TV}/\lVert\nabla\mathrm{TV}\rVert\)는 길이가 \(1\)인 방향입니다. 그래서 한 걸음은 영상을 정확히 \(\Delta_{\mathrm{TV}}\)만큼 움직입니다.
+  \(\Delta_{\mathrm{TV}}\)는 TV 걸음 길이입니다. 첫 반복에서 \(\Delta_{\mathrm{TV}} = \alpha\, d_{\mathrm{POCS}}\)(\(\alpha=0.2\))로 정하고, 그 뒤로는 페이지 5의 규칙으로 줄입니다.
+  \(20\)걸음을 마친 뒤 POCS 단계 직후의 영상에서 움직인 거리를 \(d_{\mathrm{TV}}\)로 잽니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 120" role="img" aria-label="TV 하강 단계의 순서도. POCS 단계가 끝난 영상에서 TV 기울기를 길이 1로 바꾼 방향으로 Δ_TV씩 20번 걷고, 움직인 거리 d_TV를 잰다">
+      <defs><marker id="c8-p4-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g fill="none" style="stroke:var(--muted)" stroke-width="1.6">
+        <path d="M150 56 H198" marker-end="url(#c8-p4-ah)"/><path d="M470 56 H508" marker-end="url(#c8-p4-ah)"/>
+        <path d="M360 88 V104 H240 V90" marker-end="url(#c8-p4-ah)"/>
+      </g>
+      <g fill="none" stroke-width="1.8" style="stroke:var(--muted)">
+        <rect x="10" y="24" width="140" height="64" rx="8" stroke-dasharray="5 4" stroke-width="1"/>
+        <rect x="200" y="24" width="270" height="64" rx="8"/><rect x="510" y="24" width="120" height="64" rx="8"/>
+      </g>
+      <g text-anchor="middle" font-size="12.5" font-weight="700" class="svg-fg"><text x="80" y="50">①② POCS 단계</text><text x="335" y="50">③ TV 하강</text><text x="570" y="50">d_TV 재기</text></g>
+      <g text-anchor="middle" font-size="10.5" class="svg-muted">
+        <text x="80" y="70">d_data, d_POCS</text><text x="335" y="70">길이 1인 방향으로 Δ_TV씩</text><text x="570" y="70">20걸음의 총 이동</text>
+        <text x="300" y="116">20번 되풀이</text>
+      </g>
+    </svg>
+    <figcaption>TV 하강 단계. 걸음 하나의 길이는 \(\Delta_{\mathrm{TV}}\)이고, 이 단계 전체의 이동 거리가 \(d_{\mathrm{TV}}\)입니다.</figcaption>
+  </figure>
+
+  <h3>방향을 길이 1로 바꾸는 이유</h3>
+
+  <p>TV의 기울기는 영상 값의 크기와 상관없이 비슷한 크기를 가집니다. <a href="ch07.html#s3">7장 페이지 3</a>의 \(10\times10\) 영상 가운데 \(4\times4\) 정사각형 영상으로 계산하면, 높이 \(H\)가 \(0.1\)이든 \(1\)이든 \(10\)이든
+  \(\lVert\nabla\mathrm{TV}\rVert\approx6.08\)로 같습니다. 경계에서 차이가 \(\delta\)보다 크면 기울기의 크기가 \(1\) 안팎으로 눌리기 때문입니다(7장 페이지 3).
+  그래서 기울기를 그대로 곱해 걸으면 같은 걸음이 높이 \(10\)인 영상에는 아주 작은 변화가 되고, 높이 \(0.1\)인 영상에는 지나치게 큰 변화가 됩니다.</p>
+
+  <p>ASD-POCS는 방향만 기울기에서 가져오고, 길이는 POCS 단계가 움직인 거리 \(d_{\mathrm{POCS}}\)에 묶습니다. 영상과 데이터의 값을 모두 \(10\)배 하면 \(d_{\mathrm{POCS}}\)도 \(10\)배가 되고 \(\Delta_{\mathrm{TV}}\)도 \(10\)배가 되므로, 같은 매개변수로 값의 단위가 다른 문제에도 쓸 수 있습니다.
+  이 책의 \(K=40\) 잡음 예제에서 첫 반복의 \(d_{\mathrm{POCS}}\)는 \(43.14\)이고 \(\Delta_{\mathrm{TV}}=0.2\times43.14=8.63\)입니다.</p>
+
+  <details class="fold">
+    <summary>전개: 한 걸음의 이동 거리와 TV가 줄어드는 양</summary>
+    <div class="fold-body">
+      <p>방향 \(\hat{\mathbf{v}} := \nabla\mathrm{TV}(\mathbf{x})/\lVert\nabla\mathrm{TV}(\mathbf{x})\rVert\)는 \(\lVert\hat{\mathbf{v}}\rVert=1\)이므로 한 걸음의 이동은 \(\lVert\Delta_{\mathrm{TV}}\hat{\mathbf{v}}\rVert=\Delta_{\mathrm{TV}}\)입니다.
+      \(20\)걸음의 방향이 모두 같으면 총 이동은 \(20\Delta_{\mathrm{TV}}\)이고, 방향이 조금씩 바뀌면 삼각부등식으로 그보다 작습니다.</p>
+      <p style="text-align:center">\[d_{\mathrm{TV}} \le n_{\mathrm{grad}}\,\Delta_{\mathrm{TV}}\]</p>
+      <p>걸음이 작을 때 TV가 줄어드는 양은 1차 근사(<a href="ch03.html#s7">3장 페이지 7</a>의 기울기)로 어림할 수 있습니다.</p>
+      <p style="text-align:center">\[\mathrm{TV}(\mathbf{x}-\Delta_{\mathrm{TV}}\hat{\mathbf{v}}) \approx \mathrm{TV}(\mathbf{x}) - \Delta_{\mathrm{TV}}\,\langle\nabla\mathrm{TV}(\mathbf{x}),\hat{\mathbf{v}}\rangle = \mathrm{TV}(\mathbf{x}) - \Delta_{\mathrm{TV}}\,\lVert\nabla\mathrm{TV}(\mathbf{x})\rVert\]</p>
+      <p>같은 길이로 움직일 때 TV가 가장 많이 줄어드는 방향이 기울기의 반대 방향이라는 점(가장 가파른 내리막, steepest descent)이 이 식에 들어 있습니다. 이름의 "Steepest Descent"가 이 걸음입니다.
+      원 논문은 \(n_{\mathrm{grad}}\)번의 작은 걸음을 쓰는 이유를, 걸음마다 TV가 줄어드는 것을 확실히 하기 위해서라고 적었습니다.</p>
+    </div>
+  </details>
+
+  <h3>TV 기울기의 계산</h3>
+
+  <p>TV는 차이가 \(0\)인 곳에서 미분할 수 없으므로, 기울기를 계산할 때는 평활 상수가 필요합니다. 2006년 논문은 근호 안에 작은 양수(\(10^{-8}\))를 더한 근사 기울기를 썼습니다.
+  이 책의 위젯은 원 논문의 값을 쓰지 않고, <a href="ch07.html#s3">7장 페이지 3</a>의 기울기 식에 \(\delta=10^{-3}\)을 넣어 씁니다.
+  차이가 \(\delta\)보다 작은 곳만 둥글게 바뀌며, \(10^{-3}\)은 Shepp-Logan 팬텀의 가장 작은 대비(\(0.01\))보다 10배 작습니다. 2006년 논문의 값에 해당하는 \(10^{-4}\)(\(10^{-8}\)의 제곱근)로 바꿔도 \(K=40\) 잡음 예제의 \(919\)회 뒤 오차는 \(0.0196\)으로 같았지만,
+  반복 중간의 값이 컴퓨터의 반올림 차이에 민감해 브라우저마다 수백 회 동안 조금씩 다르게 나와서 \(10^{-3}\)을 골랐습니다. 7장의 GPBB가 \(\delta=0.01\)로 목적함수 자체를 바꾼 것과 달리, 여기서는 줄이려는 목표가 원래의 TV이고 평활 상수는 방향 계산에만 쓰입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">같은 글자 다른 뜻</p>
+    <p>이 장의 \(\alpha\)(\(=0.2\))는 첫 TV 걸음 길이를 \(d_{\mathrm{POCS}}\)의 몇 배로 할지 정하는 비율이며, 6·7장의 BB 걸음 크기 \(\alpha_k\)와 다른 것입니다.
+    \(\beta\)는 ART의 완화 인자(2장의 \(\tau\)와 같은 역할)입니다. 둘 다 원 논문의 기호를 따랐습니다.</p>
+  </div>
+</section>
+
+<!-- ─ 페이지 5 -->
+<section class="screen" data-title="적응 걸음 제어">
+  <p class="kicker">8장 · 페이지 5 · 심화</p>
+  <h2>두 단계의 균형을 맞추는 걸음 규칙</h2>
+
+  <p>POCS 단계는 영상을 데이터 쪽으로 당기고, TV 하강은 데이터에서 멀어지더라도 TV가 줄어드는 쪽으로 밉니다. 두 이동의 크기가 어긋나면 어느 한쪽만 남습니다.
+  TV 걸음이 너무 크면 영상이 평평해지며 데이터와 멀어지고, 너무 작으면 POCS 단계만 남아 비음수 제약이 붙은 ART가 됩니다(2006년 논문이 이 두 경우를 적었습니다).
+  그래서 ASD-POCS는 반복마다 두 이동 거리 \(d_{\mathrm{TV}}\)와 \(d_{\mathrm{POCS}}\)를 비교해 \(\Delta_{\mathrm{TV}}\)를 조절합니다.</p>
+
+  <p style="text-align:center">\[d_{\mathrm{TV}} > r_{\max}\,d_{\mathrm{POCS}} \ \ \text{그리고}\ \ d_{\mathrm{data}} > \varepsilon \quad\Longrightarrow\quad \Delta_{\mathrm{TV}} \leftarrow \alpha_{\mathrm{red}}\,\Delta_{\mathrm{TV}}\]</p>
+
+  <p>그리고 이 판정과 상관없이 반복마다 \(\beta \leftarrow \beta_{\mathrm{red}}\,\beta\)로 ART의 완화 인자를 줄입니다. 규칙이 하는 일은 두 경우로 나누어 읽으면 분명해집니다.</p>
+
+  <ul>
+    <li><b>영상이 \(D_\varepsilon\) 밖에 있을 때</b>(\(d_{\mathrm{data}}>\varepsilon\)): TV 이동이 POCS 이동의 \(r_{\max}\)배(\(0.95\)배)를 넘으면 \(\Delta_{\mathrm{TV}}\)를 \(5\%\) 줄입니다. TV 이동을 POCS 이동보다 작게 유지해, 반복 전체로는 데이터 쪽으로 다가가게 합니다.</li>
+    <li><b>영상이 \(D_\varepsilon\) 안에 있을 때</b>(\(d_{\mathrm{data}}\le\varepsilon\)): \(\Delta_{\mathrm{TV}}\)를 줄이지 않습니다. 반면 \(\beta\)는 계속 줄어 \(d_{\mathrm{POCS}}\)가 작아지므로, TV 이동이 상대적으로 커져 영상이 TV가 낮은 쪽으로 \(D_\varepsilon\)의 경계 밖까지 밀려납니다. 밖으로 나가면 첫째 경우가 되어 다시 데이터 쪽으로 돌아옵니다.</li>
+  </ul>
+
+  <p>원 논문은 이 움직임을, 영상이 \(D_\varepsilon\)의 경계를 따라 TV가 낮은 쪽으로 미끄러지는 것으로 설명했습니다. 제약형의 해는 대개 이 경계 위(\(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert=\varepsilon\))에 있습니다.
+  데이터 조건을 빼면 TV가 \(0\)인 평평한 영상이 가장 좋은 답이 되므로, 데이터 조건이 TV를 더 낮추지 못하게 막고 있기 때문입니다.</p>
+
+  <h3>원 논문의 값</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>매개변수</th><th>원 논문의 값</th><th>하는 일</th></tr>
+      <tr><td>\(\beta\)(처음 값), \(\beta_{\mathrm{red}}\)</td><td>\(1.0\), \(0.995\)</td><td>ART의 완화 인자와 반복마다 곱하는 비율. 전체 반복 수를 정합니다. \(1\)에 가까울수록 더 정확하지만 반복이 늘어납니다.</td></tr>
+      <tr><td>\(n_{\mathrm{grad}}\)</td><td>\(20\)</td><td>POCS 단계 하나 뒤의 TV 걸음 수</td></tr>
+      <tr><td>\(\alpha\)</td><td>\(0.2\)</td><td>첫 반복의 \(\Delta_{\mathrm{TV}}=\alpha\,d_{\mathrm{POCS}}\). 원 논문은 \(n_{\mathrm{grad}}\times\alpha\)를 \(1\) 정도이되 \(1\)보다 큰 값으로 잡으라고 했습니다(여기서는 \(4.0\)). \(\Delta_{\mathrm{TV}}\)는 줄어들기만 하므로 처음 값은 크게 잡는 편이 안전합니다.</td></tr>
+      <tr><td>\(r_{\max}\)</td><td>\(0.95\)</td><td>허용하는 \(d_{\mathrm{TV}}/d_{\mathrm{POCS}}\)의 최대 비율. \(0\)과 \(1\) 사이로 잡아야 영상이 제약을 지킵니다(페이지 9).</td></tr>
+      <tr><td>\(\alpha_{\mathrm{red}}\)</td><td>\(0.95\)</td><td>\(\Delta_{\mathrm{TV}}\)를 줄이는 비율. 한 번에 줄이는 폭(\(5\%\))이 \(\beta\)의 폭(\(0.5\%\))보다 훨씬 커야 TV 걸음을 충분히 빨리 줄일 수 있습니다.</td></tr>
+      <tr><td>\(\varepsilon\)</td><td>문제마다</td><td>데이터 허용 오차. 걸음 매개변수가 아니라 풀려는 식의 일부입니다.</td></tr>
+    </table>
+  </div>
+
+  <p>이 책은 이 여섯 값을 그대로 씁니다. 원 논문은 이 값들이 그 논문의 결과에 두루 쓴 전형적인 값이라고 적었습니다.</p>
+
+  <h3>반복마다의 판정</h3>
+
+  <p>\(K=40\), 잡음 있는 데이터, \(\varepsilon=0.2577\)로 돌린 계산에서 반복 \(k\)를 고르면 그 반복의 네 값과 판정이 나옵니다. 위 막대는 \(d_{\mathrm{POCS}}\)와 \(d_{\mathrm{TV}}\)(점선은 \(r_{\max}\,d_{\mathrm{POCS}}\)), 아래 막대는 \(d_{\mathrm{data}}\)와 \(\varepsilon\)입니다.
+  막대의 길이는 반복마다 두 값 가운데 큰 쪽을 기준으로 다시 맞춥니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 200" role="img" aria-label="선택한 반복의 POCS 이동 거리와 TV 이동 거리, 데이터 거리와 ε를 막대로 비교한 그림">
+      <g font-size="11" class="svg-fg">
+        <text x="20" y="34">d_POCS</text><text x="20" y="64">d_TV</text><text x="20" y="124">d_data</text><text x="20" y="154">ε</text>
+      </g>
+      <rect id="c8-ad-b1" x="90" y="22" height="16" style="fill:var(--warn)"/>
+      <rect id="c8-ad-b2" x="90" y="52" height="16" style="fill:var(--accent)"/>
+      <path id="c8-ad-r" stroke-width="1.4" stroke-dasharray="4 3" style="stroke:var(--fg)"/>
+      <rect id="c8-ad-b3" x="90" y="112" height="16" style="fill:var(--accent)"/>
+      <rect id="c8-ad-b4" x="90" y="142" height="16" style="fill:var(--muted)"/>
+      <g font-size="10.5" class="svg-muted"><text id="c8-ad-t1" y="34"></text><text id="c8-ad-t2" y="64"></text><text id="c8-ad-t3" y="124"></text><text id="c8-ad-t4" y="154"></text></g>
+      <g font-size="11" class="svg-fg"><text id="c8-ad-dec" x="20" y="190"></text></g>
+    </svg>
+    <figcaption>점선은 \(r_{\max}\,d_{\mathrm{POCS}}\)입니다. \(d_{\mathrm{TV}}\) 막대가 점선을 넘고 \(d_{\mathrm{data}}\)가 \(\varepsilon\)보다 길면 \(\Delta_{\mathrm{TV}}\)를 줄입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="c8-ad-k">반복 \(k\)</label>
+    <input id="c8-ad-k" type="range" min="1" max="919" step="1" value="1" style="width:14rem">
+    <b id="c8-ad-kv">1</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c8-ad-out">이 페이지를 열면 계산을 시작합니다…</p>
+
+  <p>\(919\)번의 반복 가운데 \(\Delta_{\mathrm{TV}}\)를 줄인 반복은 \(197\)번입니다. 영상은 \(142\)번째 반복에서 처음 \(D_\varepsilon\) 안에 들어가고, 그 뒤로 경계를 \(59\)번 넘나들며 \(919\)번 가운데 \(676\)번은 안쪽에 있습니다.
+  처음 \(141\)번은 밖에 있으므로 \(d_{\mathrm{TV}}\)가 \(d_{\mathrm{POCS}}\)의 \(0.95\)배 근처에 머물도록 \(\Delta_{\mathrm{TV}}\)가 거의 매번 줄어듭니다(첫 반복의 \(8.63\)에서 \(142\)번째에는 \(0.01\)을 조금 넘는 값).
+  반복 초반(대략 \(300\)회 전)의 값은 브라우저의 수치 계산 차이로 마지막 자리가 조금 다를 수 있습니다.</p>
+
+<script>
+(function () {
+  /* ── 이 장의 계산 도구. 7장 페이지 5의 window.ct6Kit 과 같은 함수(그대로 복사)에 잡음 생성과 ASD-POCS 를 더했다 ── */
+    var D2R = Math.PI / 180;
+    var SL = [
+      ['a', 0, 0, 0.92, 0.69, 90, 2.0], ['b', 0, -0.0184, 0.874, 0.6624, 90, -0.98],
+      ['c', 0.22, 0, 0.31, 0.11, 72, -0.02], ['d', -0.22, 0, 0.41, 0.16, 108, -0.02],
+      ['e', 0, 0.35, 0.25, 0.21, 90, 0.01], ['f', 0, 0.1, 0.046, 0.046, 0, 0.01],
+      ['g', 0, -0.1, 0.046, 0.046, 0, 0.01], ['h', -0.08, -0.605, 0.046, 0.023, 0, 0.01],
+      ['i', 0, -0.605, 0.023, 0.023, 0, 0.01], ['j', 0.06, -0.605, 0.046, 0.023, 90, 0.01]
+    ];
+    function ellMu(x, y) {
+      var v = 0, i, e, c, s, u, w;
+      for (i = 0; i < SL.length; i++) {
+        e = SL[i]; c = Math.cos(e[5] * D2R); s = Math.sin(e[5] * D2R);
+        u = (x - e[1]) * c + (y - e[2]) * s; w = -(x - e[1]) * s + (y - e[2]) * c;
+        if (u * u / (e[3] * e[3]) + w * w / (e[4] * e[4]) <= 1) v += e[6];
+      }
+      return v;
+    }
+    function buildGrid(N, half) {
+      var cell = 2 * half / N, xs = new Float64Array(N * N), ys = new Float64Array(N * N), ix, iy;
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        xs[iy * N + ix] = -half + (ix + 0.5) * cell;
+        ys[iy * N + ix] = half - (iy + 0.5) * cell;
+      }
+      return { N: N, half: half, cell: cell, xs: xs, ys: ys };
+    }
+    function buildSystemMatrix(grid, angles, dets) {
+      var N = grid.N, half = grid.half, cell = grid.cell;
+      var rows = [], k, n, theta, s, c, sn, p0x, p0y, dx, dy;
+      var lines = [], li;
+      for (li = 0; li <= N; li++) lines.push(-half + li * cell);
+      for (k = 0; k < angles.length; k++) {
+        theta = angles[k]; c = Math.cos(theta); sn = Math.sin(theta);
+        for (n = 0; n < dets.length; n++) {
+          s = dets[n]; p0x = s * c; p0y = s * sn; dx = -sn; dy = c;
+          var txlo, txhi, tylo, tyhi, tmin, tmax, ts, li2, t, x, y, ix, iy, idx, skip = false;
+          if (Math.abs(dx) > 1e-12) { txlo = (-half - p0x) / dx; txhi = (half - p0x) / dx; if (txlo > txhi) { t = txlo; txlo = txhi; txhi = t; } }
+          else { if (p0x < -half || p0x > half) skip = true; txlo = -1e9; txhi = 1e9; }
+          if (!skip) {
+            if (Math.abs(dy) > 1e-12) { tylo = (-half - p0y) / dy; tyhi = (half - p0y) / dy; if (tylo > tyhi) { t = tylo; tylo = tyhi; tyhi = t; } }
+            else { if (p0y < -half || p0y > half) skip = true; tylo = -1e9; tyhi = 1e9; }
+          }
+          if (skip) { rows.push({ cols: [], vals: [] }); continue; }
+          tmin = Math.max(txlo, tylo); tmax = Math.min(txhi, tyhi);
+          if (tmin >= tmax - 1e-12) { rows.push({ cols: [], vals: [] }); continue; }
+          ts = [tmin, tmax];
+          for (li2 = 1; li2 < N; li2++) {
+            var xk = lines[li2], yk = lines[li2];
+            if (Math.abs(dx) > 1e-12) { t = (xk - p0x) / dx; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+            if (Math.abs(dy) > 1e-12) { t = (yk - p0y) / dy; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+          }
+          ts.sort(function (a, b) { return a - b; });
+          var cols = [], vals = [], map = {};
+          for (li2 = 0; li2 < ts.length - 1; li2++) {
+            var ta = ts[li2], tb = ts[li2 + 1], len = tb - ta;
+            if (len <= 1e-12) continue;
+            var tm = (ta + tb) / 2;
+            x = p0x + tm * dx; y = p0y + tm * dy;
+            ix = Math.floor((x + half) / cell); iy = Math.floor((half - y) / cell);
+            if (ix < 0 || ix >= N || iy < 0 || iy >= N) continue;
+            idx = iy * N + ix;
+            if (map.hasOwnProperty(idx)) { vals[map[idx]] += len; } else { map[idx] = cols.length; cols.push(idx); vals.push(len); }
+          }
+          rows.push({ cols: cols, vals: vals });
+        }
+      }
+      var M = rows.length, Npix = N * N;
+      return { rows: rows, M: M, Npix: Npix };
+    }
+    function forward(sysA, x) {
+      var M = sysA.M, rows = sysA.rows, b = new Float64Array(M), i, j, r, s;
+      for (i = 0; i < M; i++) { r = rows[i]; s = 0; for (j = 0; j < r.cols.length; j++) s += r.vals[j] * x[r.cols[j]]; b[i] = s; }
+      return b;
+    }
+    function backward(sysA, dvec) {
+      var M = sysA.M, rows = sysA.rows, x = new Float64Array(sysA.Npix), i, j, r;
+      for (i = 0; i < M; i++) { r = rows[i]; for (j = 0; j < r.cols.length; j++) x[r.cols[j]] += r.vals[j] * dvec[i]; }
+      return x;
+    }
+    function rmseFn(x, xt) {
+      var i, s = 0; for (i = 0; i < x.length; i++) { var dd = x[i] - xt[i]; s += dd * dd; }
+      return Math.sqrt(s / x.length);
+    }
+    function tvEnergyGradHuber(x, N, delta) {
+      function at(ix, iy) { if (ix < 0 || ix >= N || iy < 0 || iy >= N) return 0; return x[iy * N + ix]; }
+      var g = new Float64Array(N * N), ix, iy, coeff = new Float64Array(N * N);
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        if (ix === N - 1 && iy === N - 1) { coeff[iy * N + ix] = 0; continue; }
+        var xc = at(ix, iy), xr = (ix < N - 1) ? at(ix + 1, iy) : xc, xd = (iy < N - 1) ? at(ix, iy + 1) : xc;
+        var dx = (ix < N - 1) ? (xr - xc) : 0, dy = (iy < N - 1) ? (xd - xc) : 0;
+        var t = Math.sqrt(dx * dx + dy * dy);
+        coeff[iy * N + ix] = (t <= delta) ? (1 / delta) : (t > 1e-12 ? (1 / t) : 0);
+      }
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        var xc = at(ix, iy), xr = (ix < N - 1) ? at(ix + 1, iy) : xc, xd = (iy < N - 1) ? at(ix, iy + 1) : xc;
+        var dx1 = (ix < N - 1) ? (xr - xc) : 0, dy1 = (iy < N - 1) ? (xd - xc) : 0;
+        var c1 = coeff[iy * N + ix];
+        var term1x = -c1 * dx1, term1y = -c1 * dy1, term2 = 0, term3 = 0;
+        if (ix > 0) { var xl = at(ix - 1, iy), cl = coeff[iy * N + (ix - 1)]; term2 = cl * (xc - xl); }
+        if (iy > 0) { var xu = at(ix, iy - 1), cu = coeff[(iy - 1) * N + ix]; term3 = cu * (xc - xu); }
+        g[iy * N + ix] = term1x + term1y + term2 + term3;
+      }
+      return g;
+    }
+    function tvValue(x, N, delta) {
+      var s = 0, ix, iy, c, dx, dy, t;
+      for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+        c = x[iy * N + ix];
+        dx = ix < N - 1 ? x[iy * N + ix + 1] - c : 0;
+        dy = iy < N - 1 ? x[(iy + 1) * N + ix] - c : 0;
+        t = Math.sqrt(dx * dx + dy * dy);
+        s += t <= delta ? t * t / (2 * delta) : t - delta / 2;
+      }
+      return s;
+    }
+    function dot(a, b) { var s = 0, i; for (i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+    function gpbb(sysA, N, b, lambda, delta, opt) {
+      var tol = opt.tol, maxIter = opt.maxIter, alpha = opt.alpha0, keep = !!opt.keep;
+      var n = sysA.Npix, m = sysA.M, i, k;
+      var x = new Float64Array(n), r = new Float64Array(m);
+      for (i = 0; i < m; i++) r[i] = -b[i];
+      var g = backward(sysA, r); for (i = 0; i < n; i++) g[i] *= 2;          // TV 기울기는 x=0 에서 0
+      var J0 = dot(r, r) + lambda * tvValue(x, N, delta);
+      var hist = { J: [J0], un: [], a: [], eta: [] }, snaps = keep ? [new Float64Array(x)] : null;
+      var recent = [J0], u = new Float64Array(n), xe = new Float64Array(n), re = new Float64Array(m), gn, s = new Float64Array(n), y = new Float64Array(n);
+      for (k = 0; k < maxIter; k++) {
+        for (i = 0; i < n; i++) u[i] = Math.max(x[i] - alpha * g[i], 0) - x[i];
+        var un = Math.sqrt(dot(u, u)); hist.un.push(un); hist.a.push(alpha);
+        if (un < tol) break;
+        var Au = forward(sysA, u), eta = 1, gu = dot(g, u), mx = Math.max.apply(null, recent), f;
+        for (;;) {
+          for (i = 0; i < n; i++) xe[i] = x[i] + eta * u[i];
+          for (i = 0; i < m; i++) re[i] = r[i] + eta * Au[i];
+          f = dot(re, re) + (lambda > 0 ? lambda * tvValue(xe, N, delta) : 0);
+          if (f <= mx + 1e-4 * eta * gu || eta < 1e-12) break;
+          eta /= 2;
+        }
+        for (i = 0; i < n; i++) { s[i] = eta * u[i]; x[i] += s[i]; }
+        for (i = 0; i < m; i++) r[i] += eta * Au[i];
+        gn = backward(sysA, r); for (i = 0; i < n; i++) gn[i] *= 2;
+        if (lambda > 0) { var gt = tvEnergyGradHuber(x, N, delta); for (i = 0; i < n; i++) gn[i] += lambda * gt[i]; }
+        for (i = 0; i < n; i++) y[i] = gn[i] - g[i];
+        var sy = dot(s, y), ss = dot(s, s);
+        alpha = sy > 0 ? Math.min(1e8, Math.max(1e-8, ss / sy)) : 1e8;
+        g = gn;
+        hist.J.push(f); hist.eta.push(eta);
+        recent.push(f); if (recent.length > 10) recent.shift();
+        if (keep) snaps.push(new Float64Array(x));
+      }
+      return { x: x, iters: k, hist: hist, snaps: snaps };
+    }
+  function imageURL(arr, lo, hi) {
+    var cv = document.createElement('canvas'), ctx, im, i, g;
+    cv.width = N; cv.height = N; ctx = cv.getContext('2d'); im = ctx.createImageData(N, N);
+    for (i = 0; i < N * N; i++) {
+      g = Math.round(255 * Math.max(0, Math.min(1, (arr[i] - lo) / (hi - lo))));
+      im.data[4 * i] = im.data[4 * i + 1] = im.data[4 * i + 2] = g; im.data[4 * i + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gaussian(rng) {
+    var u1 = Math.max(rng(), 1e-12), u2 = rng();
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+  function addNoise(b) {                                  // 2장 페이지 8과 같은 잡음(N0 = 1e5, 같은 시드)
+    var rng = mulberry32(20261101), bn = new Float64Array(b.length), s2 = 0, i, sg;
+    for (i = 0; i < b.length; i++) { sg = Math.exp(b[i] / 2) / Math.sqrt(1e5); bn[i] = b[i] + gaussian(rng) * sg; s2 += sg * sg; }
+    return { b: bn, norm: Math.sqrt(s2) };
+  }
+  /* ASD-POCS: Sidky·Pan(2008)의 의사코드. TV 기울기는 7장의 식에 δ = 1e-3 */
+  function asdpocs(sysA, N, b, eps, opt) {
+    opt = opt || {};
+    var beta = 1, bred = opt.bred || 0.995, ng = opt.ng || 20, alpha = opt.alpha || 0.2,
+        rmax = opt.rmax || 0.95, ared = opt.ared || 0.95, delta = 1e-3, nIter = opt.nIter || 919, keep = !!opt.keep;
+    var n = sysA.Npix, m = sysA.M, rows = sysA.rows, nrm = new Float64Array(m), i, j, r, s, it, q;
+    for (i = 0; i < m; i++) { r = rows[i]; s = 0; for (j = 0; j < r.vals.length; j++) s += r.vals[j] * r.vals[j]; nrm[i] = s; }
+    var f = new Float64Array(n), f0 = new Float64Array(n), fres = new Float64Array(n), dtvg = 0;
+    var H = { dd: [], dp: [], dg: [], dtvg: [], beta: [], red: [], tv: [], ca: [] }, snaps = keep ? [] : null;
+    for (it = 0; it < nIter; it++) {
+      f0.set(f);
+      for (i = 0; i < m; i++) {                          // ① ART 한 바퀴
+        if (!nrm[i]) continue;
+        r = rows[i]; s = 0;
+        for (j = 0; j < r.cols.length; j++) s += r.vals[j] * f[r.cols[j]];
+        s = beta * (b[i] - s) / nrm[i];
+        for (j = 0; j < r.cols.length; j++) f[r.cols[j]] += s * r.vals[j];
+      }
+      for (i = 0; i < n; i++) if (f[i] < 0) f[i] = 0;   // ② 비음수 사영
+      fres.set(f);
+      var g = forward(sysA, f), dd = 0, dp = 0, dg = 0, e;
+      for (i = 0; i < m; i++) { e = g[i] - b[i]; dd += e * e; } dd = Math.sqrt(dd);
+      for (i = 0; i < n; i++) { e = f[i] - f0[i]; dp += e * e; } dp = Math.sqrt(dp);
+      if (it === 0) dtvg = alpha * dp;
+      if (opt.ca) {                                      // 멈춤 점검용 코사인(페이지 8)
+        for (i = 0; i < m; i++) g[i] -= b[i];
+        var gd = backward(sysA, g), gt0 = tvEnergyGradHuber(f, N, delta), a1 = 0, a2 = 0, a3 = 0;
+        for (i = 0; i < n; i++) if (f[i] > 0) { a1 += gd[i] * gt0[i]; a2 += gd[i] * gd[i]; a3 += gt0[i] * gt0[i]; }
+        H.ca.push(a2 > 0 && a3 > 0 ? a1 / Math.sqrt(a2 * a3) : 0);
+      }
+      f0.set(f);
+      for (q = 0; q < ng; q++) {                         // ③ TV 하강 n_grad 걸음
+        var gt = tvEnergyGradHuber(f, N, delta), gn = Math.sqrt(dot(gt, gt));
+        if (!(gn > 0)) break;
+        for (i = 0; i < n; i++) f[i] -= dtvg * gt[i] / gn;
+      }
+      for (i = 0; i < n; i++) { e = f[i] - f0[i]; dg += e * e; } dg = Math.sqrt(dg);
+      var red = dg > rmax * dp && dd > eps;
+      H.dd.push(dd); H.dp.push(dp); H.dg.push(dg); H.dtvg.push(dtvg); H.beta.push(beta); H.red.push(red);
+      if (keep) { snaps.push(new Float32Array(fres)); H.tv.push(tvValue(fres, N, 1e-9)); }
+      if (red) dtvg *= ared;                             // ④ 걸음 조절
+      beta *= bred;
+    }
+    return { x: new Float64Array(fres), hist: H, snaps: snaps };
+  }
+
+  var N = 48, K = 40, grid = buildGrid(N, 1), Ns = 61, ds = 2.9 / (Ns - 1), dets = [], angles = [], i;
+  for (i = 0; i < Ns; i++) dets.push(-1.45 + i * ds);
+  for (i = 0; i < K; i++) angles.push(i * Math.PI / K);
+  var xTrue = new Float64Array(N * N); for (i = 0; i < N * N; i++) xTrue[i] = ellMu(grid.xs[i], grid.ys[i]);
+  var sysA = buildSystemMatrix(grid, angles, dets), bData = forward(sysA, xTrue), noisy = addNoise(bData);
+  var run = null, waiting = [];
+  /* 기준 계산(K=40, 잡음, ε = 잡음 크기, 1,400회)은 그 계산을 쓰는 페이지가 처음 열릴 때 한 번만 한다 */
+  function getRun(cb) {
+    if (run) { cb(run); return; }
+    waiting.push(cb);
+    if (waiting.length > 1) return;
+    setTimeout(function () {
+      run = asdpocs(sysA, N, noisy.b, noisy.norm, { nIter: 1400, keep: true, ca: true });
+      run.rmse = run.snaps.map(function (sn) { return rmseFn(sn, xTrue); });
+      var w = waiting; waiting = []; w.forEach(function (f) { f(run); });
+    }, 30);
+  }
+  function onShow(sec, fn) {                              // 그 페이지가 화면에 나올 때 한 번 실행
+    var done = false;
+    function check() { if (!done && sec.classList.contains('is-active')) { done = true; obs.disconnect(); setTimeout(fn, 20); } }
+    var obs = new MutationObserver(check);
+    obs.observe(sec, { attributes: true, attributeFilter: ['class'] });
+    check();
+  }
+  window.ct8Kit = { N: N, grid: grid, dets: dets, sysA: sysA, bData: bData, noisy: noisy, xTrue: xTrue, imageURL: imageURL,
+                    gpbb: gpbb, asdpocs: asdpocs, rmseFn: rmseFn, forward: forward, backward: backward, tvValue: tvValue,
+                    buildSystemMatrix: buildSystemMatrix, tvEnergyGradHuber: tvEnergyGradHuber, getRun: getRun, onShow: onShow };
+
+  /* 걸음 규칙 위젯 */
+  var sec = document.currentScript.closest('section'), sl = document.getElementById('c8-ad-k'), out = document.getElementById('c8-ad-out');
+  function fx(v) { return v < 0.01 ? v.toExponential(2) : v.toPrecision(3); }
+  onShow(sec, function () {
+    out.textContent = '계산 중입니다…';
+    getRun(function (R) {
+      var H = R.hist, eps = noisy.norm, W = 400;
+      function show(k) {
+        var t = k - 1, dp = H.dp[t], dg = H.dg[t], dd = H.dd[t], m1 = Math.max(dp, dg), m2 = Math.max(dd, eps);
+        function bar(id, v, mx, tid) {
+          var w = Math.max(1, W * v / mx);
+          document.getElementById(id).setAttribute('width', w.toFixed(1));
+          var tt = document.getElementById(tid); tt.setAttribute('x', (96 + w).toFixed(1)); tt.textContent = fx(v);
+        }
+        bar('c8-ad-b1', dp, m1, 'c8-ad-t1'); bar('c8-ad-b2', dg, m1, 'c8-ad-t2');
+        bar('c8-ad-b3', dd, m2, 'c8-ad-t3'); bar('c8-ad-b4', eps, m2, 'c8-ad-t4');
+        var rx = 90 + W * 0.95 * dp / m1;
+        document.getElementById('c8-ad-r').setAttribute('d', 'M' + rx.toFixed(1) + ' 46 V74');
+        document.getElementById('c8-ad-kv').textContent = k;
+        var over = dg > 0.95 * dp, out2 = dd > eps;
+        document.getElementById('c8-ad-dec').textContent = H.red[t] ? '판정: Δ_TV를 0.95배로 줄입니다'
+          : '판정: Δ_TV를 그대로 둡니다 (' + (!out2 ? 'd_data ≤ ε, 영상이 D_ε 안에 있음' : 'd_TV ≤ 0.95·d_POCS') + ')';
+        out.textContent = 'k = ' + k + ' · Δ_TV = ' + fx(H.dtvg[t]) + ' · β = ' + H.beta[t].toFixed(4) + ' · d_TV/d_POCS = ' + (dg / dp).toFixed(3) +
+          ' · ' + (out2 ? 'D_ε 밖' : 'D_ε 안') + (over ? '' : '');
+      }
+      sl.addEventListener('input', function () { show(+sl.value); });
+      show(+sl.value);
+    });
+  });
+})();
+</script>
+</section>
+
+<!-- ─ 페이지 6 -->
+<section class="screen" data-title="전체 알고리즘과 반복 따라가기">
+  <p class="kicker">8장 · 페이지 6</p>
+  <h2>ASD-POCS 전체 알고리즘: 반복 따라가기</h2>
+
+  <p>페이지 3~5의 단계를 한 반복으로 이으면 아래 순서도가 됩니다. 왼쪽 위에서 출발해 POCS 단계(①②)로 데이터 쪽으로 당기고, 두 거리를 잰 뒤,
+  TV 하강(③)으로 TV를 줄이고, 걸음 조절(④)을 거쳐 멈춤을 판정합니다. 결과로 내놓는 영상은 마지막 반복에서 POCS 단계를 마친 직후의 영상입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="ASD-POCS 한 반복의 순서도. ART 한 바퀴, 비음수 사영, 거리 재기, TV 하강, 걸음 조절, 멈춤 판정 순서이며 멈추지 않으면 처음으로 돌아간다. 멈추면 POCS 단계 직후의 영상을 내놓는다">
+      <defs><marker id="c8-fc-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g fill="none" style="stroke:var(--muted)" stroke-width="1.6">
+        <path d="M150 55 H168" marker-end="url(#c8-fc-ah)"/>
+        <path d="M310 55 H328" marker-end="url(#c8-fc-ah)"/>
+        <path d="M470 55 H488" marker-end="url(#c8-fc-ah)"/>
+        <path d="M560 86 V130" marker-end="url(#c8-fc-ah)"/>
+        <path d="M488 161 H470" marker-end="url(#c8-fc-ah)"/>
+        <path d="M330 161 H312" marker-end="url(#c8-fc-ah)"/>
+        <path d="M240 192 V206" marker-end="url(#c8-fc-ah)"/>
+        <path d="M170 161 H80 V88" marker-end="url(#c8-fc-ah)"/>
+      </g>
+      <g fill="none" stroke-width="1.8" style="stroke:var(--muted)">
+        <rect x="10" y="24" width="140" height="62" rx="8"/><rect x="170" y="24" width="140" height="62" rx="8"/>
+        <rect x="330" y="24" width="140" height="62" rx="8"/><rect x="490" y="24" width="140" height="62" rx="8"/>
+        <rect x="490" y="130" width="140" height="62" rx="8"/><rect x="330" y="130" width="140" height="62" rx="8" stroke-dasharray="5 4"/>
+        <path d="M240 130 L310 161 L240 192 L170 161 Z"/>
+        <rect x="160" y="208" width="160" height="36" rx="18"/>
+      </g>
+      <g text-anchor="middle" font-size="12.5" font-weight="700" class="svg-fg">
+        <text x="80" y="50">① ART 한 바퀴</text><text x="240" y="50">② 비음수 사영</text><text x="400" y="50">거리 재기</text><text x="560" y="50">③ TV 하강</text>
+        <text x="560" y="156">④ 걸음 조절</text><text x="400" y="156">β 줄이기</text><text x="240" y="165">멈춤?</text><text x="240" y="231">POCS 직후 영상 출력</text>
+      </g>
+      <g text-anchor="middle" font-size="10.5" class="svg-muted">
+        <text x="80" y="70">β배로 초평면 사영</text><text x="240" y="70">음수 → 0</text><text x="400" y="70">d_data, d_POCS</text><text x="560" y="70">Δ_TV씩 20걸음, d_TV</text>
+        <text x="560" y="176">조건이면 Δ_TV × 0.95</text><text x="400" y="176">β × 0.995</text>
+        <text x="110" y="120">아니오</text><text x="262" y="204" text-anchor="start">예</text>
+      </g>
+    </svg>
+    <figcaption>ASD-POCS 한 반복의 흐름. 페이지 3(①②), 페이지 4(③), 페이지 5(④, 심화)의 단계를 이은 것입니다. 멈춤 판정은 페이지 8(심화)에 있습니다.</figcaption>
+  </figure>
+
+  <p><a href="ch06.html#s5">6장 페이지 5</a>의 GPBB 순서도와 나란히 놓으면 구조의 차이가 보입니다. GPBB는 목적함수 하나의 기울기로 한 걸음을 가고 사영합니다.
+  ASD-POCS에는 목적함수가 둘로 나뉘어 있습니다. 데이터 조건은 사영(ART)으로 맞추고, TV는 기울기로 줄이며, 두 단계의 비중은 걸음 조절로 정합니다.
+  GPBB의 선 탐색(⑤ 안전장치)이 하던 "너무 큰 걸음 막기"를 ASD-POCS에서는 ④가 합니다.</p>
+
+  <h3>심화 페이지의 결과</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:5.5rem">항목</th><th>결과</th><th style="width:5rem">근거</th></tr>
+      <tr><td>걸음 조절</td><td>영상이 \(D_\varepsilon\) 밖에 있고 TV 이동이 POCS 이동의 \(0.95\)배를 넘으면 \(\Delta_{\mathrm{TV}}\)를 \(0.95\)배로 줄입니다. 안에 있으면 줄이지 않습니다. \(\beta\)는 매번 \(0.995\)배로 줄입니다.</td><td>페이지 5(심화)</td></tr>
+      <tr><td>매개변수</td><td>\(\beta=1\), \(\beta_{\mathrm{red}}=0.995\), \(n_{\mathrm{grad}}=20\), \(\alpha=0.2\), \(r_{\max}=0.95\), \(\alpha_{\mathrm{red}}=0.95\)(원 논문의 값)</td><td>페이지 5(심화)</td></tr>
+      <tr><td>비용</td><td>반복당 ART 한 바퀴(\(\mathbf{A}\)·\(\mathbf{A}^{\mathsf T}\) 각 한 번에 해당), \(d_{\mathrm{data}}\)를 위한 \(\mathbf{A}\) 한 번, TV 기울기 \(20\)번. 반복 수는 \(\beta_{\mathrm{red}}\)가 정합니다(이 책의 규칙으로 \(919\)회).</td><td>페이지 7(심화)</td></tr>
+      <tr><td>멈춤</td><td>원 논문은 제약 만족, 최적성 점검값, \(\beta\)가 충분히 작은지를 함께 봅니다. 이 책은 \(\beta&lt;0.01\)에서 멈추고(\(919\)회) 최적성 점검값을 함께 보고합니다.</td><td>페이지 8(심화)</td></tr>
+      <tr><td>제약</td><td>출력이 POCS 직후의 영상이라 \(\mathbf{x}\ge\mathbf{0}\)은 정확히 지켜지고, 데이터 조건은 경계 근처에서 근사적으로 지켜집니다(\(d_{\mathrm{data}}=0.2571\), \(\varepsilon=0.2577\)).</td><td>페이지 8(심화)</td></tr>
+      <tr><td>수렴</td><td>제약형의 해로 간다는 증명은 없습니다. 원 논문은 그래서 이름을 따로 붙였다고 밝혔습니다.</td><td>페이지 11(심화)</td></tr>
+    </table>
+  </div>
+
+  <h3>반복 따라가기</h3>
+
+  <p>\(K=40\), 잡음 있는 데이터(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>(심화)의 \(\sigma_p\)), \(\varepsilon=0.2577\)로 ASD-POCS를 실제로 돌린 결과입니다. 슬라이더로 반복 \(k\)를 고르면 그 반복의 영상(POCS 직후)과 값이 나옵니다.
+  파란선은 데이터 거리 \(d_{\mathrm{data}}\), 점선은 \(\varepsilon\), 주황선은 POCS 이동 거리 \(d_{\mathrm{POCS}}\), 회색선은 TV 걸음 길이 \(\Delta_{\mathrm{TV}}\)입니다. 계산에 2~3초쯤 걸립니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 290" role="img" aria-label="왼쪽은 선택한 반복에서의 재구성 영상, 오른쪽은 반복에 따른 데이터 거리, ε, POCS 이동 거리, TV 걸음 길이를 세로 로그 눈금으로 그린 그래프">
+      <image id="c8-it-img" x="14" y="40" width="240" height="240" preserveAspectRatio="none"/>
+      <rect x="14" y="40" width="240" height="240" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <g font-size="11.5" font-weight="700" class="svg-fg"><text x="14" y="30">반복 k = <tspan id="c8-it-kv">1</tspan>의 영상</text></g>
+      <g class="svg-line" fill="none" stroke-width="1" opacity=".6"><path d="M290 40 V230 H620"/></g>
+      <g id="c8-it-grid"></g>
+      <path id="c8-it-eps" fill="none" stroke-width="1.2" stroke-dasharray="5 4" style="stroke:var(--fg)"/>
+      <path id="c8-it-dd" fill="none" stroke-width="1.8" style="stroke:var(--accent)"/>
+      <path id="c8-it-dp" fill="none" stroke-width="1.3" style="stroke:var(--warn)"/>
+      <path id="c8-it-st" fill="none" stroke-width="1.3" style="stroke:var(--muted)"/>
+      <g id="c8-it-mark">
+        <path d="M290 40 V230" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--muted)"/>
+        <circle id="c8-it-md" cx="290" cy="40" r="4" style="fill:var(--accent)"/>
+      </g>
+      <g font-size="10" class="svg-muted">
+        <text x="290" y="34">값(로그 눈금)</text>
+        <text x="620" y="246" text-anchor="end">반복 k (1~919)</text>
+      </g>
+      <g font-size="10.5">
+        <text x="290" y="266" style="fill:var(--accent)">d_data</text>
+        <text x="340" y="266" class="svg-fg">--- ε</text>
+        <text x="380" y="266" style="fill:var(--warn)">d_POCS</text>
+        <text x="440" y="266" class="svg-muted">Δ_TV</text>
+      </g>
+    </svg>
+    <figcaption>영상은 값 \(0.98\)~\(1.05\)를 흑백으로 나타냅니다(7장의 비교와 같은 범위).</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="c8-it-k">반복 \(k\)</label>
+    <input id="c8-it-k" type="range" min="1" max="919" step="1" value="1" style="width:14rem">
+    <button type="button" id="c8-it-play">재생</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c8-it-out">이 페이지를 열면 계산을 시작합니다…</p>
+
+  <p>\(d_{\mathrm{data}}\)는 \(8.33\)에서 시작해 \(k=100\)에 약 \(0.38\)이 되고, \(k=142\)에 처음 \(\varepsilon\) 아래로 내려온 뒤 \(\varepsilon\) 근처를 오르내립니다. 참값 오차는 \(k=10\)에 약 \(0.161\), \(k=50\)에 약 \(0.107\), \(k=100\)에 약 \(0.038\), \(k=150\)에 \(0.0186\)이고,
+  \(k=175\) 안팎에서 가장 작은 약 \(0.018\)이 된 뒤 조금 올라 \(k=919\)에 \(0.0196\)입니다. 그동안 TV는 \(762.6\)에서 \(357.3\)으로 줄어, 참값의 TV(\(369.0\))보다도 작아집니다.
+  반복 초반(대략 \(300\)회 전)의 값은 브라우저의 수치 계산 차이로 마지막 자리가 조금 다를 수 있습니다. 이 책의 node 계산과 Chrome 계산은 \(300\)회 이후 소수 넷째 자리까지 같았습니다.
+  \(\varepsilon\) 안에서 TV를 가장 작게 하는 영상이 참값과 같은 영상은 아니라는 뜻입니다. 이 차이가 \(\varepsilon\)을 어떻게 고를지의 문제로 이어집니다(페이지 9).</p>
+
+<script>
+(function () {
+  var kit = window.ct8Kit; if (!kit) return;
+  var sec = document.currentScript.closest('section');
+  var LO = -4, HI = 1.8, PX0 = 290, PX1 = 620, PY0 = 40, PY1 = 230, KM = 919;
+  function PX(k) { return PX0 + (k - 1) / (KM - 1) * (PX1 - PX0); }
+  function PY(v) { return PY1 - (Math.log10(Math.max(v, 1e-4)) - LO) / (HI - LO) * (PY1 - PY0); }
+  var img = document.getElementById('c8-it-img'), sl = document.getElementById('c8-it-k'), out = document.getElementById('c8-it-out'),
+      play = document.getElementById('c8-it-play'), mark = document.getElementById('c8-it-mark');
+  var g = '', e;
+  for (e = -4; e <= 1; e++) {
+    g += '<path d="M' + PX0 + ' ' + PY(Math.pow(10, e)).toFixed(1) + ' H' + PX1 + '" class="svg-line" stroke-width=".5" opacity=".5" fill="none"/>' +
+         '<text x="' + (PX0 - 6) + '" y="' + (PY(Math.pow(10, e)) + 3).toFixed(1) + '" text-anchor="end" font-size="9" class="svg-muted">' + (e === 0 ? '1' : e === 1 ? '10' : '10⁻' + ['', '¹', '²', '³', '⁴'][-e]) + '</text>';
+  }
+  document.getElementById('c8-it-grid').innerHTML = g;
+  kit.onShow(sec, function () {
+    out.textContent = '계산 중입니다…';
+    kit.getRun(function (R) {
+      var H = R.hist, eps = kit.noisy.norm, dd = '', dp = '', st = '', k;
+      for (k = 1; k <= KM; k++) {
+        dd += (k > 1 ? 'L' : 'M') + PX(k).toFixed(1) + ' ' + PY(H.dd[k - 1]).toFixed(1);
+        dp += (k > 1 ? 'L' : 'M') + PX(k).toFixed(1) + ' ' + PY(H.dp[k - 1]).toFixed(1);
+        st += (k > 1 ? 'L' : 'M') + PX(k).toFixed(1) + ' ' + PY(H.dtvg[k - 1]).toFixed(1);
+      }
+      document.getElementById('c8-it-dd').setAttribute('d', dd);
+      document.getElementById('c8-it-dp').setAttribute('d', dp);
+      document.getElementById('c8-it-st').setAttribute('d', st);
+      document.getElementById('c8-it-eps').setAttribute('d', 'M' + PX0 + ' ' + PY(eps).toFixed(1) + ' H' + PX1);
+      function fx(v) { return v < 0.01 ? v.toExponential(2) : v.toPrecision(3); }
+      function show(kk) {
+        var t = kk - 1;
+        img.setAttribute('href', kit.imageURL(R.snaps[t], 0.98, 1.05));
+        mark.setAttribute('transform', 'translate(' + (PX(kk) - PX0).toFixed(1) + ' 0)');
+        document.getElementById('c8-it-md').setAttribute('cy', PY(H.dd[t]).toFixed(1));
+        document.getElementById('c8-it-kv').textContent = kk;
+        out.textContent = 'd_data = ' + H.dd[t].toFixed(4) + (H.dd[t] <= eps ? ' (≤ ε, D_ε 안)' : ' (> ε)') + ' · d_POCS = ' + fx(H.dp[t]) + ' · Δ_TV = ' + fx(H.dtvg[t]) +
+          ' · β = ' + H.beta[t].toFixed(3) + ' · TV = ' + H.tv[t].toFixed(1) + ' · 참값 오차(rmse) = ' + R.rmse[t].toFixed(4);
+      }
+      sl.addEventListener('input', function () { show(+sl.value); });
+      var timer = null;
+      play.addEventListener('click', function () {
+        if (timer) { clearInterval(timer); timer = null; play.textContent = '재생'; return; }
+        if (+sl.value >= KM) sl.value = 1;
+        play.textContent = '멈춤';
+        timer = setInterval(function () {
+          var v = Math.min(KM, +sl.value + 4); sl.value = v; show(v);
+          if (v >= KM) { clearInterval(timer); timer = null; play.textContent = '재생'; }
+        }, 60);
+      });
+      show(+sl.value);
+    });
+  });
+})();
+</script>
+</section>
+
+<!-- ─ 페이지 7 -->
+<section class="screen" data-title="의사코드와 연산 횟수">
+  <p class="kicker">8장 · 페이지 7 · 심화</p>
+  <h2>의사코드: 반복당 연산 세기</h2>
+
+  <p>Sidky·Pan(2008)의 의사코드를 이 책의 기호로 옮겨 적습니다. 단계와 순서는 원 논문 그대로이고, 멈춤 조건만 이 책의 규칙(페이지 8)으로 채웠습니다.</p>
+
+<pre><span class="cap"># ASD-POCS</span><code>β ← 1;  β_red ← 0.995;  n_grad ← 20           # 1
+α ← 0.2;  r_max ← 0.95;  α_red ← 0.95         # 2
+x ← 0;  처음 ← 참                             # 3
+repeat:                                       # 4
+    x_앞 ← x                                  # 5
+    for i = 1, …, m:                          # 6
+        x ← x + β·(b_i − a_i·x)/‖a_i‖² · a_i  # 7
+    x ← max(x, 0)                             # 8
+    x_출력 ← x                                # 9
+    d_data ← ‖A·x − b‖                        # 10
+    d_POCS ← ‖x − x_앞‖                       # 11
+    if 처음: Δ_TV ← α·d_POCS;  처음 ← 거짓    # 12
+    x_앞 ← x                                  # 13
+    for q = 1, …, n_grad:                     # 14
+        v ← ∇TV(x)                            # 15
+        x ← x − Δ_TV · v/‖v‖                  # 16
+    d_TV ← ‖x − x_앞‖                         # 17
+    if d_TV &gt; r_max·d_POCS and d_data &gt; ε:    # 18
+        Δ_TV ← α_red·Δ_TV                     # 19
+    β ← β·β_red                               # 20
+until β &lt; 0.01                                # 21
+return x_출력                                 # 22
+</code></pre>
+
+  <ol class="notes">
+    <li><span class="ln">1~2행</span> 원 논문의 여섯 값입니다(페이지 5). \(\varepsilon\)은 풀려는 식의 일부라 입력으로 받습니다.</li>
+    <li><span class="ln">6~7행</span> ART 한 바퀴입니다. 광선 \(i\)마다 행 \(\mathbf{a}_i\)로 내적 한 번(순투영의 한 행)과 갱신 한 번(역투영의 한 행)을 하므로, \(m\)개 광선을 다 돌면 \(\mathbf{A}\)와 \(\mathbf{A}^{\mathsf T}\)를 한 번씩 곱한 것과 같은 양의 계산입니다. \(\lVert\mathbf{a}_i\rVert^2\)은 처음에 한 번만 구해 둡니다.</li>
+    <li><span class="ln">9행</span> 출력할 영상은 POCS 단계 직후의 것입니다. TV 하강은 음수를 만들 수 있지만, 출력은 비음수 사영을 막 거친 영상이라 \(\mathbf{x}\ge\mathbf{0}\)이 정확히 지켜집니다.</li>
+    <li><span class="ln">10행</span> \(d_{\mathrm{data}}\)를 구하려고 \(\mathbf{A}\)를 한 번 더 곱합니다. 원 논문은 이 계산이 비싸니 예컨대 10번에 한 번만 해도 된다고 적었습니다.</li>
+    <li><span class="ln">14~16행</span> TV 기울기를 \(20\)번 구합니다. \(\mathbf{A}\)와 상관없는 영상 안의 계산이지만, 작은 문제에서는 이것이 시간의 대부분을 차지합니다.</li>
+    <li><span class="ln">18~20행</span> 걸음 조절(페이지 5). 18행의 두 조건이 모두 참일 때만 \(\Delta_{\mathrm{TV}}\)를 줄이고, \(\beta\)는 매번 줄입니다.</li>
+    <li><span class="ln">21행</span> 이 책의 멈춤 규칙입니다. \(0.995^{919}&lt;0.01\le0.995^{918}\)이므로 \(919\)번 반복하고 멈춥니다.</li>
+  </ol>
+
+  <h3>GPBB와의 연산 비교</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>반복 한 번에</th><th>GPBB(7장 페이지 6)</th><th>ASD-POCS(이 장)</th></tr>
+      <tr><td>순투영 \(\mathbf{A}\)</td><td>1번</td><td>2번(ART 안에서 1번에 해당 + \(d_{\mathrm{data}}\) 1번)</td></tr>
+      <tr><td>역투영 \(\mathbf{A}^{\mathsf T}\)</td><td>1번</td><td>1번에 해당(ART 안)</td></tr>
+      <tr><td>TV 기울기</td><td>1번(TV 값은 선 탐색 시도마다)</td><td>\(20\)번</td></tr>
+      <tr><td>\(K=40\) 잡음 예제의 반복 수</td><td>\(156\)회(수렴할 때까지)</td><td>\(919\)회(\(\beta&lt;0.01\)까지)</td></tr>
+    </table>
+  </div>
+
+  <p>\(K=40\) 잡음 예제 전체로는 GPBB가 \(\mathbf{A}\)·\(\mathbf{A}^{\mathsf T}\)를 각각 \(156\)번 쓰는 동안 ASD-POCS는 \(\mathbf{A}\)를 \(1{,}838\)번, \(\mathbf{A}^{\mathsf T}\)를 \(919\)번에 해당하는 만큼 쓰고, TV 기울기를 \(18{,}380\)번 구합니다.
+  이 책의 node 계산에서는 같은 컴퓨터에서 ASD-POCS가 약 \(1.7\)초, GPBB가 약 \(0.1\)초 걸렸습니다(컴퓨터마다 다릅니다).
+  \(48\times48\) 영상에서는 TV 기울기가 시간의 대부분을 차지하지만, 실제 CT처럼 광선과 화소가 수십만 개이면 \(\mathbf{A}\)·\(\mathbf{A}^{\mathsf T}\)가 대부분을 차지합니다.
+  원 논문은 효율을 높이는 방법으로 \(d_{\mathrm{data}}\)를 가끔만 계산하기, \(20\)걸음 대신 되짚기 선 탐색 쓰기를 제안했습니다.</p>
+
+  <p>ART는 광선 하나를 처리할 때마다 영상을 바로 고치므로 광선을 차례로 처리해야 합니다. 모든 광선을 한꺼번에 처리하는 GPBB의 \(\mathbf{A}\)·\(\mathbf{A}^{\mathsf T}\)보다 병렬 계산(GPU 등)에 맞추기 어렵다는 점도 비용에 들어갑니다.</p>
+</section>
+
+<!-- ─ 페이지 8 -->
+<section class="screen" data-title="정지 조건과 제약 처리">
+  <p class="kicker">8장 · 페이지 8 · 심화</p>
+  <h2>정지 조건과 제약 처리</h2>
+
+  <p>7장의 GPBB는 사영 방향의 크기 \(\lVert\mathbf{u}^{(k)}\rVert\)가 작아지면 멈췄습니다. 목적함수가 하나라서 "한 걸음 가서 사영해도 제자리"인 점이 곧 최솟값이었기 때문입니다.
+  ASD-POCS는 두 단계가 서로 반대쪽으로 움직이며 균형을 이루므로, 이동이 작아졌다는 것만으로는 제약형의 해에 닿았는지 알 수 없습니다.
+  원 논문은 세 가지를 함께 확인합니다.</p>
+
+  <ol>
+    <li>지금 영상이 두 제약(\(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert\le\varepsilon\), \(\mathbf{x}\ge\mathbf{0}\))을 만족하는가.</li>
+    <li>최적성 점검값 \(c_{\mathrm{opt}}\)(원 논문의 \(c_\alpha\))가 \(-1\)에 가까운가.</li>
+    <li>\(\beta\)가 너무 작아지지 않았는가. 작으면 더 돌려도 영상이 거의 바뀌지 않으므로 멈춥니다.</li>
+  </ol>
+
+  <h3>최적성 점검값</h3>
+
+  <p>제약형의 해에서는 TV의 기울기와 데이터 조건의 기울기가 균형을 이룹니다. 그래서 \(0\)이 아닌 화소(비음수 제약이 걸리지 않은 화소)만 모은 두 기울기, 곧 TV의 기울기 \(\mathbf{d}_{\mathrm{TV}}\)와 데이터 조건의 기울기 \(\mathbf{d}_{\mathrm{data}}\)가 정반대 방향을 가리켜야 합니다.
+  두 벡터 사이 각의 코사인을 점검값으로 씁니다.</p>
+
+  <p style="text-align:center">\[c_{\mathrm{opt}} = \frac{\langle\mathbf{d}_{\mathrm{TV}},\,\mathbf{d}_{\mathrm{data}}\rangle}{\lVert\mathbf{d}_{\mathrm{TV}}\rVert\,\lVert\mathbf{d}_{\mathrm{data}}\rVert}\]</p>
+
+  <p>해에서는 \(c_{\mathrm{opt}}=-1\)입니다. 원 논문은 \(-1\)에 닿으려면 반복이 매우 많이 필요해 실제로는 어렵고, \(-0.5\) 아래로 내려가면 영상이 눈에 띄게 바뀌지 않으며, \(-0.9\) 근처를 목표로 매개변수를 고른다고 적었습니다.
+  이 점검값은 해가 만족해야 하는 필요조건을 확인할 뿐, 해에 닿았다는 증명은 아닙니다.</p>
+
+  <details class="fold">
+    <summary>전개: 두 기울기가 정반대여야 하는 이유</summary>
+    <div class="fold-body">
+      <p>제약형 문제의 라그랑주 함수(Lagrangian)를 데이터 조건 \(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert^2-\varepsilon^2\le0\)과 비음수 조건 \(-x_j\le0\)으로 씁니다.</p>
+      <p style="text-align:center">\[L(\mathbf{x}) = \mathrm{TV}(\mathbf{x}) + \mu_0\big(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert^2-\varepsilon^2\big) - \textstyle\sum_j \mu_j x_j\]</p>
+      <p>해에서는 \(\nabla L=\mathbf{0}\)이고 승수는 모두 \(0\) 이상이며, 조건이 등호로 걸린 곳에서만 \(0\)이 아닐 수 있습니다(KKT 조건, Karush–Kuhn–Tucker). \(x_j&gt;0\)인 화소에서는 \(\mu_j=0\)이므로 그 화소들만 보면</p>
+      <p style="text-align:center">\[\nabla\mathrm{TV}(\mathbf{x}) + 2\mu_0\,\mathbf{A}^{\mathsf T}(\mathbf{A}\mathbf{x}-\mathbf{b}) = \mathbf{0},\qquad \mu_0 &gt; 0\]</p>
+      <p>이 됩니다. \(\mu_0&gt;0\)은 데이터 조건이 실제로 걸려 있다는 뜻입니다(페이지 5에서 본 대로, 이 조건이 없으면 평평한 영상이 답이 됩니다). 그러면 \(\mathbf{d}_{\mathrm{TV}}=\nabla\mathrm{TV}\)와 \(\mathbf{d}_{\mathrm{data}}=2\mathbf{A}^{\mathsf T}(\mathbf{A}\mathbf{x}-\mathbf{b})\)는 양수 배 차이로 방향만 반대이고, 코사인이 \(-1\)입니다.
+      이 계산에는 \(\mathbf{A}^{\mathsf T}\)가 한 번 더 들어가므로, 점검값은 매 반복이 아니라 가끔 계산해도 됩니다.</p>
+    </div>
+  </details>
+
+  <h3>이 책의 멈춤 규칙과 멈춤 시점</h3>
+
+  <p>이 책은 세 번째 기준만 규칙으로 정해 \(\beta&lt;0.01\)에서 멈추고(\(919\)회), 첫째와 둘째는 결과와 함께 보고합니다. 페이지 6과 같은 계산(\(K=40\), 잡음, \(\varepsilon=0.2577\))에서 \(\beta\)의 하한을 바꾸면 어느 반복에서 멈추고 그때 값이 얼마인지 봅니다.
+  위 그래프는 \(c_{\mathrm{opt}}\), 아래 그래프는 참값 오차이고, 세로선이 멈추는 반복입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 296" role="img" aria-label="위쪽은 반복에 따른 최적성 점검값(주황선, -1에서 1까지), 아래쪽은 같은 반복에서의 참값 오차(파란선, 로그 눈금). 세로선이 선택한 β 하한에서 멈추는 반복을 가리킨다">
+      <g font-size="11" font-weight="700" class="svg-fg"><text x="60" y="20">최적성 점검값 c_opt</text><text x="60" y="170">참값 오차 rmse</text></g>
+      <g class="svg-line" fill="none" stroke-width="1" opacity=".6"><path d="M60 30 V140 H620"/><path d="M60 180 V270 H620"/></g>
+      <g id="c8-st-grid"></g>
+      <path id="c8-st-C" fill="none" stroke-width="1.5" style="stroke:var(--warn)"/>
+      <path id="c8-st-R" fill="none" stroke-width="1.8" style="stroke:var(--accent)"/>
+      <g id="c8-st-mark">
+        <path d="M60 30 V270" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--muted)"/>
+        <circle id="c8-st-mc" cx="60" cy="30" r="4" style="fill:var(--warn)"/>
+        <circle id="c8-st-mr" cx="60" cy="180" r="4" style="fill:var(--accent)"/>
+      </g>
+      <g font-size="10" class="svg-muted"><text x="620" y="286" text-anchor="end">반복 k (1~1,400)</text></g>
+    </svg>
+    <figcaption>위 그래프의 가로 점선은 \(c_{\mathrm{opt}}=0\)과 \(-0.9\)입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="c8-st-b">β의 하한</label>
+    <input id="c8-st-b" type="range" min="0" max="6" step="1" value="3" style="width:14rem">
+    <b id="c8-st-bv">0.01</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="c8-st-out">이 페이지를 열면 계산을 시작합니다…</p>
+
+  <p>하한을 \(0.1\), \(0.05\), \(0.01\), \(0.001\)로 줄이면 멈춤 반복은 \(460\), \(598\), \(919\), \(1{,}379\)회로 늘고, \(c_{\mathrm{opt}}\)는 \(-0.662\), \(-0.823\), \(-0.929\), \(-0.938\)로 \(-1\)에 다가갑니다.
+  참값 오차는 \(0.0204\), \(0.0199\), \(0.0196\), \(0.0196\)으로 거의 변하지 않습니다. \(c_{\mathrm{opt}}\)가 \(-0.5\)를 지난 뒤로는 영상이 크게 바뀌지 않는다는 원 논문의 관찰과 맞습니다.
+  이 책의 하한 \(0.01\)에서 \(c_{\mathrm{opt}}\)는 원 논문이 목표로 한 \(-0.9\)보다 \(-1\)에 가깝고, 7장의 허용값 \(10^{-4}\)처럼 오차가 더 줄지 않는 지점에 가깝습니다.</p>
+
+<script>
+(function () {
+  var kit = window.ct8Kit; if (!kit) return;
+  var sec = document.currentScript.closest('section');
+  var X0 = 60, X1 = 620, T0 = 30, T1 = 140, B0 = 180, B1 = 270, KM = 1400, RLO = -2, RHI = 0;
+  function PX(k) { return X0 + (k - 1) / (KM - 1) * (X1 - X0); }
+  function PC(v) { return T1 - (v + 1) / 2 * (T1 - T0); }
+  function PR(v) { return B1 - (Math.log10(v) - RLO) / (RHI - RLO) * (B1 - B0); }
+  var g = '';
+  [1, 0, -0.9, -1].forEach(function (v) {
+    g += '<path d="M' + X0 + ' ' + PC(v).toFixed(1) + ' H' + X1 + '" class="svg-line" stroke-width=".6" opacity=".6" fill="none"' + (v === 0 || v === -0.9 ? ' stroke-dasharray="4 3"' : '') + '/>' +
+         '<text x="' + (X0 - 6) + '" y="' + (PC(v) + 3).toFixed(1) + '" text-anchor="end" font-size="9" class="svg-muted">' + String(v).replace('-', '−') + '</text>';
+  });
+  [0.01, 0.1, 1].forEach(function (v) {
+    g += '<path d="M' + X0 + ' ' + PR(v).toFixed(1) + ' H' + X1 + '" class="svg-line" stroke-width=".5" opacity=".5" fill="none"/>' +
+         '<text x="' + (X0 - 6) + '" y="' + (PR(v) + 3).toFixed(1) + '" text-anchor="end" font-size="9" class="svg-muted">' + v + '</text>';
+  });
+  document.getElementById('c8-st-grid').innerHTML = g;
+  var sl = document.getElementById('c8-st-b'), out = document.getElementById('c8-st-out'), val = document.getElementById('c8-st-bv');
+  kit.onShow(sec, function () {
+    out.textContent = '계산 중입니다…';
+    kit.getRun(function (R) {
+      var H = R.hist, dC = '', dR = '', k;
+      for (k = 1; k <= KM; k++) {
+        dC += (k > 1 ? 'L' : 'M') + PX(k).toFixed(1) + ' ' + PC(H.ca[k - 1]).toFixed(1);
+        dR += (k > 1 ? 'L' : 'M') + PX(k).toFixed(1) + ' ' + PR(R.rmse[k - 1]).toFixed(1);
+      }
+      document.getElementById('c8-st-C').setAttribute('d', dC);
+      document.getElementById('c8-st-R').setAttribute('d', dR);
+      function update() {
+        var bmin = [0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001][+sl.value], n = 0;
+        while (n < KM && Math.pow(0.995, n) >= bmin) n++;     // β = 0.995^n 이 하한 아래로 내려가기까지의 반복 수
+        val.textContent = String(bmin);
+        var t = n - 1;
+        document.getElementById('c8-st-mark').setAttribute('transform', 'translate(' + (PX(n) - X0).toFixed(1) + ' 0)');
+        document.getElementById('c8-st-mc').setAttribute('cy', PC(H.ca[t]).toFixed(1));
+        document.getElementById('c8-st-mr').setAttribute('cy', PR(R.rmse[t]).toFixed(1));
+        out.textContent = 'β 하한 ' + val.textContent + ' → ' + n + '회에서 멈춤 · c_opt = ' + H.ca[t].toFixed(3).replace('-', '−') +
+          ' · d_data = ' + H.dd[t].toFixed(4) + ' (ε = ' + kit.noisy.norm.toFixed(4) + ') · 참값 오차(rmse) = ' + R.rmse[t].toFixed(4);
+      }
+      sl.addEventListener('input', update);
+      update();
+    });
+  });
+})();
+</script>
+
+  <h3>불일치 원칙과의 관계</h3>
+
+  <p><a href="ch02.html#s8">2장 페이지 8</a>은 잔차가 기대 잡음 크기 아래로 내려온 반복에서 ART를 멈췄습니다. ASD-POCS에서 같은 생각은 멈춤 규칙이 아니라 \(\varepsilon\) 자체에 들어 있습니다.
+  영상이 처음 \(D_\varepsilon\)에 들어온 반복(\(142\)회)에서 멈추면 어떻게 될까요?</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>멈춘 시점</th><th>반복</th><th>참값 오차(rmse)</th><th>\(c_{\mathrm{opt}}\)</th></tr>
+      <tr><td>처음 \(d_{\mathrm{data}}\le\varepsilon\)이 된 반복</td><td>142회</td><td>약 \(0.019\)</td><td>약 \(0.15\)</td></tr>
+      <tr><td>이 책의 규칙(\(\beta&lt;0.01\))</td><td>919회</td><td>\(0.0196\)</td><td>\(-0.929\)</td></tr>
+    </table>
+  </div>
+
+  <p>오차는 거의 같습니다. 그러나 \(142\)회의 영상은 제약을 만족할 뿐 TV를 다 줄이지 못한 영상이라 \(c_{\mathrm{opt}}\)가 아직 양수이고, TV도 약 \(384\)로 \(919\)회의 \(357.3\)보다 큽니다. 같은 오차라도 풀려는 식의 해에 가까운 쪽은 \(919\)회입니다.
+  7장 페이지 7에서는 불일치 원칙으로 일찍 멈추면 오차가 훨씬 나빴는데(\(0.0514\) 대 \(0.0168\)), 여기서는 그렇지 않습니다. GPBB는 \(\lambda\)를 정해 둔 채 반복이 그 해를 향해 가는 도중이었고, ASD-POCS는 반복 내내 영상을 \(D_\varepsilon\) 쪽으로 당기면서 TV를 줄이기 때문입니다.</p>
+
+  <h3>제약이 지켜지는 정도</h3>
+
+  <p>비음수 제약은 정확히 지켜집니다. TV 하강이 음수를 만들더라도 출력은 비음수 사영을 막 거친 영상이기 때문입니다(페이지 7의 의사코드 9행).
+  데이터 제약은 근사적으로만 지켜집니다. ART 한 바퀴는 \(D_\varepsilon\)으로의 사영이 아니므로, 영상은 경계 \(d_{\mathrm{data}}=\varepsilon\) 근처를 오르내리다 \(\beta\)가 줄면서 경계에 붙습니다(\(919\)회에서 \(0.2571\), \(1{,}400\)회에서 \(0.2577\)).
+  \(\varepsilon\)이 작아 POCS 단계가 닿을 수 있는 잔차보다 작으면 영상은 끝내 \(D_\varepsilon\)에 들어가지 못합니다. 이 경우는 페이지 9에서 봅니다.</p>
+</section>
+
+<!-- ─ 페이지 9 -->
+<section class="screen" data-title="파라미터 민감도와 실패 모드">
+  <p class="kicker">8장 · 페이지 9</p>
+  <h2>파라미터 민감도와 실패 모드</h2>
+
+  <p>ASD-POCS에서 사람이 정하는 값은 \(\varepsilon\)과 걸음 매개변수 여섯 개입니다(페이지 1). 이 페이지는 \(K=40\), 잡음 있는 데이터(기대 잡음 크기 \(0.2577\))로 이 값들을 하나씩 바꿔, 이 책의 규칙대로 \(919\)회 돌린 결과를 봅니다.
+  바꾸지 않은 값은 원 논문의 값입니다.</p>
+
+  <h3>데이터 허용 오차의 민감도</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(\varepsilon\)(잡음 크기의 배수)</th><td>\(0\)</td><td>\(0.5\)배</td><td>\(0.75\)배</td><td>\(1\)배</td><td>\(1.25\)배</td><td>\(1.5\)배</td><td>\(2\)배</td><td>\(3\)배</td></tr>
+      <tr><th>참값 오차(rmse)</th><td>\(0.0266\)</td><td>\(0.0266\)</td><td>\(0.0156\)</td><td>\(0.0196\)</td><td>\(0.0299\)</td><td>약 \(0.040\)</td><td>\(0.0585\)</td><td>약 \(0.092\)</td></tr>
+      <tr><th>끝난 뒤 \(d_{\mathrm{data}}\)</th><td>\(0.15\)</td><td>\(0.15\)</td><td>\(0.19\)</td><td>\(0.26\)</td><td>\(0.32\)</td><td>\(0.39\)</td><td>\(0.51\)</td><td>\(0.77\)</td></tr>
+    </table>
+  </div>
+
+  <p>7장 페이지 8의 \(\lambda\) 표와 같은 U자 모양입니다. \(\varepsilon\)이 크면 데이터와 멀리 떨어진 영상까지 허용되어 TV가 구조를 깎고(\(3\)배에서 오차 약 \(0.092\)), 작으면 잡음까지 맞추려 합니다.
+  이 예제에서 가장 좋은 값은 잡음 크기의 \(0.75\)배 근처였고, 원 논문의 실험에서도 오차가 가장 작은 \(\varepsilon\)은 잡음 수준 근처에 있었습니다. 실제로는 참값을 모르므로 이 곡선을 그릴 수 없고, 잡음 크기를 그대로 쓰면(\(1\)배) 오차는 \(0.0196\)입니다.
+  7장에서 불일치 원칙으로 \(\lambda\)를 고른 경우(\(\lambda\approx0.0022\), 오차 \(0.0223\))보다 조금 낫습니다. 두 방법 모두 잡음 크기만 알고 고른 값입니다.</p>
+
+  <p>\(0\)과 \(0.5\)배의 결과가 같은 것은 우연이 아닙니다. 두 경우 모두 끝난 뒤의 \(d_{\mathrm{data}}\)가 \(0.150\)이고, 이것이 \(919\)회 동안 닿은 가장 작은 잔차입니다. TV 걸음 없이 POCS 단계만 \(919\)회 돌려도 잔차는 \(0.135\)까지만 내려갑니다(이때 오차는 \(0.0601\)로, TV 걸음을 넣은 결과보다 훨씬 큽니다).
+  \(0.5\)배(\(0.129\))는 두 값보다 작습니다. \(\varepsilon\)이 이렇게 닿을 수 있는 잔차보다 작으면 영상은 끝까지 \(D_\varepsilon\) 밖에 있고, 걸음 규칙의 조건 \(d_{\mathrm{data}}&gt;\varepsilon\)이 늘 참이 되어 \(\varepsilon\)의 값이 결과에 영향을 주지 못합니다. 잡음이 있는데 \(\varepsilon\)을 너무 작게 잡으면 생기는 실패입니다.</p>
+
+  <h3>걸음 매개변수의 민감도</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>바꾼 값</th><th>참값 오차(rmse)</th><th>\(c_{\mathrm{opt}}\)</th><th>읽는 법</th></tr>
+      <tr><td>\(n_{\mathrm{grad}}=1,\ 5,\ 10,\ 20,\ 40\)</td><td>\(0.0194,\ 0.0196,\ 0.0196,\ 0.0196,\ 0.0196\)</td><td>\(-0.928\) ~ \(-0.936\)</td><td>오차와 점검값이 거의 같습니다.</td></tr>
+      <tr><td>\(r_{\max}=0.5,\ 0.95\)</td><td>\(0.0193,\ 0.0196\)</td><td>\(-0.927,\ -0.929\)</td><td>\(1\)보다 작은 범위에서는 결과가 비슷합니다.</td></tr>
+      <tr><td>\(r_{\max}=1.5\)</td><td>약 \(0.39\)</td><td>약 \(0\)</td><td>실패: 영상이 데이터에서 멀어집니다(아래).</td></tr>
+      <tr><td>\(\beta_{\mathrm{red}}=0.99,\ 0.995,\ 0.998\)(\(459,\ 919,\ 2{,}301\)회)</td><td>\(0.0199,\ 0.0196,\ 0.0195\)</td><td>\(-0.930,\ -0.929,\ -0.927\)</td><td>반복 수가 5배 달라도 이 예제에서는 오차가 비슷합니다.</td></tr>
+    </table>
+  </div>
+
+  <p>\(n_{\mathrm{grad}}\)와 \(\beta_{\mathrm{red}}\)는 이 예제에서 결과를 크게 바꾸지 않았습니다. 2006년 논문도 매개변수를 바꾸면 수렴 속도만 달라지고 최종 영상은 바뀌지 않는 것으로 보였다고 적었습니다.
+  다만 잡음 없는 \(K=10\)·\(18\)처럼 영상이 아직 수렴 중인 경우에는 \(\beta_{\mathrm{red}}\)가 결과를 바꿉니다(페이지 10).</p>
+
+  <h3>흔한 실패 모드: 데이터 이탈과 정체</h3>
+
+  <p><b>데이터 이탈</b>. \(r_{\max}=1.5\)로 두면 \(d_{\mathrm{TV}}\)가 \(1.5\,d_{\mathrm{POCS}}\)를 넘는 일이 없어 \(\Delta_{\mathrm{TV}}\)가 첫 값 \(8.63\)에서 한 번도 줄지 않습니다. 반복마다 TV 하강이 POCS 단계보다 영상을 더 멀리 밀어,
+  \(919\)회 뒤에도 \(d_{\mathrm{data}}\)가 약 \(8.0\)으로 첫 반복(\(8.33\))과 거의 같고, 영상의 최댓값이 참값 \(2.00\)에서 약 \(1.07\)로 내려가 두개골이 거의 사라집니다. 원 논문이 \(r_{\max}\)를 \(0\)과 \(1\) 사이로 잡으라고 한 이유입니다.
+  TV 걸음이 POCS 걸음보다 크면 영상이 평평해지며 데이터와 맞지 않게 된다는 2006년 논문의 경고가 이 경우입니다.</p>
+
+  <p><b>정체</b>. 걸음 매개변수를 잘못 잡지 않아도 \(\beta\)가 반복마다 줄어 POCS 단계와 TV 걸음이 함께 작아지므로, 반복 예산이 정해져 있으면 해에 닿기 전에 영상이 멈춘 것처럼 보일 수 있습니다.
+  \(c_{\mathrm{opt}}\)가 \(-1\)에서 멀면 이 경우를 의심하고 \(\beta_{\mathrm{red}}\)를 \(1\)에 더 가깝게 잡아 다시 돌립니다. 원 논문도 점검에서 최적성 조건이 맞지 않으면 매개변수를 바꿔 다시 돌린다고 적었습니다.</p>
+
+  <h3>7장의 매개변수와 대응시키기</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>GPBB(7장)</th><th>ASD-POCS(이 장)</th><th>공통점과 차이</th></tr>
+      <tr><td>정규화 강도 \(\lambda\)</td><td>데이터 허용 오차 \(\varepsilon\)</td><td>둘 다 U자. \(\varepsilon\)은 잡음 크기라는 물리적인 뜻이 있어 바로 정할 수 있습니다.</td></tr>
+      <tr><td>평활화 \(\delta\)(목적함수를 바꿈)</td><td>평활 상수 \(10^{-3}\)(기울기 방향 계산에만 씀)</td><td>GPBB는 \(\delta\)가 작을수록 반복이 늘었습니다. 이 장은 값을 고정했습니다.</td></tr>
+      <tr><td>멈춤 허용값 \(10^{-4}\)</td><td>\(\beta\)의 하한 \(0.01\)</td><td>둘 다 오차가 더 줄지 않는 지점 근처로 정했습니다.</td></tr>
+      <tr><td>(없음: BB 스텝과 선 탐색이 정함)</td><td>\(n_{\mathrm{grad}}\), \(\alpha\), \(r_{\max}\), \(\alpha_{\mathrm{red}}\), \(\beta_{\mathrm{red}}\)</td><td>ASD-POCS는 걸음을 사람이 정한 규칙으로 조절하므로 고를 값이 더 많습니다.</td></tr>
+    </table>
+  </div>
+
+  <h3>직접 바꿔 보기</h3>
+
+  <p>같은 \(K=40\) 잡음 데이터에서 \(\varepsilon\), \(n_{\mathrm{grad}}\), \(r_{\max}\)를 바꿔 \(919\)회 돌립니다. 버튼을 누르면 그 자리에서 다시 계산하며 2초쯤 걸립니다.</p>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="c8-pa-e">
+    <span>\(\varepsilon\)(잡음 크기의 배수)</span>
+    <button type="button" data-v="0">0</button>
+    <button type="button" data-v="0.75">0.75</button>
+    <button type="button" data-v="1">1</button>
+    <button type="button" data-v="1.5">1.5</button>
+    <button type="button" data-v="3">3</button>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.3rem" id="c8-pa-g">
+    <span>\(n_{\mathrm{grad}}\)</span>
+    <button type="button" data-v="1">1</button>
+    <button type="button" data-v="20">20</button>
+  </div>
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.3rem" id="c8-pa-r">
+    <span>\(r_{\max}\)</span>
+    <button type="button" data-v="0.95">0.95</button>
+    <button type="button" data-v="1.5">1.5</button>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 230" role="img" aria-label="선택한 ε, n_grad, r_max로 재구성한 영상과 참값 영상을 나란히 보여준다">
+      <image id="c8-pa-img" x="14" y="24" width="190" height="190" preserveAspectRatio="none"/>
+      <image id="c8-pa-true" x="226" y="24" width="190" height="190" preserveAspectRatio="none"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><rect x="14" y="24" width="190" height="190"/><rect x="226" y="24" width="190" height="190"/></g>
+      <g font-size="11.5" font-weight="700" class="svg-fg"><text x="14" y="16">ASD-POCS(919회)</text><text x="226" y="16">참값</text></g>
+    </svg>
+    <figcaption id="c8-pa-cap">이 페이지를 열면 계산을 시작합니다…</figcaption>
+  </figure>
+
+<script>
+(function () {
+  var kit = window.ct8Kit; if (!kit) return;
+  var sec = document.currentScript.closest('section'), N = kit.N, st = { e: 1, g: 20, r: 0.95 }, cache = {};
+  var img = document.getElementById('c8-pa-img'), cap = document.getElementById('c8-pa-cap');
+  function cosOpt(x) {                                   // 페이지 8의 최적성 점검값
+    var r = kit.forward(kit.sysA, x), i;
+    for (i = 0; i < r.length; i++) r[i] -= kit.noisy.b[i];
+    var gd = kit.backward(kit.sysA, r), gt = kit.tvEnergyGradHuber(x, N, 1e-3), a1 = 0, a2 = 0, a3 = 0, s = 0;
+    for (i = 0; i < x.length; i++) if (x[i] > 0) { a1 += gd[i] * gt[i]; a2 += gd[i] * gd[i]; a3 += gt[i] * gt[i]; }
+    for (i = 0; i < r.length; i++) s += r[i] * r[i];
+    return { c: a1 / Math.sqrt(a2 * a3), dd: Math.sqrt(s) };
+  }
+  function compute(cb) {
+    var key = st.e + '/' + st.g + '/' + st.r;
+    if (cache[key]) { cb(cache[key]); return; }
+    function finish(x, c, dd) {
+      var mx = 0, i; for (i = 0; i < x.length; i++) if (x[i] > mx) mx = x[i];
+      cache[key] = { url: kit.imageURL(x, 0.98, 1.05), rmse: kit.rmseFn(x, kit.xTrue), c: c, dd: dd, mx: mx }; cb(cache[key]);
+    }
+    if (st.e === 1 && st.g === 20 && st.r === 0.95) {   // 기준 계산(페이지 6)의 919번째 반복을 그대로 쓴다
+      kit.getRun(function (R) { finish(R.snaps[918], R.hist.ca[918], R.hist.dd[918]); });
+      return;
+    }
+    setTimeout(function () {
+      var Rr = kit.asdpocs(kit.sysA, N, kit.noisy.b, st.e * kit.noisy.norm, { ng: st.g, rmax: st.r, nIter: 919 }), o = cosOpt(Rr.x);
+      finish(Rr.x, o.c, o.dd);
+    }, 15);
+  }
+  function mark() {
+    ['e', 'g', 'r'].forEach(function (id) {
+      var btns = document.querySelectorAll('#c8-pa-' + id + ' button'), q;
+      for (q = 0; q < btns.length; q++) {
+        var on = +btns[q].getAttribute('data-v') === st[id];
+        btns[q].style.fontWeight = on ? '700' : '400'; btns[q].style.borderColor = on ? 'var(--accent)' : '';
+      }
+    });
+  }
+  function render() {
+    mark(); cap.textContent = '계산 중입니다…';
+    compute(function (o) {
+      img.setAttribute('href', o.url);
+      cap.textContent = 'ε = ' + st.e + ' × ' + kit.noisy.norm.toFixed(4) + ', n_grad = ' + st.g + ', r_max = ' + st.r + ' · 참값 오차(rmse) = ' + o.rmse.toFixed(4) +
+        ' · 끝난 뒤 d_data = ' + o.dd.toFixed(3) + ' · c_opt = ' + o.c.toFixed(3).replace('-', '−') + ' · 영상 최댓값 ' + o.mx.toFixed(2);
+    });
+  }
+  function bind(id) {
+    document.getElementById('c8-pa-' + id).addEventListener('click', function (e) {
+      var t = e.target.closest('button[data-v]'); if (!t) return;
+      st[id] = +t.getAttribute('data-v'); render();
+    });
+  }
+  kit.onShow(sec, function () {
+    document.getElementById('c8-pa-true').setAttribute('href', kit.imageURL(kit.xTrue, 0.98, 1.05));
+    bind('e'); bind('g'); bind('r'); render();
+  });
+  mark();
+})();
+</script>
+</section>
+
+<!-- ─ 페이지 10 -->
+<section class="screen" data-title="계산 비용과 Shepp-Logan 결과">
+  <p class="kicker">8장 · 페이지 10</p>
+  <h2>계산 비용: FBP·GPBB와의 비교</h2>
+
+  <p>ASD-POCS 한 반복은 ART 한 바퀴(\(\mathbf{A}\)·\(\mathbf{A}^{\mathsf T}\) 각 한 번에 해당), 잔차 계산(\(\mathbf{A}\) 한 번), TV 기울기 \(20\)번입니다(페이지 7, 심화). 반복 수는 문제와 상관없이 \(\beta_{\mathrm{red}}\)와 이 책의 멈춤 규칙이 정해 \(919\)회입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>각도 수 \(K\)</th><th>10</th><th>18</th><th>40</th></tr>
+      <tr><td>GPBB 반복 수(7장, \(\mathbf{A}\)·\(\mathbf{A}^{\mathsf T}\) 각 그만큼)</td><td>280회</td><td>208회</td><td>116회</td></tr>
+      <tr><td>ASD-POCS 반복 수(\(\mathbf{A}\) 두 번·\(\mathbf{A}^{\mathsf T}\) 한 번에 해당 + TV 기울기 20번씩)</td><td colspan="3">919회</td></tr>
+      <tr><td>FBP</td><td colspan="3">반복 없음: 필터링 한 번 + 역투영 한 번</td></tr>
+    </table>
+  </div>
+
+  <p>FBP가 가장 가볍고, 그다음이 GPBB입니다. ASD-POCS는 반복 수가 GPBB의 \(3\)~\(8\)배이고 반복 하나도 더 무거워, 이 예제에서는 가장 많은 계산이 듭니다.
+  <a href="ch07.html#s9">7장 페이지 9</a>에서 본 것처럼 대수적 방법의 계산 비용은 해석적 방법보다 훨씬 크고, 그 차이가 ASD-POCS에서 더 커집니다.</p>
+
+  <h2>Shepp-Logan 결과 분석: GPBB와 나란히</h2>
+
+  <p><a href="ch07.html#s9">7장 페이지 9</a>와 같은 \(48\times48\) Shepp-Logan 팬텀, 검출기 \(61\)개, \(K=10,18,40\) 설정입니다. FBP와 GPBB 열은 7장의 표를 그대로 옮겼고(GPBB는 \(\lambda=0.001\), \(\delta=0.01\), 수렴까지),
+  ASD-POCS 열은 잡음이 없으므로 \(\varepsilon=0\)으로 두고 \(919\)회 돌린 결과입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(K\)</th><th>FBP</th><th>GPBB(7장, 수렴까지)</th><th>ASD-POCS(\(\varepsilon=0\), 919회)</th><th>ASD-POCS의 \(c_{\mathrm{opt}}\)</th></tr>
+      <tr><td>\(10\)</td><td>\(0.3245\)</td><td>\(0.1278\)(280회)</td><td>\(0.1228\)</td><td>\(-0.932\)</td></tr>
+      <tr><td>\(18\)</td><td>\(0.2376\)</td><td>\(0.0332\)(208회)</td><td>\(0.0159\)</td><td>\(-0.930\)</td></tr>
+      <tr><td>\(40\)</td><td>\(0.1769\)</td><td>\(0.0100\)(116회)</td><td>\(0.0004\)</td><td>\(-0.961\)</td></tr>
+    </table>
+  </div>
+
+  <p>\(K=40\)에 잡음(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>(심화)의 \(\sigma_p\))을 더하면 FBP \(0.1776\), GPBB \(0.0168\)(156회, 7장)이고, ASD-POCS는 \(\varepsilon\)을 기대 잡음 크기 \(0.2577\)로 두었을 때 \(0.0196\)입니다.
+  GPBB의 \(\lambda=0.001\)은 참값을 알고 고른 가장 좋은 값이고, 잡음 크기만 알고 불일치 원칙으로 고르면 \(0.0223\)이었습니다(7장 페이지 8). 같은 정보만 쓰면 ASD-POCS가 조금 낫고, 참값을 알고 고른 가장 좋은 값끼리 비교하면 GPBB \(0.0168\), ASD-POCS \(0.0156\)(\(\varepsilon\)을 잡음 크기의 \(0.75\)배로, 페이지 9)로 비슷합니다.</p>
+
+  <h3>정규화 강도와 허용 오차의 대응으로 읽기</h3>
+
+  <p>잡음 없는 세 행에서 ASD-POCS가 크게 앞선 것을 "ASD-POCS가 더 좋은 알고리즘"이라고 읽으면 안 됩니다. 두 열은 서로 다른 식을 풀었습니다.
+  <a href="ch04.html#s5">4장 페이지 5</a>에서 적절히 짝지은 \(\lambda\)와 \(\varepsilon\)은 같은 해를 준다고 했습니다. \(\varepsilon=0\)은 데이터와 정확히 맞추라는 뜻이고, 벌점형에서는 \(\lambda\)를 \(0\)에 가깝게 줄인 극한에 해당합니다.
+  원 논문도 \(\varepsilon=0\)에 정확히 대응하는 \(\lambda\)는 없고, \(\lambda\)를 \(0\)에 가깝게 하면 벌점형 알고리즘의 효율이 떨어진다고 적었습니다. 7장의 \(\lambda=0.001\)은 이 극한에서 꽤 떨어진 값입니다.</p>
+
+  <p>이 책이 GPBB를 \(\lambda=0.0001\)로 다시 계산하면 \(K=10,18,40\)에서 오차가 \(0.1032\)(674회), \(0.0091\)(438회), 약 \(0.0020\)(185회 안팎)으로 줄고, 반복은 늘어납니다. \(K=10\)에서는 ASD-POCS(\(0.1228\))보다 낮습니다.
+  ASD-POCS도 \(\beta_{\mathrm{red}}=0.998\)로 \(2{,}301\)회 돌리면 \(K=10\)에서 \(0.1116\), \(K=18\)에서 \(0.0070\)으로 더 내려갑니다. 각도가 적을수록 \(919\)회는 아직 수렴 중인 결과라는 뜻입니다.
+  정리하면, 이 예제에서 차이를 만든 것은 주로 "어떤 식을 풀었는가"(\(\lambda\)와 \(\varepsilon\)의 값)와 "반복을 얼마나 했는가"이고, 알고리즘 자체의 우열은 이 표로 말할 수 없습니다.
+  ASD-POCS의 장점은 \(\varepsilon\)을 잡음 크기로 바로 정할 수 있고, \(\varepsilon=0\)처럼 벌점형으로는 다루기 어려운 경우도 그대로 다룬다는 데 있습니다.</p>
+
+  <h3>재구성 영상으로 비교하기</h3>
+
+  <p>같은 \(K\)에서 FBP, 7장의 GPBB(수렴까지), 이 장의 ASD-POCS(\(919\)회)를 참값과 나란히 놓습니다. 영상은 값 \(0.98\)~\(1.05\)를 흑백으로 나타낸 것으로 7장 페이지 9와 같은 범위이며,
+  버튼을 누르면 그 자리에서 다시 계산합니다(2~3초). "40, 잡음"은 \(K=40\)에 잡음을 더한 데이터이고, ASD-POCS는 \(\varepsilon=0.2577\)입니다.
+  \(K=18\)에서는 ASD-POCS 영상의 가운데 두 타원과 위쪽 원이 GPBB 영상보다 또렷하지만, 바탕에 얼룩이 남습니다.
+  잡음 있는 \(K=40\)에서는 GPBB 영상에 작은 알갱이 모양의 잡음이 남고, ASD-POCS 영상은 그보다 큰 평평한 조각들로 나뉩니다. 오차는 GPBB(참값을 알고 고른 \(\lambda\))가 조금 낮지만, 남은 오차의 모양이 서로 다릅니다.</p>
+
+  <div style="display:flex;gap:.5rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="c8-cmp-k">
+    <span>각도 수 \(K\)</span>
+    <button type="button" data-k="10">10</button>
+    <button type="button" data-k="18">18</button>
+    <button type="button" data-k="40">40</button>
+    <button type="button" data-k="41">40, 잡음</button>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 690 220" role="img" aria-label="선택한 각도 수에서 FBP, GPBB, ASD-POCS로 재구성한 영상과 참값 영상을 나란히 보여준다">
+      <image id="c8-cmp-fbp" x="14" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <image id="c8-cmp-gp" x="184" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <image id="c8-cmp-as" x="354" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <image id="c8-cmp-true" x="524" y="26" width="150" height="150" preserveAspectRatio="none"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><rect x="14" y="26" width="150" height="150"/><rect x="184" y="26" width="150" height="150"/><rect x="354" y="26" width="150" height="150"/><rect x="524" y="26" width="150" height="150"/></g>
+      <g font-size="11.5" font-weight="700" class="svg-fg"><text x="14" y="18">FBP</text><text x="184" y="18">GPBB(수렴까지)</text><text x="354" y="18">ASD-POCS(919회)</text><text x="524" y="18">참값</text></g>
+      <g font-size="11" class="svg-muted"><text x="14" y="196" id="c8-cmp-r1"></text><text x="184" y="196" id="c8-cmp-r2"></text><text x="354" y="196" id="c8-cmp-r3"></text></g>
+    </svg>
+    <figcaption id="c8-cmp-cap">이 페이지를 열면 계산을 시작합니다…</figcaption>
+  </figure>
+
+  <p>두 장의 표를 함께 보면, 같은 데이터와 같은 잡음 정보에서 GPBB는 적은 계산으로 벌점형의 해에 수렴하고,
+  ASD-POCS는 더 많은 계산으로 잡음 크기를 직접 쓴 제약형의 해에 다가갑니다.</p>
+
+<script>
+(function () {
+  var kit = window.ct8Kit; if (!kit) return;
+  var sec = document.currentScript.closest('section'), N = kit.N, cache = {}, curK = 18;
+  function ramLakKernel(Ns2, delta) {
+    var h = new Float64Array(2 * Ns2 - 1), c = Ns2 - 1, n;
+    for (n = -(Ns2 - 1); n <= Ns2 - 1; n++) {
+      if (n === 0) h[n + c] = 1 / (4 * delta * delta);
+      else if (n % 2 === 0) h[n + c] = 0;
+      else h[n + c] = -1 / (n * n * Math.PI * Math.PI * delta * delta);
+    }
+    return h;
+  }
+  function filterRow(row, h, delta) {
+    var Ns2 = row.length, Lh = h.length, c = (Lh - 1) / 2, out = new Float64Array(Ns2), n, m, s, k;
+    for (n = 0; n < Ns2; n++) {
+      s = 0;
+      for (m = 0; m < Ns2; m++) { k = n - m + c; if (k >= 0 && k < Lh) s += row[m] * h[k]; }
+      out[n] = s * delta;
+    }
+    return out;
+  }
+  function fbpReconstruct(grid, angles, dets, sino) {
+    var Ns2 = dets.length, delta = dets[1] - dets[0], h = ramLakKernel(Ns2, delta);
+    var K2 = angles.length, q = new Float64Array(K2 * Ns2), k, n, ix, iy, f;
+    for (k = 0; k < K2; k++) { f = filterRow(sino.slice(k * Ns2, (k + 1) * Ns2), h, delta); for (n = 0; n < Ns2; n++) q[k * Ns2 + n] = f[n]; }
+    var mu = new Float64Array(N * N), dmin = dets[0];
+    for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+      var x = grid.xs[iy * N + ix], y = grid.ys[iy * N + ix], acc = 0;
+      for (k = 0; k < K2; k++) {
+        var s = x * Math.cos(angles[k]) + y * Math.sin(angles[k]);
+        var tau = (s - dmin) / delta, i0 = Math.floor(tau), fr = tau - i0;
+        if (i0 < 0 || i0 >= Ns2 - 1) continue;
+        acc += (1 - fr) * q[k * Ns2 + i0] + fr * q[k * Ns2 + i0 + 1];
+      }
+      mu[iy * N + ix] = (Math.PI / K2) * acc;
+    }
+    return mu;
+  }
+  function compute(K, cb) {
+    if (cache[K]) { cb(cache[K]); return; }
+    var noisy = K === 41, angles = [], i, A, b, fbpX, G;
+    if (noisy) { A = kit.sysA; b = kit.noisy.b; }
+    else {
+      for (i = 0; i < K; i++) angles.push(i * Math.PI / K);
+      A = kit.buildSystemMatrix(kit.grid, angles, kit.dets); b = kit.forward(A, kit.xTrue);
+    }
+    var ang = angles.length ? angles : (function () { var a = [], j; for (j = 0; j < 40; j++) a.push(j * Math.PI / 40); return a; })();
+    fbpX = fbpReconstruct(kit.grid, ang, kit.dets, b);
+    G = kit.gpbb(A, N, b, 0.001, 0.01, { tol: 1e-4, maxIter: 1500, alpha0: 1, keep: false });
+    function done(asX) {
+      cache[K] = {
+        fbp: { url: kit.imageURL(fbpX, 0.98, 1.05), e: kit.rmseFn(fbpX, kit.xTrue) },
+        gp: { url: kit.imageURL(G.x, 0.98, 1.05), e: kit.rmseFn(G.x, kit.xTrue), it: G.iters },
+        as: { url: kit.imageURL(asX, 0.98, 1.05), e: kit.rmseFn(asX, kit.xTrue) }
+      };
+      cb(cache[K]);
+    }
+    if (noisy) kit.getRun(function (R) { done(R.snaps[918]); });
+    else done(kit.asdpocs(A, N, b, 0, { nIter: 919 }).x);
+  }
+  var cap = document.getElementById('c8-cmp-cap');
+  function render() {
+    var btns = document.querySelectorAll('#c8-cmp-k button'), q;
+    for (q = 0; q < btns.length; q++) {
+      var on = +btns[q].getAttribute('data-k') === curK;
+      btns[q].style.fontWeight = on ? '700' : '400'; btns[q].style.borderColor = on ? 'var(--accent)' : '';
+    }
+    cap.textContent = '계산 중입니다…';
+    setTimeout(function () {
+      compute(curK, function (o) {
+        document.getElementById('c8-cmp-fbp').setAttribute('href', o.fbp.url);
+        document.getElementById('c8-cmp-gp').setAttribute('href', o.gp.url);
+        document.getElementById('c8-cmp-as').setAttribute('href', o.as.url);
+        document.getElementById('c8-cmp-r1').textContent = 'rmse ' + o.fbp.e.toFixed(4);
+        document.getElementById('c8-cmp-r2').textContent = 'rmse ' + o.gp.e.toFixed(4) + ' · ' + o.gp.it + '회';
+        document.getElementById('c8-cmp-r3').textContent = 'rmse ' + o.as.e.toFixed(4);
+        cap.textContent = (curK === 41 ? 'K=40 · 잡음 있는 데이터 · GPBB λ=0.001, δ=0.01 · ASD-POCS ε=0.2577.'
+          : 'K=' + curK + ' · 잡음 없는 데이터 · GPBB λ=0.001, δ=0.01 · ASD-POCS ε=0.') + ' 반복 수는 브라우저의 수치 계산 차이로 몇 회 달라질 수 있습니다.';
+      });
+    }, 15);
+  }
+  kit.onShow(sec, function () {
+    document.getElementById('c8-cmp-true').setAttribute('href', kit.imageURL(kit.xTrue, 0.98, 1.05));
+    document.getElementById('c8-cmp-k').addEventListener('click', function (e) {
+      var t = e.target.closest('button[data-k]'); if (!t) return;
+      curK = +t.getAttribute('data-k'); render();
+    });
+    render();
+  });
+})();
+</script>
+</section>
+
+<!-- ─ 페이지 11 -->
+<section class="screen" data-title="수렴 근거와 후속 연구">
+  <p class="kicker">8장 · 페이지 11 · 심화</p>
+  <h2>수렴 근거와 후속 연구</h2>
+
+  <h3>증명이 없다는 말의 뜻</h3>
+
+  <p>ASD-POCS는 이름에 POCS가 들어 있지만, 페이지 2에서 본 POCS의 수렴 결과를 그대로 물려받지 않습니다. 원 논문은 이 알고리즘이 Yamada의 hybrid steepest descent(볼록 집합 위에서 함수를 줄이는 방법으로, 수렴이 증명되어 있습니다)를
+  고쳐 만든 것이며, 사영 대신 POCS를 쓰고 걸음을 적응적으로 바꾸었기 때문에 그 증명이 적용되지 않는다고 밝혔습니다. 그래서 수렴이 증명된 것처럼 보이지 않도록 다른 이름을 붙였다고 적었습니다.</p>
+
+  <p>원 논문이 주장하는 것은 두 가지입니다. 매개변수를 알맞게 고르면 결과가 두 제약을 지킨다는 것과, 그 결과가 제약형의 해에 수치적으로 가깝다는 것입니다. 앞의 것은 POCS의 성질에서, 뒤의 것은 페이지 8의 점검값 \(c_{\mathrm{opt}}\)로 확인합니다.
+  어느 쪽도 "반복을 충분히 하면 반드시 제약형의 해에 도착한다"는 보장은 아닙니다.</p>
+
+  <p>이 장의 예제에도 그 차이가 보입니다. 잡음 없는 \(K=10\)에서 \(919\)회의 결과(오차 \(0.1228\), \(c_{\mathrm{opt}}=-0.932\))는 \(\beta_{\mathrm{red}}\)를 \(0.998\)로 바꾸면 \(0.1116\)으로 달라졌습니다(페이지 10).
+  풀려는 식은 같은데 걸음 매개변수에 따라 도착한 영상이 다릅니다. 두 결과의 잔차 \(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert\)는 \(0.0535\)(\(919\)회)와 \(0.0180\)(\(2{,}301\)회)으로 둘 다 \(0\)이 아니어서, \(\varepsilon=0\)인 데이터 조건을 아직 만족하지 못했습니다. 두 결과 모두 해에 닿지 않았다는 뜻입니다. 7장의 GPBB는 목적함수가 볼록이라 멈춘 점이 곧 최솟값이었던 것과 대조됩니다(<a href="ch07.html#s1">7장 페이지 1</a>).</p>
+
+  <h3>같은 제약형을 정확히 푸는 방법</h3>
+
+  <p>제약형 TV 자체는 볼록 최적화 문제이므로, 수렴이 증명된 방법으로 풀 수 있습니다. E. Y. Sidky, J. H. Jørgensen, X. Pan, <i>Convex optimization problem prototyping for image reconstruction in computed tomography with the Chambolle–Pock algorithm</i>,
+  Physics in Medicine and Biology 57(10), 2012, 3065–3091은 데이터 조건을 "\(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert\le\varepsilon\)이면 \(0\), 아니면 무한대"인 함수로 바꿔 목적함수에 더하고,
+  원-쌍대(<span class="term" data-term="chambollepock">Primal-Dual</span>) 알고리즘으로 같은 제약형을 풉니다. 이 함수의 근위 연산은 닫힌 식으로 계산되므로, 반복마다 \(\mathbf{A}\)·\(\mathbf{A}^{\mathsf T}\) 한 번씩으로 진행됩니다.
+  그 논문은 이렇게 하면 벌점형과 같은 일을 하면서 \(\varepsilon\)이 데이터 오차의 한계라는 물리적인 뜻을 가진다고 적었습니다. 이 방법은 9장 페이지 6에서 다룹니다.</p>
+
+  <h3>변형 알고리즘</h3>
+
+  <p>ASD-POCS의 구조(데이터 맞추기와 TV 하강을 번갈아 하고 두 이동의 균형을 맞추기)를 바꾼 변형도 많습니다. 예를 들어 L. Ritschl, F. Bergner, C. Fleischmann, M. Kachelrieß, <i>Improved total variation-based CT image reconstruction applied to clinical data</i>,
+  Physics in Medicine and Biology 56(6), 2011, 1545–1561은 SART 한 번과 TV 걸음 여러 번으로 얻은 두 영상을, 데이터 오차가 직전 반복보다 나빠지지 않도록 섞는 방식(iTV)을 제안해 임상 데이터에 적용한 것으로 알려져 있습니다.</p>
+
+  <p>이런 변형들이 공통으로 겨냥하는 것은 이 장에서 본 두 약점입니다. 고를 매개변수가 많다는 점(페이지 9)과, 수렴 근거가 약하다는 점입니다.</p>
+</section>
+
+<!-- ─ 페이지 12 -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">8장 · 페이지 12</p>
+  <h2>8장 마무리</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>ASD-POCS는 4장의 제약형 TV(\(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert\le\varepsilon\), \(\mathbf{x}\ge\mathbf{0}\)에서 TV 최소화)를 직접 다루며, 잡음 크기 \(\varepsilon\)을 식에 바로 넣습니다. 처음에는 상자로 보아도 됩니다.</li>
+      <li>한 반복은 POCS 단계(ART 한 바퀴와 비음수 사영)로 데이터 쪽으로 당기고, 길이 \(1\)인 TV 기울기 방향으로 \(\Delta_{\mathrm{TV}}\)씩 \(20\)걸음 가는 것입니다. TV 걸음의 길이는 POCS 이동 거리에 묶여 있어 값의 단위에 좌우되지 않습니다.</li>
+      <li>(심화) 걸음 조절은 영상이 \(D_\varepsilon\) 밖에 있고 TV 이동이 POCS 이동의 \(r_{\max}\)배를 넘을 때만 \(\Delta_{\mathrm{TV}}\)를 줄이고, \(\beta\)는 매번 줄입니다. 이 책은 원 논문의 여섯 값을 그대로 쓰고 \(\beta&lt;0.01\)(\(919\)회)에서 멈추며, 최적성 점검값 \(c_{\mathrm{opt}}\)로 결과를 확인합니다.</li>
+      <li>7장과 같은 조건에서 잡음 크기만 알고 고른 값끼리 비교하면 ASD-POCS(\(0.0196\))가 GPBB(\(0.0223\))보다 조금 나았지만, 계산은 훨씬 많이 들었습니다. 잡음 없는 경우의 큰 차이는 주로 \(\varepsilon=0\)과 \(\lambda=0.001\)이라는 식의 차이에서 왔습니다.</li>
+      <li>\(\varepsilon\)은 \(\lambda\)처럼 U자 민감도를 보이고, \(r_{\max}\)를 \(1\)보다 크게 잡으면 영상이 데이터에서 멀어집니다. 수렴은 증명되지 않았고, 같은 제약형을 정확히 푸는 원-쌍대 방법은 9장 페이지 6에서 다룹니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">ASD-POCS가 TV 하강의 방향을 길이 \(1\)로 바꾸고, 걸음 길이를 POCS 단계가 움직인 거리 \(d_{\mathrm{POCS}}\)에 묶는 이유로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 방향을 길이 1로 바꿔도 TV 기울기는 그대로 계산해야 합니다. 걸음마다 TV 기울기를 한 번씩, 모두 20번 구합니다(페이지 7).">그렇게 하면 TV 기울기를 계산하지 않고도 걸을 수 있어, 반복당 계산이 줄어들기 때문이다.</li>
+      <li data-why="틀립니다. 걸음 길이를 묶는다고 수렴이 증명되지는 않습니다. ASD-POCS에는 제약형의 해로 간다는 증명이 없습니다(페이지 11).">그렇게 하면 걸음 크기와 상관없이 제약형의 해로 수렴한다는 것이 증명되기 때문이다.</li>
+      <li data-why="맞습니다. TV 기울기의 크기는 영상 값의 크기와 거의 상관이 없어(높이 0.1·1·10에서 모두 약 6.08), 기울기를 그대로 곱하면 값의 단위에 따라 걸음이 너무 크거나 작아집니다. 데이터 쪽 이동 거리에 묶으면 두 단계가 같은 크기로 비교됩니다(페이지 4).">TV 기울기의 크기는 영상 값의 크기와 거의 상관없으므로, 데이터 쪽 이동 거리에 맞춰야 두 단계의 크기를 비교할 수 있기 때문이다.</li>
+      <li data-why="틀립니다. 출력 영상이 음수가 되지 않는 것은 출력이 비음수 사영 직후의 영상이기 때문입니다. TV 걸음 자체는 음수를 만들 수 있습니다(페이지 7·8).">걸음 길이를 이렇게 정하면 TV 하강이 음수 화소를 만들지 않아, 비음수 사영이 필요 없어지기 때문이다.</li>
+    </ol>
+    <div class="explain">
+      <p>방향을 길이 \(1\)로 바꾸면 한 걸음이 영상을 정확히 \(\Delta_{\mathrm{TV}}\)만큼 움직입니다. 그래서 \(d_{\mathrm{TV}}\le n_{\mathrm{grad}}\Delta_{\mathrm{TV}}\)처럼 이동 거리를 미리 어림할 수 있고, 걸음 조절 규칙(페이지 5)이 두 거리를 직접 비교할 수 있습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">잡음 없는 \(K=18\)에서 ASD-POCS(\(\varepsilon=0\))의 오차는 \(0.0159\)로 GPBB(\(\lambda=0.001\))의 \(0.0332\)보다 훨씬 낮았습니다(페이지 10). 이 차이에 대한 해석으로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. GPBB는 수렴할 때까지(사영 방향이 허용값 아래로) 돌린 결과입니다. 반복을 더 해도 λ=0.001인 식의 해에서 거의 바뀌지 않습니다(7장 페이지 7).">GPBB가 수렴하기 전에 멈췄기 때문이며, GPBB를 더 오래 돌리면 같은 λ로도 오차가 0.0159까지 내려간다.</li>
+      <li data-why="틀립니다. ASD-POCS에는 그런 증명이 없습니다. 오히려 β_red를 바꾸면 K=18의 결과가 0.0070으로 달라져, 919회가 아직 수렴 중임을 보여 줍니다(페이지 10·11).">ASD-POCS는 제약형의 해로 수렴한다는 증명이 있는 반면, GPBB는 그런 증명이 없기 때문이다.</li>
+      <li data-why="틀립니다. ASD-POCS의 TV 기울기는 δ=10⁻³을 쓰지만, 7장에서 δ를 0.01에서 0.001로 줄여도 오차는 0.0332에서 0.0317로 조금만 줄었습니다(7장 페이지 8). 평활 상수로는 이 차이가 설명되지 않습니다.">ASD-POCS가 더 작은 평활 상수를 써서 TV를 더 정확히 계산했기 때문이며, 이것만으로 차이가 모두 설명된다.</li>
+      <li data-why="맞습니다. ε=0은 벌점형에서 λ를 0에 가깝게 줄인 극한에 해당하고, λ=0.001은 그보다 큰 값입니다. GPBB도 λ=0.0001로 바꾸면 0.0091로 내려갑니다(페이지 10).">두 알고리즘이 서로 다른 식을 풀었기 때문이며, ε=0은 λ를 0에 가깝게 줄인 벌점형에 해당한다.</li>
+    </ol>
+    <div class="explain">
+      <p>알고리즘을 비교할 때는 같은 식을 풀었는지부터 확인해야 합니다. 같은 식(\(\varepsilon\)과 짝을 이루는 \(\lambda\))을 두 알고리즘으로 풀었다면 차이는 수렴 속도와 정확도에서만 나야 합니다. 9장 페이지 6의 원-쌍대 방법은 ASD-POCS와 같은 제약형을 풀기 때문에 이런 비교에 쓰기 좋습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">(심화) 걸음 조절 규칙에서 영상이 \(D_\varepsilon\) 안에 있을 때(\(d_{\mathrm{data}}\le\varepsilon\)) \(\Delta_{\mathrm{TV}}\)를 줄이지 않는 이유로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. D_ε 안에 들어왔다고 반복을 멈추지 않습니다. 이 책은 β가 0.01보다 작아질 때 멈추고, 처음 D_ε에 들어온 142회의 영상은 TV를 다 줄이지 못한 상태였습니다(페이지 8).">영상이 D_ε 안에 들어오면 제약형의 해에 도착한 것이므로, 그 반복에서 알고리즘을 바로 멈추기 때문이다.</li>
+      <li data-why="틀립니다. β는 판정과 상관없이 매 반복 β_red배로 줄어듭니다. 안쪽에서 β를 키우는 규칙은 없습니다(페이지 5).">영상이 D_ε 안에 있으면 β를 다시 키워, POCS 단계의 이동이 TV 걸음보다 커지도록 하기 때문이다.</li>
+      <li data-why="틀립니다. 안쪽에 있어도 TV 걸음은 계속 걷습니다. 걸음 길이를 줄이지 않을 뿐이며, 그래서 영상이 TV가 낮은 쪽으로 밀려납니다(페이지 5).">영상이 D_ε 안에 있으면 TV 하강을 건너뛰고 POCS 단계만 해서, 데이터 조건을 더 정확히 맞추기 때문이다.</li>
+      <li data-why="맞습니다. 안쪽에서는 Δ_TV가 그대로인데 β가 줄어 d_POCS가 작아지므로, TV 걸음이 상대적으로 커져 영상이 TV가 낮은 쪽으로 경계 밖까지 밀려납니다. 밖으로 나가면 다시 줄입니다(페이지 5).">β가 줄어 POCS 이동이 작아지는 동안 TV 걸음을 그대로 두어, 영상을 TV가 더 낮은 쪽으로 경계 밖까지 밀어내기 때문이다.</li>
+    </ol>
+    <div class="explain">
+      <p>제약형의 해는 대개 \(D_\varepsilon\)의 경계 위에 있습니다. 경계 안쪽 깊숙이 있는 영상은 데이터 조건을 남는 만큼 지키는 대신 TV를 덜 줄인 것이므로, 경계 쪽으로 밀어내는 것이 맞습니다. 원 논문은 이 움직임을 경계를 따라 미끄러진다고 표현했습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">\(K=40\) 잡음 데이터에서 \(\varepsilon\)을 잡음 크기의 \(0.5\)배로 둔 결과는 \(\varepsilon=0\)과 똑같았습니다(오차 \(0.0266\), 페이지 9). 그 이유로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. ε은 걸음 조절 규칙에 쓰이는 값이며, 규칙은 반복 내내 판정합니다. 다만 두 경우 모두 판정 결과가 같았을 뿐입니다(페이지 5).">ε은 첫 반복에서 Δ_TV를 정할 때만 쓰이므로, ε의 값이 무엇이든 결과에 영향을 주지 않기 때문이다.</li>
+      <li data-why="맞습니다. 919회 동안 닿은 가장 작은 잔차가 0.150이고(POCS 단계만 돌려도 0.135) 0.5배(0.129)는 그보다 작아, 영상이 끝까지 D_ε 밖에 있었습니다. 그러면 d_data > ε 조건이 늘 참이라 ε=0과 같은 판정이 나옵니다(페이지 9).">ε이 POCS 단계가 닿을 수 있는 잔차보다 작아 영상이 끝까지 D_ε 밖에 있었고, 규칙의 판정이 ε=0과 같았기 때문이다.</li>
+      <li data-why="틀립니다. 잡음 크기의 0.75배에서는 결과가 0.0156으로 달라졌습니다. 작은 ε이 모두 같은 결과를 내는 것이 아니라, 닿을 수 있는 잔차보다 작은 ε만 그렇습니다(페이지 9).">ε이 잡음 크기보다 작으면 그 크기와 상관없이 언제나 같은 결과가 나오도록 알고리즘이 만들어졌기 때문이다.</li>
+      <li data-why="틀립니다. 잡음은 POCS 단계의 ART가 맞추려는 데이터에 그대로 들어 있습니다. 잡음 때문에 모든 초평면을 지나는 점이 없어 잔차가 0까지 내려가지 못하는 것이 이 현상의 원인입니다(페이지 3).">ε이 작으면 ART가 잡음을 데이터에서 걸러 내므로, 결과가 잡음 없는 데이터를 쓴 것과 같아지기 때문이다.</li>
+    </ol>
+    <div class="explain">
+      <p>잡음이 있으면 \(\varepsilon\)을 잡음 크기보다 많이 작게 잡을 이유가 없습니다. 원 논문도 POCS만으로 얻은 가장 작은 잔차 \(\varepsilon_{\min}\)이 \(0\)보다 클 수 있다고 적었고, \(\varepsilon\)은 그보다 커야 뜻이 있습니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>첫 반복에서 \(d_{\mathrm{POCS}}=43.14\), \(\alpha=0.2\), \(n_{\mathrm{grad}}=20\)일 때 \(\Delta_{\mathrm{TV}}\)와 \(d_{\mathrm{TV}}\)의 상한을 구하고, 실제 \(d_{\mathrm{TV}}=17.9\)가 그 상한보다 작은 이유를 한 문장으로 설명하세요.</li>
+      <li>(심화) \(\beta_{\mathrm{red}}=0.99\)이면 \(\beta\)가 \(0.01\)보다 작아질 때까지 몇 번 반복하는지 계산하고, 페이지 9의 표와 맞는지 확인하세요.</li>
+      <li>페이지 9의 \(\varepsilon\) 표와 7장 페이지 8의 \(\lambda\) 표를 견주어, \(\varepsilon\)이 클 때와 \(\lambda\)가 클 때 영상에 같은 일이 일어나는 이유를 두세 문장으로 설명하세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> \(\Delta_{\mathrm{TV}}=0.2\times43.14\approx8.63\)이고, 한 걸음이 정확히 \(\Delta_{\mathrm{TV}}\)만큼 움직이므로 \(d_{\mathrm{TV}}\le20\times8.63\approx172.6\)입니다.
+      실제 값 \(17.9\)가 훨씬 작은 것은 \(20\)걸음의 방향이 서로 같지 않기 때문입니다. 원 논문도 \(n_{\mathrm{grad}}\times\alpha=4.0\)인데 첫 반복의 \(d_{\mathrm{TV}}\)가 \(d_{\mathrm{POCS}}\)보다 작아지는 까닭을, 작은 걸음들의 방향이 같지 않다는 데서 찾았습니다.
+      방향이 바뀌는 걸음들은 일부가 서로 상쇄되어, 총 이동이 걸음 길이의 합보다 짧아집니다(삼각부등식, 페이지 4의 접기).</p>
+      <p><b>2번.</b> \(0.99^{n}&lt;0.01\)에서 \(n&gt;\ln0.01/\ln0.99\approx458.2\)이므로 \(459\)번입니다. 페이지 9의 표의 \(459\)회와 같습니다. \(\beta_{\mathrm{red}}=0.995\)이면 \(\ln0.01/\ln0.995\approx918.7\)이라 \(919\)번입니다.</p>
+      <p><b>3번.</b> \(\varepsilon\)이 크면 데이터와 멀리 떨어진 영상까지 조건을 만족하므로, 그 넓은 범위에서 TV가 가장 작은 영상, 곧 더 평평한 영상이 선택됩니다. \(\lambda\)가 크면 목적함수에서 TV 항의 비중이 커져 데이터 잔차를 늘리더라도 TV를 줄이는 쪽이 선택됩니다.
+      두 경우 모두 데이터와 맞추는 정도를 TV를 줄이는 데 내주는 것이며, 그 결과 진짜 경계까지 깎여 오차가 커집니다(\(\varepsilon\) 3배에서 약 \(0.092\), \(\lambda=0.03\)에서 \(0.1496\)).
+      짝지은 \(\lambda\)와 \(\varepsilon\)이 같은 해를 준다는 <a href="ch04.html#s5">4장 페이지 5</a>의 관계가 민감도에서도 같은 모양으로 나타나는 것입니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 \(d_{\mathrm{TV}}=20\,\Delta_{\mathrm{TV}}\)라고 등호로 답하는 것입니다. 걸음마다 방향이 다시 계산되므로 상한일 뿐입니다.</li>
+        <li>2번에서 \(458\)번이라고 답하는 것입니다. \(\beta\)는 반복을 마친 뒤 곱하므로, \(0.99^{458}\approx0.01003\)은 아직 하한 이상이고 한 번 더 돌아야 합니다.</li>
+        <li>3번에서 "\(\varepsilon\)이 크면 잡음이 더 많이 남는다"고 답하는 것입니다. 잡음이 남는 것은 \(\varepsilon\)이 작을 때이고, 클 때는 구조가 지워집니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch09.html"><span>다음 장</span>9장 — 그 밖의 길은 없을까요? 다른 최적화 방식</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

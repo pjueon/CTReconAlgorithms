@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>참고문헌 — CT 재구성 알고리즘</title>
+<script src="assets/theme.js"></script><link rel="stylesheet" href="assets/base.css"><link rel="stylesheet" href="assets/book.css">
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+.wrap{max-width:46rem;margin:0 auto;padding:1.1rem 1rem 2rem}
+.back{margin:0 0 .8rem;font-size:.86rem}
+.kicker{margin:0 0 .15rem;font-size:.8rem}
+h1.title{font-size:1.6rem;line-height:1.2;letter-spacing:-.03em;margin:0 0 .25rem;color:var(--fg-strong);border:0;padding:0}
+.sub{font-size:.92rem;color:var(--muted);margin:0 0 .8rem}
+h2{font-size:1.1rem;margin:1.5rem 0 .4rem;color:var(--fg-strong)}
+h3{font-size:.95rem;margin:1rem 0 .3rem;color:var(--fg-strong);border:0}
+ul.refs{margin:.3rem 0 .6rem;padding-left:1.2rem}
+ul.refs li{margin:0 0 .5rem;font-size:.9rem;line-height:1.5}
+.where{display:block;font-size:.8rem;color:var(--muted)}
+.where a{margin-right:.5rem}
+.toc a{margin-right:.8rem;font-size:.88rem}
+</style></head><body>
+<div class="wrap">
+<p class="back"><a href="index.html">← 홈으로</a></p>
+<p class="kicker">CT 재구성 알고리즘</p>
+<h1 class="title">참고문헌</h1>
+<p class="sub">본문에서 인용하거나 소개한 문헌을 편별로 모았습니다. 항목마다 "인용" 줄에 어느 장에서 나오는지 적었습니다. 본문에서는 처음 인용하는 자리에 서지를 함께 적어 두었습니다.</p>
+<p class="toc"><a href="#main">주 참고서</a><a href="#v0">0편</a><a href="#v1">1편</a><a href="#v2">2편</a></p>
+
+<div class="box note" style="padding:.7rem 1rem;border:1px solid var(--rule);border-radius:10px;background:var(--bg-soft);font-size:.86rem">
+서지(권·호·쪽수)는 PubMed 등에서 확인한 것입니다. Parker, Wesarg 외, Wang, Feldkamp 외의 논문은 원문 대신 주 참고서(Kak &amp; Slaney)에 실린 식이나 원 논문의 식을 옮긴 후속 문헌·공개 구현과 대조했고, 무엇과 대조했는지 해당 장에 적었습니다. 이 책의 식은 앞 장의 규약으로 직접 유도한 것이어서 문헌의 기호와 다를 수 있습니다.
+</div>
+
+<h2 id="main">주 참고서</h2>
+<ul class="refs">
+<li>A. C. Kak, M. Slaney, <i>Principles of Computerized Tomographic Imaging</i>, SIAM, 2001 (IEEE Press 1988년판의 재출간). 이 시리즈 전체의 주 참고서입니다.
+ <span class="where">인용: <a href="part1/detail/ch03.html">1편 3장</a><a href="part1/detail/ch04.html">1편 4장</a><a href="part1/detail/ch14.html">1편 14장</a><a href="part2/detail/ch02.html">2편 2장</a></span></li>
+<li>F. Natterer, <i>The Mathematics of Computerized Tomography</i>, SIAM, 2001. 연속 모델의 수학적 이론을 더 깊이 볼 때의 참고서입니다.
+ <span class="where">인용: <a href="part2/detail/ch11.html">2편 11장</a></span></li>
+</ul>
+
+<h2 id="v0">0편 · 기초편</h2>
+<p class="sub">0편은 특정 논문을 인용하지 않고 주 참고서의 내용을 바탕으로 합니다.</p>
+
+<h2 id="v1">1편 · 해석적 재구성편</h2>
+<ul class="refs">
+<li>J. Radon, Über die Bestimmung von Funktionen durch ihre Integralwerte längs gewisser Mannigfaltigkeiten, <i>Berichte über die Verhandlungen der Sächsischen Akademie der Wissenschaften zu Leipzig, Mathematisch-Physische Klasse</i> 69, 1917, 262–277.
+ <span class="where">인용: <a href="part1/detail/ch03.html">1편 3장</a></span></li>
+<li>L. A. Shepp, B. F. Logan, The Fourier reconstruction of a head section, <i>IEEE Transactions on Nuclear Science</i> NS-21(3), 1974, 21–43. Shepp-Logan 팬텀.
+ <span class="where">인용: <a href="part1/detail/ch03.html">1편 3장</a></span></li>
+<li>R. N. Bracewell, Strip integration in radio astronomy, <i>Australian Journal of Physics</i> 9, 1956, 198–217.
+ <span class="where">인용: <a href="part1/detail/ch04.html">1편 4장</a></span></li>
+<li>F. Noo, R. Clackdoyle, J. D. Pack, A two-step Hilbert transform method for 2D image reconstruction, <i>Physics in Medicine and Biology</i> 49(17), 2004, 3903–3923.
+ <span class="where">인용: <a href="part1/detail/ch10.html">1편 10장</a></span></li>
+<li>D. L. Parker, Optimal short scan convolution reconstruction for fanbeam CT, <i>Medical Physics</i> 9(2), 1982, 254–257.
+ <span class="where">인용: <a href="part1/detail/ch11.html">1편 11장</a></span></li>
+<li>S. Wesarg, M. Ebert, T. Bortfeld, Parker weights revisited, <i>Medical Physics</i> 29(3), 2002, 372–378. 같은 학술지 29(8), 1916쪽의 같은 제목 글은 M. D. Harpen의 의견(Letter)입니다.
+ <span class="where">인용: <a href="part1/detail/ch11.html">1편 11장</a></span></li>
+<li>G. Wang, X-ray micro-CT with a displaced detector array, <i>Medical Physics</i> 29(7), 2002, 1634–1636.
+ <span class="where">인용: <a href="part1/detail/ch12.html">1편 12장</a></span></li>
+<li>K. S. Sharma, H. Gong, O. Ghasemalizadeh, H. Yu, G. Wang, G. Cao, Interior micro-CT with an offset detector, <i>Medical Physics</i> 41(6), 2014, 061915.
+ <span class="where">인용: <a href="part1/detail/ch12.html">1편 12장</a>(Wang 가중의 식, 팬 각에 대한 sin² 경사)</span></li>
+<li>H. K. Tuy, An inversion formula for cone-beam reconstruction, <i>SIAM Journal on Applied Mathematics</i> 43(3), 1983, 546–552.
+ <span class="where">인용: <a href="part1/detail/ch13.html">1편 13장</a></span></li>
+<li>L. A. Feldkamp, L. C. Davis, J. W. Kress, Practical cone-beam algorithm, <i>Journal of the Optical Society of America A</i> 1(6), 1984, 612–619.
+ <span class="where">인용: <a href="part1/detail/ch14.html">1편 14장</a></span></li>
+<li>대조에 쓴 공개 구현: RTK(Reconstruction Toolkit)의 Parker 가중 필터, ODL의 <code>parker_weighting</code>(<a href="https://odl.readthedocs.io/">odl.readthedocs.io</a>), M. Schabel의 <code>phantom3d.m</code>(Toft의 3차원 Shepp-Logan 표).
+ <span class="where">인용: <a href="part1/detail/ch11.html">1편 11장</a>, <a href="part1/detail/ch14.html">1편 14장</a></span></li>
+</ul>
+
+<h2 id="v2">2편 · 대수적 재구성편</h2>
+
+<h3>시스템 행렬과 고전적 반복법 (1~2장)</h3>
+<ul class="refs">
+<li>R. L. Siddon, Fast calculation of the exact radiological path for a three-dimensional CT array, <i>Medical Physics</i> 12(2), 1985, 252–255.
+ <span class="where">인용: <a href="part2/detail/ch01.html">2편 1장</a></span></li>
+<li>B. De Man, S. Basu, Distance-driven projection and backprojection in three dimensions, <i>Physics in Medicine and Biology</i> 49(11), 2004, 2463–2475.
+ <span class="where">인용: <a href="part2/detail/ch01.html">2편 1장</a></span></li>
+<li>S. Kaczmarz, Angenäherte Auflösung von Systemen linearer Gleichungen, <i>Bulletin International de l'Académie Polonaise des Sciences et des Lettres</i>, 1937.
+ <span class="where">인용: <a href="part2/detail/ch02.html">2편 2장</a></span></li>
+<li>R. Gordon, R. Bender, G. T. Herman, Algebraic reconstruction techniques (ART) for three-dimensional electron microscopy and X-ray photography, <i>Journal of Theoretical Biology</i> 29(3), 1970, 471–481.
+ <span class="where">인용: <a href="part2/detail/ch02.html">2편 2장</a></span></li>
+<li>P. Gilbert, Iterative methods for the three-dimensional reconstruction of an object from projections, <i>Journal of Theoretical Biology</i> 36(1), 1972, 105–117.
+ <span class="where">인용: <a href="part2/detail/ch02.html">2편 2장</a></span></li>
+<li>A. H. Andersen, A. C. Kak, Simultaneous Algebraic Reconstruction Technique (SART): A superior implementation of the ART algorithm, <i>Ultrasonic Imaging</i> 6(1), 1984, 81–94.
+ <span class="where">인용: <a href="part2/detail/ch02.html">2편 2장</a></span></li>
+<li>V. A. Morozov, On the solution of functional equations by the method of regularization, <i>Doklady Akademii Nauk SSSR</i> 167(3), 1966, 510–512. 불일치 원칙.
+ <span class="where">인용: <a href="part2/detail/ch02.html">2편 2장</a></span></li>
+</ul>
+
+<h3>정규화, TV, 압축 센싱 (4~5장)</h3>
+<ul class="refs">
+<li>L. I. Rudin, S. Osher, E. Fatemi, Nonlinear total variation based noise removal algorithms, <i>Physica D: Nonlinear Phenomena</i> 60(1–4), 1992, 259–268.
+ <span class="where">인용: <a href="part2/detail/ch04.html">2편 4장</a></span></li>
+<li>E. Candès, J. Romberg, T. Tao, Robust uncertainty principles: exact signal reconstruction from highly incomplete frequency information, <i>IEEE Transactions on Information Theory</i> 52(2), 2006, 489–509.
+ <span class="where">인용: <a href="part2/detail/ch05.html">2편 5장</a></span></li>
+<li>D. Donoho, Compressed sensing, <i>IEEE Transactions on Information Theory</i> 52(4), 2006, 1289–1306.
+ <span class="where">인용: <a href="part2/detail/ch05.html">2편 5장</a><a href="part2/quick/day4.html">2편 빠르게 보기 4일차</a></span></li>
+<li>E. Candès, J. Romberg, Sparsity and incoherence in compressive sampling, <i>Inverse Problems</i> 23(3), 2007, 969–985.
+ <span class="where">인용: <a href="part2/detail/ch05.html">2편 5장</a></span></li>
+<li>E. Y. Sidky, X. Pan, Image reconstruction in circular cone-beam computed tomography by constrained, total-variation minimization, <i>Physics in Medicine and Biology</i> 53(17), 2008, 4777–4807.
+ <span class="where">인용: <a href="part2/detail/ch05.html">2편 5장</a>, <a href="part2/detail/ch08.html">2편 8장</a>(ASD-POCS)</span></li>
+</ul>
+
+<h3>GPBB와 TV 재구성 (6~7장)</h3>
+<ul class="refs">
+<li>J. Barzilai, J. M. Borwein, Two-point step size gradient methods, <i>IMA Journal of Numerical Analysis</i> 8(1), 1988, 141–148. BB 스텝(long·short 두 공식).
+ <span class="where">인용: <a href="part2/detail/ch06.html">2편 6장</a></span></li>
+<li>B. Zhou, L. Gao, Y.-H. Dai, Gradient methods with adaptive step-sizes, <i>Computational Optimization and Applications</i> 35(1), 2006, 69–86. 두 BB 공식을 골라 쓰는 적응형 변형(ABB).
+ <span class="where">인용: <a href="part2/detail/ch06.html">2편 6장</a></span></li>
+<li>L. Grippo, F. Lampariello, S. Lucidi, A nonmonotone line search technique for Newton's method, <i>SIAM Journal on Numerical Analysis</i> 23(4), 1986, 707–716. 비단조 선 탐색.
+ <span class="where">인용: <a href="part2/detail/ch06.html">2편 6장</a></span></li>
+<li>E. G. Birgin, J. M. Martínez, M. Raydan, Nonmonotone spectral projected gradient methods on convex sets, <i>SIAM Journal on Optimization</i> 10(4), 2000, 1196–1211. 사영 기울기 + BB 스텝 + 비단조 선 탐색.
+ <span class="where">인용: <a href="part2/detail/ch06.html">2편 6장</a></span></li>
+<li>J. C. Park 외, <i>Medical Physics</i> 39(3), 2012, 1207–1217. 기울기 사영에 BB 스텝을 붙여 TV 정규화 CBCT 재구성에 쓴 논문(본문에는 제목을 적지 않았습니다).
+ <span class="where">인용: <a href="part2/detail/ch07.html">2편 7장</a><a href="part2/quick/day5.html">2편 빠르게 보기 5일차</a></span></li>
+</ul>
+
+<h3>ASD-POCS와 제약형 TV (8장)</h3>
+<ul class="refs">
+<li>E. Y. Sidky, C.-M. Kao, X. Pan, Accurate image reconstruction from few-views and limited-angle data in divergent-beam CT, <i>Journal of X-Ray Science and Technology</i> 14(2), 2006, 119–139. ASD-POCS의 바탕이 된 잡음 없는 경우(ε=0)의 TV 알고리즘. arXiv:0904.4495 판으로 대조했습니다.
+ <span class="where">인용: <a href="part2/detail/ch08.html">2편 8장</a></span></li>
+<li>L. M. Bregman, The method of successive projection for finding a common point of convex sets, <i>Soviet Mathematics Doklady</i> 6, 1965, 688–692(러시아어 원문: <i>Doklady Akademii Nauk SSSR</i> 162(3), 1965, 487–490). POCS의 수렴.
+ <span class="where">인용: <a href="part2/detail/ch08.html">2편 8장</a></span></li>
+<li>L. G. Gubin, B. T. Polyak, E. V. Raik, The method of projections for finding the common point of convex sets, <i>USSR Computational Mathematics and Mathematical Physics</i> 7(6), 1967, 1–24. POCS의 수렴.
+ <span class="where">인용: <a href="part2/detail/ch08.html">2편 8장</a></span></li>
+<li>D. C. Youla, H. Webb, Image restoration by the method of convex projections: Part 1—Theory, <i>IEEE Transactions on Medical Imaging</i> 1(2), 1982, 81–94. 영상 복원에서의 POCS.
+ <span class="where">인용: <a href="part2/detail/ch08.html">2편 8장</a></span></li>
+<li>E. Y. Sidky, J. H. Jørgensen, X. Pan, Convex optimization problem prototyping for image reconstruction in computed tomography with the Chambolle–Pock algorithm, <i>Physics in Medicine and Biology</i> 57(10), 2012, 3065–3091. 제약형 TV를 원-쌍대 알고리즘으로 푸는 방법. arXiv:1111.5632v2 판으로 대조했습니다(그 판의 식 (59)와 의사코드 7의 5행은 길이 ‖y−σg‖로 나누는 부분이 빠진 모양으로 인쇄되어 있습니다. 근위 연산은 거리를 늘리지 않으므로 나눈 식이 맞습니다).
+ <span class="where">인용: <a href="part2/detail/ch08.html">2편 8장</a>, <a href="part2/detail/ch09.html">2편 9장</a></span></li>
+<li>L. Ritschl, F. Bergner, C. Fleischmann, M. Kachelrieß, Improved total variation-based CT image reconstruction applied to clinical data, <i>Physics in Medicine and Biology</i> 56(6), 2011, 1545–1561. ASD-POCS 계열의 변형(iTV).
+ <span class="where">인용: <a href="part2/detail/ch08.html">2편 8장</a></span></li>
+</ul>
+
+<h3>다른 최적화 방식 (9장, 심화)</h3>
+<ul class="refs">
+<li>I. Daubechies, M. Defrise, C. De Mol, An iterative thresholding algorithm for linear inverse problems with a sparsity constraint, <i>Communications on Pure and Applied Mathematics</i> 57(11), 2004, 1413–1457. ISTA.
+ <span class="where">인용: <a href="part2/detail/ch09.html">2편 9장</a></span></li>
+<li>A. Beck, M. Teboulle, A fast iterative shrinkage-thresholding algorithm for linear inverse problems, <i>SIAM Journal on Imaging Sciences</i> 2(1), 2009, 183–202. FISTA.
+ <span class="where">인용: <a href="part2/detail/ch09.html">2편 9장</a></span></li>
+<li>T. Goldstein, S. Osher, The split Bregman method for L1-regularized problems, <i>SIAM Journal on Imaging Sciences</i> 2(2), 2009, 323–343.
+ <span class="where">인용: <a href="part2/detail/ch09.html">2편 9장</a></span></li>
+<li>E. Esser, UCLA CAM Report 09-31, 2009. Split Bregman과 ADMM의 동치를 보인 보고서(본문에는 제목을 적지 않았습니다).
+ <span class="where">인용: <a href="part2/detail/ch09.html">2편 9장</a></span></li>
+<li>A. Chambolle, T. Pock, A first-order primal-dual algorithm for convex problems with applications to imaging, <i>Journal of Mathematical Imaging and Vision</i> 40(1), 2011, 120–145.
+ <span class="where">인용: <a href="part2/detail/ch09.html">2편 9장</a></span></li>
+<li>L. A. Shepp, Y. Vardi, Maximum likelihood reconstruction for emission tomography, <i>IEEE Transactions on Medical Imaging</i> 1(2), 1982, 113–122. ML-EM.
+ <span class="where">인용: <a href="part2/detail/ch09.html">2편 9장</a></span></li>
+<li>K. Lange, R. Carson, EM reconstruction algorithms for emission and transmission tomography, <i>Journal of Computer Assisted Tomography</i> 8(2), 1984, 306–316.
+ <span class="where">인용: <a href="part2/detail/ch09.html">2편 9장</a></span></li>
+<li>H. M. Hudson, R. S. Larkin, Accelerated image reconstruction using ordered subsets of projection data, <i>IEEE Transactions on Medical Imaging</i> 13(4), 1994, 601–609. OS-EM.
+ <span class="where">인용: <a href="part2/detail/ch09.html">2편 9장</a></span></li>
+</ul>
+
+<p class="sub" style="margin-top:1.5rem">마지막 수정: 2026-11-03</p>
+</div></body></html>

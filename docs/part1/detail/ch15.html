@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch15">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15장 · 1편 돌아보기 — CT 재구성 알고리즘1 - 해석적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="1편의 지도">
+  <p class="kicker">15장 · 페이지 1</p>
+  <h1>1편 돌아보기</h1>
+
+  <p class="lead">1편은 광선마다의 투영값에서 영상을 구하는 해석적 방법을 평행빔에서 시작해 콘빔까지 넓혀 왔습니다. 마지막 장에서는 이 흐름을 한 장의 지도로 보고, 1편이 다루지 않은 것들을 짧게 짚습니다. 새로운 식은 나오지 않으며, 앞 장의 결과를 다시 가리킵니다.</p>
+
+  <h2>1편의 흐름</h2>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 270" role="img" aria-label="1편의 흐름. 첫 줄은 문제 정의, Radon 변환과 sinogram, 푸리에 슬라이스 정리, 필터 역투영이 차례로 이어진다. 둘째 줄은 팬빔, 데이터 완전성, 콘빔과 FDK가 이어지고, 점선 상자의 1편 밖 내용으로 끝난다. 각 상자에는 해당하는 장 번호가 적혀 있다">
+      <defs><marker id="r18-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-line" fill="none" stroke-width="1.4">
+        <rect x="14" y="20" width="138" height="76" rx="6"/>
+        <rect x="172" y="20" width="138" height="76" rx="6"/>
+        <rect x="330" y="20" width="138" height="76" rx="6"/>
+        <rect x="488" y="20" width="138" height="76" rx="6"/>
+        <rect x="14" y="150" width="138" height="76" rx="6"/>
+        <rect x="172" y="150" width="138" height="76" rx="6"/>
+        <rect x="330" y="150" width="138" height="76" rx="6"/>
+      </g>
+      <rect x="488" y="150" width="138" height="76" rx="6" fill="none" stroke-width="1.4" stroke-dasharray="5 4" style="stroke:var(--accent)"/>
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.4">
+        <path d="M153 58 H170" marker-end="url(#r18-arr)"/>
+        <path d="M311 58 H328" marker-end="url(#r18-arr)"/>
+        <path d="M469 58 H486" marker-end="url(#r18-arr)"/>
+        <path d="M557 97 V123 H83 V148" marker-end="url(#r18-arr)"/>
+        <path d="M153 188 H170" marker-end="url(#r18-arr)"/>
+        <path d="M311 188 H328" marker-end="url(#r18-arr)"/>
+        <path d="M469 188 H486" marker-end="url(#r18-arr)"/>
+      </g>
+      <g text-anchor="middle" font-size="12.5" font-weight="700" class="svg-fg">
+        <text x="83" y="46">문제 정의</text><text x="241" y="46">Radon·sinogram</text><text x="399" y="46">슬라이스 정리</text><text x="557" y="46">필터 역투영</text>
+        <text x="83" y="176">팬빔</text><text x="241" y="176">데이터 완전성</text><text x="399" y="176">콘빔과 FDK</text><text x="557" y="176">다루지 않은 것</text>
+      </g>
+      <g text-anchor="middle" font-size="10.5" class="svg-muted">
+        <text x="83" y="65">p = ∫μ dℓ, 역문제</text><text x="241" y="65">p(θ, s)의 표</text><text x="399" y="65">투영 ↔ 2D 푸리에</text><text x="557" y="65">램프 필터 + 역투영</text>
+        <text x="83" y="195">점광원, 가중 둘</text><text x="241" y="195">중복 광선, 가중</text><text x="399" y="195">3차원, 근사</text><text x="557" y="195">대수적 방법 등 네 가지</text>
+      </g>
+      <g text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--accent)">
+        <text x="83" y="85">0편 1~3장</text><text x="241" y="85">3장</text><text x="399" y="85">4장</text><text x="557" y="85">5·6장</text>
+        <text x="83" y="215">7~9장</text><text x="241" y="215">10~12장</text><text x="399" y="215">13·14장</text><text x="557" y="215">페이지 2</text>
+      </g>
+      <text x="14" y="254" font-size="11" class="svg-muted">1·2장은 복습이며 5·8장의 변수변환과 4~9장의 푸리에 도구에 쓰였습니다.</text>
+    </svg>
+    <figcaption>1편의 흐름입니다. 상자 안의 숫자는 그 단계를 다룬 장이고, 점선 상자는 1편 밖의 내용입니다. 아래 표에서 단계마다 얻은 결과와 다시 볼 페이지를 확인합니다.</figcaption>
+  </figure>
+
+  <h2>단계별 결과</h2>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:8rem">단계</th><th>얻은 결과</th><th style="width:7.5rem">다시 볼 곳</th></tr>
+      <tr><td>문제 정의<br>0편 1~3장</td><td>화소 값은 감쇠계수 \(\mu\)이고 광선 하나의 투영값은 선적분 \(p = \int\mu\,d\ell\)입니다. 재구성은 \(p\)에서 \(\mu\)를 구하는 역문제이며, 푸는 접근은 해석적 방법과 대수적 방법으로 나뉩니다.</td><td style="white-space:nowrap"><a href="../../part0/ch03.html#s1">0편 3장 페이지 1</a></td></tr>
+      <tr><td>Radon 변환(직선마다 선적분을 모은 변환)과 <span class="term" data-term="sinogram">sinogram</span><br>3장</td><td>평행빔 데이터는 직선마다의 선적분 \(p(\theta, s)\)이고, 이를 각도 × 위치의 표로 쌓은 것이 sinogram입니다. \(p(\theta + \pi, -s) = p(\theta, s)\)이므로 평행빔은 \(180^{\circ}\)로 충분합니다.</td><td style="white-space:nowrap">3장 페이지 6·9</td></tr>
+      <tr><td>푸리에 슬라이스 정리<br>4장</td><td>각도 \(\theta\)의 투영을 1차원 푸리에 변환한 값이 영상의 2차원 푸리에 변환을 \(\theta\) 방향 직선에서 읽은 값입니다. 단순 역투영은 흐린 영상을 주고, 주파수에 \(|\omega|\)를 곱하면 값이 고르게 쌓입니다.</td><td style="white-space:nowrap">4장 페이지 2</td></tr>
+      <tr><td>필터 역투영<br>5·6장</td><td>연속 식 \(\mu = \int_0^\pi q\,d\theta\)는 모든 각도와 모든 \(s\)에서 잡음 없는 투영이 있으면 정확한 역공식입니다. 이산화에서는 검출기 간격 \(\Delta s\), 차단 주파수 \(W\), 제로 패딩 길이, 각도 수를 정했습니다.</td><td style="white-space:nowrap">5장 페이지 1</td></tr>
+      <tr><td>팬빔<br>7~9장</td><td>팬빔 광선 \((\beta, \gamma)\)는 평행빔 직선 \(\theta = \beta + \gamma\), \(s = D\sin\gamma\)와 같습니다. 직접 방식은 코사인 가중, 램프 필터링, \(1/U^{2}\)을 곱하는 역투영의 세 단계이고, rebinning은 평행빔 FBP를 그대로 쓰는 대안입니다.</td><td style="white-space:nowrap">8장 페이지 1</td></tr>
+      <tr><td>데이터 완전성<br>10~12장</td><td>같은 직선을 두 번 잰 광선(<span class="term" data-term="redundant">중복 광선</span>)이 있어서 선원을 \(\pi + 2\gamma_m\)만 돌려도 모든 직선을 잴 수 있습니다. 중복 측정은 합이 1이고 끊김이 없는 가중(Parker 가중, Wang 가중)으로 합칩니다.</td><td style="white-space:nowrap">10장 페이지 4</td></tr>
+      <tr><td>콘빔과 FDK<br>13·14장</td><td>3차원의 정확한 재구성 조건은 <span class="term" data-term="p16_tuy">Tuy 조건</span>이며 원형 궤도는 궤도 평면 위의 점에서만 만족합니다. <span class="term" data-term="p17_fdk">FDK 알고리즘</span>은 중앙 슬라이스와 \(z\)에 무관한 물체에서 정확하고 그 밖에서는 근사입니다.</td><td style="white-space:nowrap">13장 페이지 6<br>14장 페이지 7</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="다루지 않은 것과 2편">
+  <p class="kicker">15장 · 페이지 2</p>
+  <h2>1편이 다루지 않은 것</h2>
+
+  <p>1편은 완전하고 잡음 없는 선적분 데이터라는 이상적인 조건을 세우고, 그 조건에서 영상을 구하는 수학적 이론 가운데 해석적 방법만 다뤘습니다. 다루지 않은 것은 크게 네 가지이며, 깊이 설명하는 대신 찾아볼 키워드만 적었습니다.</p>
+
+  <ul>
+    <li><b>대수적 알고리즘.</b> 재구성을 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)로 세우고 반복 계산으로 푸는 방법입니다. <span class="term" data-term="p18_regular">정규화(Regularization)</span>도 여기에 속합니다. 2편(<a href="../../part2/index.html">대수적 재구성편</a>)에서 다룹니다.</li>
+    <li><b>실제 데이터에서 생기는 비이상적 문제.</b> 빔 경화(<span class="term" data-term="p18_beamhard">Beam Hardening</span>), 산란(Scatter), 금속에 의한 아티팩트, 다중 에너지(<span class="term" data-term="p18_spectral">Spectral CT</span>)의 필요성 같은 키워드로 찾아볼 수 있습니다.</li>
+    <li><b>그런 문제를 개선하는 방법론.</b> 빔 경화 보정, 산란 보정, <span class="term" data-term="p18_mar">금속 아티팩트 저감(MAR)</span> 같은 키워드로 찾아볼 수 있습니다.</li>
+    <li><b>원형 궤도가 아닌 CT.</b> <span class="term" data-term="p18_helical">나선(Helical, Spiral) CT</span> 같은 키워드로 찾아볼 수 있습니다.</li>
+  </ul>
+
+  <p>1편에서 세운 모델(단색광, 산란 없음, 원형 궤도, 완전하고 잡음 없는 데이터)의 어느 전제가 깨지는 상황인지만 표시해 둔 것이며, 각 키워드의 내용은 1편의 범위 밖입니다(심화 주제로 남겨 둡니다).</p>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="../../part2/index.html"><span>다음에 읽을 것</span>2편(대수적 재구성편)</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

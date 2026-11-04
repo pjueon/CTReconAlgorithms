@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch08">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8장 · 팬빔 FBP 공식 유도해 보기 (연속) — CT 재구성 알고리즘1 - 해석적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="결론: 평면 검출기의 공식">
+  <p class="kicker">8장 · 페이지 1</p>
+  <h1>팬빔 FBP 공식 유도해 보기 (연속)</h1>
+
+  <p class="lead">7장에서는 팬빔 데이터에 바로 쓰는 재구성(직접 방식)이 가중, 필터링, 가중 역투영의 세 단계라고만 보였습니다. 이 장에서는 그 식을 5장의 평행빔 FBP에서 유도하고, 두 가중이 어디서 나오는지 한 단계씩 확인합니다. 적분은 모두 연속 식입니다.</p>
+
+  <h2>평면 검출기의 공식</h2>
+
+  <p>유도는 뒤로 미루고 식부터 보입니다. 평면 검출기(<span class="term" data-term="flat">Flat Detector</span>)로 선원을 한 바퀴(\(0 \le \beta < 2\pi\)) 돌려 얻은 팬빔 데이터 \(R_\beta(t)\)에서 영상 \(\mu(x, y)\)를 구하는 식은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\mu(x, y) = \frac{1}{2}\int_{0}^{2\pi} \frac{1}{U^{2}} \int_{-\infty}^{\infty} R_\beta(t)\,\frac{D}{\sqrt{D^{2} + t^{2}}}\,h(t' - t)\,dt\,d\beta\]</p>
+
+  <ul>
+    <li><b>\(R_\beta(t)\).</b> 선원 각 \(\beta\)에서 가상 검출기(<span class="term" data-term="virtualdet">Virtual Detector</span>) 위치 \(t\)로 가는 광선의 투영값입니다. 팬 각 \(\gamma\)와는 \(t = D\tan\gamma\)로 이어지며(7장 페이지 3), 값은 평행빔의 \(p(\beta + \gamma,\ D\sin\gamma)\)와 같은 선적분입니다.</li>
+    <li><b>\(D\).</b> 선원에서 회전 중심까지의 거리입니다. 실제 검출기까지의 거리 \(\mathrm{SDD}\)는 이 식에 나오지 않습니다.</li>
+    <li><b>\(h(t' - t)\).</b> 램프 필터 \(|\omega|\)의 커널 \(h(s) = \int |\omega|\,e^{i2\pi\omega s}\,d\omega\)입니다(5장 페이지 7). 실제 계산에서는 \(|\omega| \le W\)에서 자른 \(h_W\)를 쓰고, 이 장은 \(h\)로 씁니다.</li>
+    <li><b>\(U\), \(t'\).</b> 영상의 점 \((x, y)\)와 선원 각 \(\beta\)에 따라 정해지는 두 값입니다. \(U = (D + x\sin\beta - y\cos\beta)/D\)는 선원에서 점까지의 벡터를 중심 광선 방향으로 사영한 길이(깊이)를 \(D\)로 나눈 비로, 직선 거리가 아니라 깊이의 비이고, \(t' = D\,(x\cos\beta + y\sin\beta)/(D + x\sin\beta - y\cos\beta)\)는 선원과 점을 잇는 광선이 가상 검출기에 닿는 위치입니다.</li>
+    <li><b>\(\tfrac{1}{2}\).</b> 선원이 한 바퀴 돌면 같은 직선을 두 번 재므로 반으로 나눕니다. 덜 돌린 데이터에서는 이 상수를 광선마다 정한 가중으로 바꿔야 합니다.</li>
+    <li><b>\(D/\sqrt{D^{2} + t^{2}}\)</b>와 <b>\(1/U^{2}\).</b> 두 가중입니다. 앞의 것은 코사인 가중(<span class="term" data-term="cosweight">Cosine Weighting</span>), 뒤의 것은 거리 가중(<span class="term" data-term="distweight">Distance Weighting</span>)이라고 합니다.</li>
+  </ul>
+
+  <h2>세 단계의 순서</h2>
+
+  <p>식을 안쪽부터 읽으면 평행빔 FBP(필터링, 역투영)에 가중이 하나씩 앞뒤로 붙은 세 단계가 됩니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 164" role="img" aria-label="팬빔 데이터 R_β(t)에 코사인 가중을 곱하고, t 방향으로 램프 필터링을 한 뒤, 화소마다 t′에서 값을 읽어 1/U²를 곱하며 더해 영상 μ를 얻는 순서. 코사인 가중과 가중 역투영 상자는 파란 테두리로 평행빔 FBP에 없던 단계를 표시">
+      <defs>
+        <marker id="r11a-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1.4" class="svg-line">
+        <rect x="2" y="30" width="104" height="76" rx="6"/>
+        <rect x="135" y="30" width="104" height="76" rx="6" style="stroke:var(--accent)" stroke-width="2.4"/>
+        <rect x="268" y="30" width="104" height="76" rx="6"/>
+        <rect x="401" y="30" width="104" height="76" rx="6" style="stroke:var(--accent)" stroke-width="2.4"/>
+        <rect x="534" y="30" width="104" height="76" rx="6"/>
+        <path d="M108 68 L133 68" marker-end="url(#r11a-mu)"/>
+        <path d="M241 68 L266 68" marker-end="url(#r11a-mu)"/>
+        <path d="M374 68 L399 68" marker-end="url(#r11a-mu)"/>
+        <path d="M507 68 L532 68" marker-end="url(#r11a-mu)"/>
+      </g>
+      <g font-size="12" text-anchor="middle" class="svg-fg" font-weight="700">
+        <text x="54" y="62">팬빔 데이터</text>
+        <text x="187" y="62">① 코사인 가중</text>
+        <text x="320" y="62">② 램프 필터링</text>
+        <text x="453" y="62">③ 가중 역투영</text>
+        <text x="586" y="62">영상</text>
+      </g>
+      <g font-size="10.5" text-anchor="middle" class="svg-muted">
+        <text x="54" y="80">R<tspan font-size="70%" dy="0.25em">β</tspan><tspan dy="-0.175em">(t)</tspan></text>
+        <text x="187" y="80">× D/√(D² + t²)</text>
+        <text x="320" y="80">t 방향 컨볼루션</text>
+        <text x="320" y="95">커널 h</text>
+        <text x="453" y="80">화소마다 t′ 에서 읽고</text>
+        <text x="453" y="95">1/U² 를 곱해 더함</text>
+        <text x="586" y="80">μ(x, y)</text>
+        <text x="187" y="95">필터링 앞</text>
+        <text x="320" y="146">모든 선원 각 β 에 대해 되풀이하고 ½ 을 곱함</text>
+        <text x="320" y="20">파란 굵은 테두리: 평행빔 FBP에 없던 단계</text>
+      </g>
+    </svg>
+    <figcaption>평면 검출기 팬빔 FBP의 순서입니다. 필터링은 평행빔과 같은 커널로 검출기 방향(\(t\))을 따라 하고, 영상의 점마다 그 점을 지나는 광선이 닿는 위치 \(t'\)에서 필터링한 값을 읽습니다.</figcaption>
+  </figure>
+
+  <div class="box warn">
+    <p class="box-t">두 가중의 출처</p>
+    <p>두 가중은 적분 변수를 바꿀 때 생기는 수학적 인자입니다. 선량과의 관계는 페이지 4에서 확인합니다.</p>
+  </div>
+
+  <h2>각 항의 출처</h2>
+
+  <p>식의 항이 유도의 어느 단계에서 나오는지를 미리 정리합니다. 이 장의 진행은 아래 표의 순서와 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:9rem">항</th><th>출처</th><th style="width:7.5rem">유도하는 곳</th></tr>
+      <tr><td>\(\tfrac{1}{2}\int_0^{2\pi} d\beta\)</td><td>한 바퀴의 평행빔 FBP에서 같은 직선이 두 번 들어간 것을 반으로 나눔</td><td>페이지 2</td></tr>
+      <tr><td>\(h(t' - t)\)</td><td>평행빔 FBP의 커널 입력(점에서 직선까지의 거리)을 검출기 위의 거리로 옮김</td><td>페이지 2</td></tr>
+      <tr><td>\(\cos^{3}\gamma\) (\(dt\,d\beta\) 앞)</td><td>\((\theta, s) \to (\beta, t)\) 변수변환의 야코비안</td><td>페이지 3</td></tr>
+      <tr><td>\(1/U^{2}\)</td><td>램프 커널의 스케일 성질 \(h(as) = h(s)/a^{2}\)</td><td>페이지 4</td></tr>
+      <tr><td>\(D/\sqrt{D^{2} + t^{2}} = \cos\gamma\)</td><td>야코비안 \(\cos^{3}\gamma\)와 스케일 성질에서 남는 \(1/\cos^{2}\gamma\)의 곱</td><td>페이지 5</td></tr>
+    </table>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">다른 책의 표기</p>
+    <p>팬빔 식은 책마다 선원 각과 팬 각의 기준, 램프 커널에 \(\tfrac{1}{2}\)을 묶어 넣는지, \(U\)를 어떻게 정의하는지가 다릅니다. 다른 책의 식과 비교할 때는 이 세 가지부터 확인해야 합니다. 이 책은 7장 페이지 2의 규약을 따르고, \(\tfrac{1}{2}\)은 식 밖에 둡니다.</p>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>평면 검출기의 공식과 각 항의 출처(페이지 1)</li>
+      <li>한 바퀴로 쓴 평행빔 FBP와 변수를 바꿀 때 달라지는 것, 커널에 들어가는 거리(페이지 2)</li>
+      <li>야코비안 \(d\theta\,ds = D\cos\gamma\,d\gamma\,d\beta\)(페이지 3)</li>
+      <li>거리 가중 \(1/U^{2}\)의 정체와 선량 보정이 아닌 이유(페이지 4)</li>
+      <li>코사인 가중과 최종 공식, 두 가중의 모양, 수치 확인(페이지 5)</li>
+      <li>연속 알고리즘의 순서도와 의사코드(페이지 6)</li>
+      <li>곡면 검출기의 연속 공식(페이지 7, 심화)</li>
+      <li>평면 검출기와 곡면 검출기의 비교(페이지 8, 심화)</li>
+      <li>rebinning과 직접 방식의 비교(페이지 9, 심화)</li>
+      <li>요약, 퀴즈, 직접 해보기(페이지 10)</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지(7, 8, 9)는 처음 읽을 때 건너뛰어도 됩니다. 곡면 검출기만 쓴다면 페이지 7은 읽어야 합니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="출발점과 변수 바꾸기">
+  <p class="kicker">8장 · 페이지 2</p>
+  <h2>출발점과 변수 바꾸기</h2>
+
+  <p>팬빔 FBP는 새로 세운 식이 아니라 5장의 평행빔 FBP에서 적분 변수를 팬빔 좌표로 바꾼 것입니다. 변수를 바꾸면 달라지는 것이 두 가지 있습니다. 하나는 적분의 작은 조각의 넓이이고, 다른 하나는 필터 커널에 들어가는 거리(이 페이지)입니다.</p>
+
+  <h3>출발점: 한 바퀴로 쓴 평행빔 FBP</h3>
+
+  <p>5장의 FBP는 투영을 필터링해 \(q(\theta, s') = \int p(\theta, s)\,h(s' - s)\,ds\)를 만들고, 점 \((x, y)\)를 지나는 광선의 위치 \(s' = x\cos\theta + y\sin\theta\)에서 \(q\)를 읽어 \(\theta\)가 \(0\)~\(\pi\)인 동안 더했습니다. 이를 한 식으로 쓰고 \(\theta\)의 범위를 \(0\)~\(2\pi\)로 넓히면 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\mu(x, y) = \frac{1}{2}\int_{0}^{2\pi}\int_{-\infty}^{\infty} p(\theta, s)\,h(x\cos\theta + y\sin\theta - s)\,ds\,d\theta \tag{A}\]</p>
+
+  <ul>
+    <li><b>\(h\)의 입력.</b> 직선 \(x\cos\theta + y\sin\theta = s\)의 단위 법선은 \((\cos\theta, \sin\theta)\)입니다. 그래서 \(x\cos\theta + y\sin\theta - s\)는 점 \((x, y)\)에서 직선 \((\theta, s)\)까지의 부호 있는 거리입니다. 커널의 값은 점과 광선 사이의 거리로 정해집니다.</li>
+    <li><b>\(\tfrac{1}{2}\).</b> \(\theta\)를 \(0\)~\(2\pi\)로 돌리면 모든 직선이 \((\theta, s)\)와 \((\theta + \pi, -s)\)로 두 번 나오기 때문입니다. 아래 접기에서 확인합니다.</li>
+  </ul>
+
+  <details class="fold">
+    <summary>½이 붙는 이유</summary>
+    <div class="fold-body">
+      <p>\(\theta\) 하나에 대한 안쪽 적분을 \(I(\theta) = \int p(\theta, s)\,h(x\cos\theta + y\sin\theta - s)\,ds\)로 둡니다. 5장의 FBP는 \(\mu = \int_0^{\pi} I(\theta)\,d\theta\)입니다. \(I(\theta + \pi) = I(\theta)\)임을 두 가지 성질로 보입니다.</p>
+      <ol>
+        <li>\(\cos(\theta + \pi) = -\cos\theta\), \(\sin(\theta + \pi) = -\sin\theta\)이므로 \(I(\theta + \pi) = \int p(\theta + \pi, s)\,h\bigl(-(x\cos\theta + y\sin\theta) - s\bigr)\,ds\)입니다.</li>
+        <li>적분 변수를 \(s \to -s\)로 바꾸면 \(\int p(\theta + \pi, -s)\,h\bigl(-(x\cos\theta + y\sin\theta) + s\bigr)\,ds\)입니다.</li>
+        <li>3장 페이지 9의 대칭 \(p(\theta + \pi, -s) = p(\theta, s)\)를 쓰면 \(\int p(\theta, s)\,h\bigl(-(x\cos\theta + y\sin\theta - s)\bigr)\,ds\)입니다.</li>
+        <li>\(h\)는 \(|\omega|\)가 짝함수이므로 짝함수입니다. \(h(-u) = h(u)\)를 쓰면 \(I(\theta)\)와 같아집니다.</li>
+      </ol>
+      <p>따라서 \(\int_0^{2\pi} I\,d\theta = 2\int_0^{\pi} I\,d\theta = 2\mu\)이고, \(\mu = \tfrac{1}{2}\int_0^{2\pi} I\,d\theta\)입니다.</p>
+    </div>
+  </details>
+
+  <h3>팬빔 좌표로 바꿀 때 달라지는 것</h3>
+
+  <p>7장 페이지 4의 대응 \(\theta = \beta + \gamma\), \(s = D\sin\gamma\)를 식 (A)에 넣습니다. 같은 직선이므로 투영값은 그대로여서 \(p(\beta + \gamma,\ D\sin\gamma) = R_\beta(\gamma)\)이고, 평면 검출기의 좌표로는 \(t = D\tan\gamma\)에서 \(R_\beta(t)\)입니다. 이 값은 팬빔 광선 하나의 선적분이고 어떤 인자도 곱해져 있지 않습니다. 달라지는 것은 두 곳입니다.</p>
+
+  <ol>
+    <li>적분 요소 \(d\theta\,ds\)가 \((\beta, \gamma)\)의 요소로 바뀝니다.</li>
+    <li>커널의 입력 \(x\cos\theta + y\sin\theta - s\)를 팬빔의 양으로 써야 합니다. 아래에서 다룹니다.</li>
+  </ol>
+
+  <h3>커널에 들어가는 거리</h3>
+
+  <p>평면 검출기에서 커널에 들어가는 거리는 검출기 위의 위치 차이 \(t' - t\)에 \(U\cos\gamma\)를 곱한 값입니다(식 (D)). 아래에서 이 식이 나오는 과정을 두 단계로 봅니다.</p>
+
+  <p>먼저 기하입니다. 점 \(P = (x, y)\)에서 팬빔 광선까지의 거리를 선원 \(S\)에서 바라보며 구합니다. 광선은 \(S\)를 지나므로, \(P\)에서 광선까지의 수직 거리는 선분 \(SP\)의 길이 \(L\)에 \(SP\)와 광선 사이 각의 \(\sin\)을 곱한 값입니다. \(SP\)가 중심 광선과 이루는 각을 \(\gamma'\), 광선의 팬 각을 \(\gamma\)라고 하면 두 방향 사이의 각은 \(\gamma' - \gamma\)입니다.</p>
+
+  <p style="text-align:center">\[x\cos\theta + y\sin\theta - s = L\sin(\gamma' - \gamma) \tag{C}\]</p>
+
+  <p>다음은 검출기 위의 위치로 옮겨 쓰는 일입니다. 광선이 가상 검출기에 닿는 위치는 \(t = D\tan\gamma\), 선원과 \(P\)를 잇는 광선이 닿는 위치는 \(t' = D\tan\gamma'\)입니다.</p>
+
+  <p>여기에 \(U = L\cos\gamma'/D\)를 정의합니다. \(L\cos\gamma'\)는 \(SP\)를 중심 광선 방향으로 사영한 길이, 곧 \(P\)의 깊이 \(z\)이므로, \(U = z/D\)는 깊이를 \(D\)로 나눈 비입니다. 선원에서 \(P\)까지의 직선 거리 \(L\)가 아니라 중심 광선 방향의 성분만 쓴다는 점에 주의하세요. \(P\)가 가상 검출기 위(\(O\)를 지나 중심 광선에 수직인 직선 위)에 있으면 \(U = 1\)이고, 선원에 가까우면 \(U < 1\)입니다.</p>
+
+  <p>\(L = UD/\cos\gamma'\)를 식 (C)에 넣고 정리하면 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[L\sin(\gamma' - \gamma) = U\cos\gamma\,(t' - t) \tag{D}\]</p>
+
+  <details class="fold">
+    <summary>식 (D)의 전개</summary>
+    <div class="fold-body">
+      <p style="text-align:center">\[\begin{aligned}L\sin(\gamma' - \gamma) &= \frac{UD}{\cos\gamma'}\bigl(\sin\gamma'\cos\gamma - \cos\gamma'\sin\gamma\bigr)\\ &= U\cos\gamma\,\bigl(D\tan\gamma' - D\tan\gamma\bigr) = U\cos\gamma\,(t' - t) \end{aligned}\]</p>
+      <p>첫 줄은 \(L = UD/\cos\gamma'\)를 넣고 \(\sin\)의 뺄셈 공식을 쓴 것입니다. 둘째 줄은 괄호를 풀어 \(\tfrac{UD}{\cos\gamma'}\sin\gamma'\cos\gamma = U\cos\gamma\cdot D\tan\gamma'\), \(\tfrac{UD}{\cos\gamma'}\cos\gamma'\sin\gamma = U D\sin\gamma = U\cos\gamma\cdot D\tan\gamma\)로 묶은 것입니다.</p>
+    </div>
+  </details>
+
+  <p>아래 위젯에서 \(\beta\), 점 \(P\), 광선의 위치 \(t\)를 바꾸며 세 가지 방법으로 구한 거리가 같은 값인지 확인할 수 있습니다. 처음 상태는 \(D = 3\) cm, \(\beta = 0\), \(P = (0.8, 0.6)\), \(t = 0.4\) cm입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 -12 640 372" role="img" aria-label="선원 S는 회전 중심 O를 중심으로 반지름 D인 원 위에 있다. O를 지나 중심 광선에 수직인 직선이 가상 검출기이다. 선원에서 검출기 위치 t로 가는 광선과, 선원에서 점 P를 지나 검출기 위치 t′에 닿는 광선, P에서 t 광선까지의 수직 거리(초록)를 그린다">
+      <circle cx="190" cy="180" r="150" fill="none" stroke-width="1" stroke-dasharray="4 4" style="stroke:var(--muted)"/>
+      <rect x="135" y="125" width="110" height="110" fill="none" stroke-width="1" stroke-dasharray="2 3" opacity=".7" style="stroke:var(--muted)"/>
+      <g id="r11g-dyn"></g>
+      <g font-size="11" class="svg-muted">
+        <text x="400" y="22">점선 원: 선원이 도는 궤도 (반지름 D = 3 cm)</text>
+        <text x="400" y="38">작은 점선 네모: 영상 영역 (±1.1 cm)</text>
+      </g>
+      <g id="r11g-txt" font-size="12" class="svg-fg"></g>
+    </svg>
+    <figcaption>검출기는 선원과 함께 돌며 항상 선원의 맞은편에 있습니다. 파란 직선이 가상 검출기이고 그 위의 \(t\)(회색)와 \(t'\)(주황)는 각각 고른 광선과 점 \(P\)를 지나는 광선이 닿는 위치입니다. 초록 선이 \(P\)에서 고른 광선까지의 수직 거리입니다.</figcaption>
+  </figure>
+
+  <div style="display:grid;grid-template-columns:auto 1fr auto;gap:.35rem .7rem;align-items:center;max-width:36rem;margin:0 auto;font-size:.86rem">
+    <label for="r11g-b">선원 각 β</label><input id="r11g-b" type="range" min="0" max="355" step="5" value="0"><b id="r11g-bv" style="min-width:3.2rem;text-align:right">0°</b>
+    <label for="r11g-x">점 P 의 x</label><input id="r11g-x" type="range" min="-1.1" max="1.1" step="0.05" value="0.8"><b id="r11g-xv" style="min-width:3.2rem;text-align:right">0.80</b>
+    <label for="r11g-y">점 P 의 y</label><input id="r11g-y" type="range" min="-1.1" max="1.1" step="0.05" value="0.6"><b id="r11g-yv" style="min-width:3.2rem;text-align:right">0.60</b>
+    <label for="r11g-t">광선 위치 t</label><input id="r11g-t" type="range" min="-1.6" max="1.6" step="0.05" value="0.4"><b id="r11g-tv" style="min-width:3.2rem;text-align:right">0.40</b>
+  </div>
+
+  <p>세 값은 서로 다른 방법으로 구한 같은 거리입니다. 첫째는 \(\theta = \beta + \gamma\), \(s = D\sin\gamma\)를 넣어 식 (A)의 원래 형태로 계산한 값, 둘째는 식 (D)의 \(U\cos\gamma\,(t' - t)\), 셋째는 식 (C)의 \(L\sin(\gamma' - \gamma)\)입니다. 위젯 값은 소수 넷째 자리까지 보입니다. 세 값의 실제 차이는 \(10^{-14}\)보다 작으므로 같게 보이며, 반올림 경계에서는 끝자리가 1 다르게 보일 수도 있습니다. 식 (D)의 \(U\cos\gamma\)는 점이 선원에 가까울수록, 그리고 광선이 중심 광선에서 멀수록 작아집니다.</p>
+
+  <details class="fold">
+    <summary>좌표로 쓴 U, t′, L과 부호 확인</summary>
+    <div class="fold-body">
+      <p>점 \(P\)를 검출기 방향 성분 \(\xi = x\cos\beta + y\sin\beta\)와 중심 광선 방향 성분 \(\eta = x\sin\beta - y\cos\beta\)로 나눕니다. 선원은 \((-D\sin\beta,\ D\cos\beta)\)에 있고 중심 광선의 방향은 \((\sin\beta, -\cos\beta)\), 검출기 방향은 \((\cos\beta, \sin\beta)\)입니다. \(SP\)를 이 두 방향으로 분해하면 다음과 같습니다.</p>
+      <ul>
+        <li>중심 광선 방향의 길이는 \(D + \eta\), 검출기 방향의 길이는 \(\xi\)입니다.</li>
+        <li>따라서 \(L = \sqrt{(D + \eta)^{2} + \xi^{2}}\), \(\tan\gamma' = \xi/(D + \eta)\), \(U = (D + \eta)/D\), \(t' = D\xi/(D + \eta) = \xi/U\)입니다.</li>
+      </ul>
+      <p>식 (C)의 부호는 다음 계산으로 확인합니다. \(\theta = \beta + \gamma\)를 넣고 덧셈 공식을 쓰면 \(x\cos(\beta + \gamma) + y\sin(\beta + \gamma) = \xi\cos\gamma - \eta\sin\gamma\)입니다. 여기서 \(s = D\sin\gamma\)를 빼면 \(\xi\cos\gamma - (D + \eta)\sin\gamma\)이고, \(\xi = L\sin\gamma'\), \(D + \eta = L\cos\gamma'\)를 넣으면 \(L(\sin\gamma'\cos\gamma - \cos\gamma'\sin\gamma) = L\sin(\gamma' - \gamma)\)입니다. 위젯의 처음 상태에서는 \(\xi = 0.8\), \(\eta = -0.6\), \(U = 0.8\), \(t' = 1.0\), \(\cos\gamma = 3/\sqrt{9.16} \approx 0.991\)이므로 거리는 \(0.8 \times 0.991 \times (1.0 - 0.4) \approx 0.476\) cm입니다.</p>
+    </div>
+  </details>
+
+<script>
+(function () {
+  var D = 3, PX = 50, CX = 190, CY = 180;
+  var dyn = document.getElementById('r11g-dyn'), txt = document.getElementById('r11g-txt');
+  var sl = { b: document.getElementById('r11g-b'), x: document.getElementById('r11g-x'), y: document.getElementById('r11g-y'), t: document.getElementById('r11g-t') };
+  var vl = { b: document.getElementById('r11g-bv'), x: document.getElementById('r11g-xv'), y: document.getElementById('r11g-yv'), t: document.getElementById('r11g-tv') };
+  function X(x) { return (CX + PX * x).toFixed(1); }
+  function Y(y) { return (CY - PX * y).toFixed(1); }
+  function fx(v, d) { return v.toFixed(d).replace('-', '−'); }
+  function line(a, b, st, extra) { return '<path d="M' + X(a[0]) + ' ' + Y(a[1]) + ' L' + X(b[0]) + ' ' + Y(b[1]) + '" fill="none" ' + (extra || '') + ' style="' + st + '"/>'; }
+  function dot(p, r, st) { return '<circle cx="' + X(p[0]) + '" cy="' + Y(p[1]) + '" r="' + r + '" style="' + st + '"/>'; }
+  function lab(p, dx, dy, s, st) { return '<text x="' + (+X(p[0]) + dx) + '" y="' + (+Y(p[1]) + dy) + '" font-size="11.5" style="' + (st || 'fill:var(--fg)') + '">' + s + '</text>'; }
+  function lab2(p, off, ux, uy, s, st) {   // (ux, uy) 는 월드 좌표의 단위 방향
+    var px = +X(p[0]) + off * ux, py = +Y(p[1]) - off * uy;
+    return '<text x="' + px.toFixed(1) + '" y="' + (py + 4).toFixed(1) + '" font-size="11.5" text-anchor="middle" style="' + st + '">' + s + '</text>';
+  }
+  function draw() {
+    var bd = +sl.b.value, x = +sl.x.value, y = +sl.y.value, t = +sl.t.value, b = bd * Math.PI / 180;
+    var cb = Math.cos(b), sb = Math.sin(b), S = [-D * sb, D * cb], et = [cb, sb];
+    var g = Math.atan(t / D), th = b + g, s = D * Math.sin(g), dir = [Math.sin(th), -Math.cos(th)];
+    var xi = x * cb + y * sb, eta = x * sb - y * cb, U = (D + eta) / D, tp = xi / U;
+    var L = Math.hypot(D + eta, xi), gp = Math.atan2(xi, D + eta);
+    var d1 = x * Math.cos(th) + y * Math.sin(th) - s, d2 = U * Math.cos(g) * (tp - t), d3 = L * Math.sin(gp - g);
+    var lam = (x - S[0]) * dir[0] + (y - S[1]) * dir[1], F = [S[0] + lam * dir[0], S[1] + lam * dir[1]];
+    var T = [t * et[0], t * et[1]], TP = [tp * et[0], tp * et[1]], E1 = [-3.3 * et[0], -3.3 * et[1]], E2 = [3.3 * et[0], 3.3 * et[1]];
+    var far = [S[0] + 1.18 * (T[0] - S[0]), S[1] + 1.18 * (T[1] - S[1])], farP = [S[0] + 1.12 * (TP[0] - S[0]), S[1] + 1.12 * (TP[1] - S[1])];
+    dyn.innerHTML =
+      line(E1, E2, 'stroke:var(--accent)', 'stroke-width="3"') +
+      line(S, [0, 0], 'stroke:var(--muted)', 'stroke-width="1" stroke-dasharray="5 4"') +
+      line(S, far, 'stroke:var(--muted)', 'stroke-width="1.8"') +
+      line(S, farP, 'stroke:var(--warn)', 'stroke-width="1.8"') +
+      line([x, y], F, 'stroke:var(--good)', 'stroke-width="2.6"') +
+      dot(S, 5, 'fill:var(--fg)') + dot([0, 0], 3, 'fill:var(--fg)') + dot([x, y], 4.5, 'fill:var(--fg)') +
+      dot(T, 4, 'fill:var(--muted)') + dot(TP, 4, 'fill:var(--warn)') + dot(F, 3, 'fill:var(--good)') +
+      lab2(S, 24, -sb, cb, '선원 S', 'fill:var(--fg)') + lab([0, 0], 6, 14, 'O') + lab([x, y], 7, -6, 'P') +
+      lab2(T, 16, sb, -cb, 't', 'fill:var(--muted)') + lab2(TP, Math.abs(t - tp) < 0.45 ? 32 : 16, sb, -cb, 't′', 'fill:var(--warn)');
+    txt.innerHTML =
+      '<text x="400" y="72" font-weight="700">현재 값 (D = 3 cm)</text>' +
+      '<text x="400" y="96">U = ' + fx(U, 3) + ',  t′ = ' + fx(tp, 3) + ' cm</text>' +
+      '<text x="400" y="116">L = ' + fx(L, 3) + ' cm,  γ′ = ' + fx(gp * 180 / Math.PI, 2) + '°</text>' +
+      '<text x="400" y="136">γ = ' + fx(g * 180 / Math.PI, 2) + '°,  cosγ = ' + fx(Math.cos(g), 3) + '</text>' +
+      '<text x="400" y="174" font-weight="700" style="fill:var(--good)">P 에서 광선 t 까지의 거리</text>' +
+      '<text x="400" y="198">① x cosθ + y sinθ − s = ' + fx(d1, 4) + '</text>' +
+      '<text x="400" y="218">② U cosγ (t′ − t) = ' + fx(d2, 4) + '</text>' +
+      '<text x="400" y="238">③ L sin(γ′ − γ) = ' + fx(d3, 4) + '</text>' +
+      '<text x="400" y="272" class="svg-muted" font-size="11">① 은 θ = β + γ, s = D sinγ 를 넣은 값</text>' +
+      '<text x="400" y="288" class="svg-muted" font-size="11">거리가 양수이면 t′ 가 t 보다 크다</text>';
+    vl.b.textContent = bd + '°'; vl.x.textContent = fx(x, 2); vl.y.textContent = fx(y, 2); vl.t.textContent = fx(t, 2);
+  }
+  for (var k in sl) sl[k].addEventListener('input', draw);
+  draw();
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="넓이는 몇 배가 될까요? 야코비안">
+  <p class="kicker">8장 · 페이지 3</p>
+  <h2>변수를 바꾸면 넓이는 몇 배가 될까요? 야코비안</h2>
+
+  <p>변수를 바꾸면 달라지는 첫 번째는 적분의 작은 조각의 넓이입니다. 변수를 바꿀 때 작은 조각의 넓이가 몇 배가 되는지를 야코비안(<span class="term" data-term="jacobian">Jacobian</span>)이라고 하며, 적분에는 이 배율이 곱해져 남습니다(1장 페이지 2). 5장에서는 푸리에 평면의 극좌표 변환에서 이 배율이 \(|\omega|\)가 되었습니다. 이번에는 직선의 좌표 \((\theta, s)\)를 \((\beta, \gamma)\)로 바꿉니다.</p>
+
+  <p style="text-align:center">\[d\theta\,ds = D\cos\gamma\;d\gamma\,d\beta\]</p>
+
+  <h3>작은 칸 하나의 넓이</h3>
+
+  <p>\((\beta, \gamma)\) 평면의 작은 칸 \(d\beta \times d\gamma\)가 \((\theta, s)\) 평면에서 어떤 모양이 되는지 봅니다. 대응은 \(\theta = \beta + \gamma\), \(s = D\sin\gamma\)입니다.</p>
+
+  <ul>
+    <li>\(\beta\)만 \(d\beta\) 바꾸면 \(\theta\)가 \(d\beta\)만큼 움직이고 \(s\)는 그대로입니다.</li>
+    <li>\(\gamma\)만 \(d\gamma\) 바꾸면 \(s\)가 \(D\cos\gamma\,d\gamma\)만큼 움직이고, \(\theta\)도 \(d\gamma\)만큼 움직입니다.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="왼쪽은 (γ, β) 평면의 작은 직사각형으로 가로 폭 dγ, 세로 길이 dβ. 오른쪽은 (s, θ) 평면에서 같은 칸이 옮겨진 평행사변형으로, 세로 변의 길이는 dβ이고 두 세로 변 사이의 가로 거리는 D cosγ dγ이며 윗변과 아랫변은 아래로 기울어 있음">
+      <defs>
+        <marker id="r11j-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="r11j-ac" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="r11j-wa" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1" style="stroke:var(--rule)">
+        <rect x="40" y="40" width="200" height="170"/><rect x="380" y="40" width="200" height="170"/>
+      </g>
+      <path d="M110 90 H160 V140 H110 Z" fill-opacity=".3" stroke-width="1.6" style="fill:var(--accent);stroke:var(--accent)"/>
+      <path d="M430 90 L470 140 V190 L430 140 Z" fill-opacity=".3" stroke-width="1.6" style="fill:var(--warn);stroke:var(--warn)"/>
+      <path d="M262 125 H358" fill="none" stroke-width="1.4" style="stroke:var(--muted)" marker-end="url(#r11j-mu)"/>
+      <g font-size="12" class="svg-fg" text-anchor="middle" font-weight="700">
+        <text x="140" y="26">(γ, β) 평면</text><text x="480" y="26">(s, θ) 평면</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="middle">
+        <text x="310" y="106">θ = β + γ</text><text x="310" y="122">s = D sinγ</text>
+        <text x="225" y="226">γ →</text><text x="565" y="226">s →</text>
+        <text x="135" y="80" style="fill:var(--accent)">dγ</text>
+        <text x="450" y="222" style="fill:var(--warn)">D cosγ dγ</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="end">
+        <text x="102" y="119" style="fill:var(--accent)">dβ</text><text x="424" y="119" style="fill:var(--warn)">dβ</text>
+        <text x="34" y="56">β ↓</text><text x="374" y="56">θ ↓</text>
+      </g>
+      <path d="M110 86 H160" fill="none" stroke-width="1" style="stroke:var(--accent)" marker-start="url(#r11j-ac)" marker-end="url(#r11j-ac)"/>
+      <path d="M106 90 V140" fill="none" stroke-width="1" style="stroke:var(--accent)" marker-start="url(#r11j-ac)" marker-end="url(#r11j-ac)"/>
+      <path d="M426 90 V140" fill="none" stroke-width="1" style="stroke:var(--warn)" marker-start="url(#r11j-wa)" marker-end="url(#r11j-wa)"/>
+      <path d="M430 205 H470" fill="none" stroke-width="1" style="stroke:var(--warn)" marker-start="url(#r11j-wa)" marker-end="url(#r11j-wa)"/>
+    </svg>
+    <figcaption>왼쪽 칸이 오른쪽에서 평행사변형이 됩니다. 두 세로 변의 길이는 \(d\beta\)로 그대로이고, 세로 변 사이의 가로 거리는 \(D\cos\gamma\,d\gamma\)입니다. 윗변과 아랫변이 기울어진 것은 \(\gamma\)를 바꾸면 \(\theta\)도 함께 움직이기 때문입니다. 두 방향의 눈금은 그리기 쉽게 정했습니다. 두 평면 모두 가로가 \(\gamma\) 또는 \(s\), 세로가 \(\beta\) 또는 \(\theta\)(위에서 아래로 증가)입니다.</figcaption>
+  </figure>
+
+  <p>평행사변형의 넓이는 밑변에 높이를 곱한 값입니다. 세로 변이 \(d\beta\)이고 두 세로 변 사이의 가로 거리가 \(D\cos\gamma\,d\gamma\)이므로 넓이는 \(D\cos\gamma\,d\gamma\,d\beta\)입니다. 칸이 \(\theta\) 방향으로 기울어 밀려도 이 두 길이는 변하지 않으므로, 기울어짐은 넓이에 영향을 주지 않습니다.</p>
+
+  <details class="fold">
+    <summary>행렬식과 적분 범위의 대응</summary>
+    <div class="fold-body">
+      <p>1장 페이지 2에서 본 대로, 야코비안은 변환의 편미분을 모은 \(2 \times 2\) 행렬의 행렬식 절댓값입니다.</p>
+      <p style="text-align:center">\[\begin{vmatrix} \partial\theta/\partial\beta & \partial\theta/\partial\gamma \\ \partial s/\partial\beta & \partial s/\partial\gamma \end{vmatrix} = \begin{vmatrix} 1 & 1 \\ 0 & D\cos\gamma \end{vmatrix} = D\cos\gamma\]</p>
+      <p>\(|\gamma| < \pi/2\)에서 \(\cos\gamma > 0\)이므로 절댓값을 취해도 같습니다. 식 (A)를 바꾸려면 적분 범위의 대응도 확인해야 합니다.</p>
+      <ol>
+        <li>\(\beta\)가 \(0\)~\(2\pi\), \(\gamma\)가 \(-\pi/2\)~\(\pi/2\)를 도는 동안 \((\theta \bmod 2\pi,\ s)\)는 \(|s| < D\)인 모든 직선을 정확히 한 번씩 지납니다. \(|s| < D\)인 \(s\)에는 \(\gamma = \arcsin(s/D)\)가 하나뿐이고, 그러면 \(\beta = \theta - \gamma\)가 \(2\pi\)를 법으로 하나로 정해지기 때문입니다.</li>
+        <li>식 (A)의 피적분 함수 \(p(\theta, s)\,h(x\cos\theta + y\sin\theta - s)\)는 \(\theta\)에 대해 주기 \(2\pi\)입니다. 그래서 \(\theta = \beta + \gamma\)로 두어 \(\theta\)의 구간이 \(\gamma\)만큼 밀려도 적분값은 같습니다.</li>
+        <li>팬이 물체를 덮으면(\(D\sin\gamma_m \ge r_0\), 7장 페이지 4) \(|\gamma| > \gamma_m\)에서 \(p = 0\)입니다. \(|s| \ge D\)인 직선도 물체를 지나지 않으므로 \(p = 0\)입니다. 그래서 \(\gamma\)의 적분을 \(\pm\gamma_m\)이나 \(\pm\pi/2\)로 두어도 값이 같고, \(t\)로 바꾼 뒤에는 \(\pm\infty\)로 쓸 수 있습니다.</li>
+      </ol>
+    </div>
+  </details>
+
+  <h3>평면 검출기의 좌표로</h3>
+
+  <p>평면 검출기의 칸은 \(\gamma\)가 아니라 \(t = D\tan\gamma\)의 간격이 같습니다. \(dt = (D/\cos^{2}\gamma)\,d\gamma\)이므로 \(d\gamma = (\cos^{2}\gamma/D)\,dt\)이고, 이를 대입하면 다음과 같습니다. 마지막 등호에는 \(\cos\gamma = D/\sqrt{D^{2} + t^{2}}\)를 썼습니다.</p>
+
+  <p style="text-align:center">\[d\theta\,ds = D\cos\gamma\cdot\frac{\cos^{2}\gamma}{D}\,dt\,d\beta = \cos^{3}\gamma\;dt\,d\beta = \frac{D^{3}}{(D^{2} + t^{2})^{3/2}}\,dt\,d\beta\]</p>
+
+  <p>\(\cos^{3}\gamma\)는 두 부분으로 읽을 수 있습니다. \(\cos^{2}\gamma\)는 같은 간격 \(dt\)의 칸이 가장자리로 갈수록 좁은 팬 각을 맡는다는 것이고(7장 페이지 3), \(\cos\gamma\)는 같은 팬 각이라도 가장자리에서는 \(s\)가 덜 움직인다는 것입니다. \(D = 3\) cm일 때 값은 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>팬 각 \(\gamma\)</th><th>\(t = D\tan\gamma\) (cm)</th><th>\(\cos\gamma\)</th><th>\(\cos^{2}\gamma\)</th><th>\(\cos^{3}\gamma\)</th></tr>
+      <tr><td>0°</td><td>0</td><td>1.000</td><td>1.000</td><td>1.000</td></tr>
+      <tr><td>10°</td><td>0.529</td><td>0.985</td><td>0.970</td><td>0.955</td></tr>
+      <tr><td>20°</td><td>1.092</td><td>0.940</td><td>0.883</td><td>0.830</td></tr>
+      <tr><td>30°</td><td>1.732</td><td>0.866</td><td>0.750</td><td>0.650</td></tr>
+    </table>
+  </div>
+
+  <p>이 값이 곧 가장자리 칸이 대표하는 직선 묶음의 크기가 중심 칸의 몇 배인지입니다. 예를 들어 \(30^{\circ}\)의 칸 하나는 \((\theta, s)\) 평면에서 중심 칸의 \(0.65\)배 넓이를 맡습니다.</p>
+
+  <h3>식 (A)에 대입</h3>
+
+  <p>\(d\theta\,ds\)를 바꾸고 커널의 입력에 페이지 2의 식 (D)를 넣으면 식 (A)는 다음과 같이 바뀝니다. 여기서 \(\gamma = \arctan(t/D)\)이고, 팬 밖에서는 \(R_\beta = 0\)이므로 \(t\)의 적분 범위를 \(\pm\infty\)로 썼습니다.</p>
+
+  <p style="text-align:center">\[\mu(x, y) = \frac{1}{2}\int_{0}^{2\pi}\int_{-\infty}^{\infty} R_\beta(t)\;h\bigl(U\cos\gamma\,(t' - t)\bigr)\;\cos^{3}\gamma\;dt\,d\beta \tag{B}\]</p>
+
+  <p>\(\cos^{3}\gamma\)가 야코비안에서 나온 인자입니다. 아직 남은 것은 \(h\)의 입력에 곱해진 \(U\cos\gamma\)입니다. 이 곱을 커널 밖으로 꺼내는 일이 다음 페이지입니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="거리 가중의 정체">
+  <p class="kicker">8장 · 페이지 4</p>
+  <h2>거리 가중의 정체</h2>
+
+  <p>페이지 3의 식 (B)에서 커널 \(h\)의 입력에는 \(U\cos\gamma\)가 곱해져 있습니다. 평행빔 FBP의 커널처럼 \(h(t' - t)\)의 모양으로 되돌리려면 이 곱을 커널 밖으로 꺼내야 합니다. 이때 램프 커널의 스케일 성질(<span class="term" data-term="scaleprop">Scale Property</span>)을 씁니다.</p>
+
+  <h3>램프 커널의 스케일 성질</h3>
+
+  <p>램프 필터 \(|\omega|\)의 커널 \(h\)는 입력을 \(a\)배(\(a > 0\)) 하면 값이 \(1/a^{2}\)배가 됩니다.</p>
+
+  <p style="text-align:center">\[h(as) = \frac{1}{a^{2}}\,h(s)\qquad (a > 0)\]</p>
+
+  <p>\(1/a\)이 두 번 나오기 때문입니다. \(\omega' = a\omega\)로 바꾸면 \(|\omega| = |\omega'|/a\)에서 한 번, \(d\omega = d\omega'/a\)에서 한 번 나옵니다. 5장에서 극좌표로 바꿀 때 \(|\omega|\)가 나온 것처럼, 이 \(1/a^{2}\)도 적분 변수를 바꾸는 계산에서 생긴 인자입니다.</p>
+
+  <p>이 성질은 필터의 값이 \(|\omega|\)로 주파수에 비례하기 때문에 성립합니다. 윈도우 필터처럼 주파수에 따라 다른 모양을 곱한 필터에서는 그대로 성립하지 않습니다. 단계별 계산과 \(h\)의 정확한 뜻은 아래 접기에 있습니다.</p>
+
+  <details class="fold">
+    <summary>치환의 단계와 극한 커널</summary>
+    <div class="fold-body">
+      <ol>
+        <li>정의에서 시작합니다. \(h(as) = \int_{-\infty}^{\infty}|\omega|\,e^{i2\pi(\omega a)s}\,d\omega\)</li>
+        <li>\(\omega' = a\omega\)로 둡니다. \(a > 0\)이므로 적분 범위의 방향은 그대로이고, \(\omega = \omega'/a\), \(d\omega = d\omega'/a\)입니다.</li>
+        <li>\(|\omega| = |\omega'|/a\)이므로 \(h(as) = \int \dfrac{|\omega'|}{a}\,e^{i2\pi\omega' s}\,\dfrac{d\omega'}{a} = \dfrac{1}{a^{2}}\int |\omega'|\,e^{i2\pi\omega' s}\,d\omega' = \dfrac{h(s)}{a^{2}}\)입니다.</li>
+      </ol>
+      <p>적분 범위를 \(|\omega| \le W\)로 자른 \(h_W\)에서는 \(\omega'\)의 범위가 \(|\omega'| \le aW\)가 됩니다. 그래서 \(h_W(as) = h_{aW}(s)/a^{2}\)이고, 닫힌 식 \(h_W(s) = 2W^{2}\,\mathrm{sinc}(2Ws) - W^{2}\,\mathrm{sinc}^{2}(Ws)\)(5장 페이지 7)에 직접 대입해도 같은 결과가 나옵니다.</p>
+      <p>여기서 \(h\)는 5장 페이지 7의 극한 커널입니다. \(W \to \infty\)에서 \(h_W(0) = W^{2}\)이 한없이 커져 보통 함수로 수렴하지 않는 형식적인 커널이고(\(s \ne 0\)에서 꼬리의 평균은 \(-1/(2\pi^{2}s^{2})\)), 스케일 성질은 이 극한에서 성립합니다. 실제 계산은 자른 커널 \(h_W\)로 합니다.</p>
+    </div>
+  </details>
+
+  <div class="box warn">
+    <p class="box-t">자른 커널의 근사</p>
+    <p>실제 계산에서 쓰는 \(h_W\)는 \(h_W(as) = h_W(s)/a^{2}\)을 정확히 만족하지 않습니다. 정확한 관계는 \(h_W(as) = h_{aW}(s)/a^{2}\)이어서, 스케일 성질을 쓰면 차단 주파수가 \(W\)에서 \(aW\)로 바뀝니다. \(a = U\cos\gamma\)는 점과 선원 각, 광선마다 다른 값이므로 이 차이는 화소와 광선마다 조금씩 다릅니다. 팬빔 FBP의 계산에서는 이 차이를 무시하고 \(h_W\)를 그대로 쓰며, 이 장의 수치 확인은 그렇게 계산한 값입니다.</p>
+  </div>
+
+  <h3>U cosγ를 커널 밖으로</h3>
+
+  <p>\(a = U\cos\gamma\)로 두면 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[h\bigl(U\cos\gamma\,(t' - t)\bigr) = \frac{h(t' - t)}{U^{2}\cos^{2}\gamma}\]</p>
+
+  <p>페이지 2의 처음 상태(\(U = 0.8\), \(\cos\gamma = 0.991\), \(t' - t = 0.6\))에서는 \(a = 0.793\)이므로 \(h(0.476)\)이 \(h(0.6)\)의 \(1/0.793^{2} \approx 1.59\)배라는 뜻입니다.</p>
+
+  <p>식 (B)에 대입하면 \(\cos^{3}\gamma\)와 \(1/(U^{2}\cos^{2}\gamma)\)가 곱해져 \(\cos\gamma/U^{2}\)이 남습니다.</p>
+
+  <p style="text-align:center">\[\begin{aligned}\mu(x, y) &= \frac{1}{2}\int_{0}^{2\pi}\int_{-\infty}^{\infty} R_\beta(t)\,h(t' - t)\,\frac{\cos^{3}\gamma}{U^{2}\cos^{2}\gamma}\,dt\,d\beta\\ &= \frac{1}{2}\int_{0}^{2\pi}\frac{1}{U^{2}}\int_{-\infty}^{\infty} R_\beta(t)\,\cos\gamma\;h(t' - t)\,dt\,d\beta\end{aligned}\]</p>
+
+  <p>남은 두 인자는 의존하는 것이 다릅니다. \(\cos\gamma\)는 측정 위치 \(t\)에만 의존하고, \(1/U^{2}\)은 화소와 선원 각에만 의존하며 \(t\)와 무관합니다. 그래서 \(1/U^{2}\)은 \(t\)에 대한 적분 밖으로 나옵니다. 필터링(\(t\)에 대한 적분)을 마친 뒤, 화소마다 값을 읽을 때 곱하는 인자입니다. 이 인자를 거리 가중(<span class="term" data-term="distweight">Distance Weighting</span>)이라고 합니다. \(U\)가 선원에서 점까지 중심 광선 방향의 거리에 비례하므로 붙은 이름입니다. \(\cos\gamma\)의 의미는 다음 페이지에서 봅니다.</p>
+
+  <h3>선량 보정이 아닌 이유</h3>
+
+  <p>\(1/U^{2}\)은 선원에서 멀수록 X선이 약해지는 역제곱 법칙과 모양이 닮았고 이름에도 '거리'가 들어 있어서 선량을 고치는 인자로 읽기 쉽습니다. 그러나 이 가중은 보정이 아니라는 근거가 이 장 안에 네 가지 있습니다.</p>
+
+  <ol>
+    <li><b>유도에 X선 세기가 나오지 않습니다.</b> 쓴 것은 직선 좌표의 변수변환(야코비안), 점과 광선 사이 거리의 기하, 램프 커널의 스케일 성질뿐입니다. 입력인 \(R_\beta(t)\)는 로그 변환을 거친 선적분이고, 칸마다의 거리·입사각·이득 차이는 <a href="../../part0/ch02.html#s2">0편 2장 페이지 2</a>의 플랫필드 보정에서 비 \(I/I_0\)로 이미 상쇄되었습니다.</li>
+    <li><b>좌표를 바꾸면 가중이 바뀝니다.</b> 같은 광선, 같은 측정값이라도 곡면 검출기의 좌표 \(\gamma\)로 적분하면 가중이 \(D\cos\gamma\)와 \(1/L^{2}\)으로 달라집니다. 선량은 광선이 정하는 값이고 적분 변수를 어떻게 잡았는지와 무관하므로, 좌표에 따라 달라지는 이 가중은 식 쪽의 성질입니다.</li>
+    <li><b>데이터를 옮기면 가중이 필요 없습니다.</b> rebinning은 같은 측정값을 평행빔 격자로 옮긴 뒤 5장의 식을 가중 없이 그대로 씁니다(7장 페이지 8, 9). 가중은 측정값이 아니라 식을 바꾼 데서 나옵니다.</li>
+    <li><b>세기 인자와 성격이 다릅니다.</b> 칸 하나의 세기가 \(c\)배가 되면 \(-\ln(cI/I_0) = p - \ln c\)가 되어 투영값에 더해지는 항으로 나타납니다. 재구성 식의 가중은 투영값에 곱해지는 인자입니다.</li>
+  </ol>
+
+  <p>보정이라고 가정하고 방향을 따져 보아도 맞지 않습니다. 선원에서 먼 화소(\(U > 1\))의 신호가 약해지는 것을 고치는 인자라면 1보다 큰 값을 곱해야 합니다. 그런데 \(1/U^{2}\)은 \(U > 1\)에서 1보다 작습니다. 다만 이 비교는 보정이라는 가정 위에서 한 추론이므로, 위의 네 근거가 핵심입니다. 코사인 가중에도 같은 네 근거가 적용됩니다. 그 출처는 다음 페이지에서 확인합니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 -->
+<section class="screen" data-title="코사인 가중과 최종 공식">
+  <p class="kicker">8장 · 페이지 5</p>
+  <h2>코사인 가중과 최종 공식</h2>
+
+  <p>페이지 4의 마지막 식에는 측정 위치 \(t\)에만 의존하는 인자 \(\cos\gamma\)가 남아 있습니다. 이 인자의 정체를 확인하고 공식을 정리합니다.</p>
+
+  <h3>코사인 가중</h3>
+
+  <p>\(\tan\gamma = t/D\)이므로 \(\cos\gamma = D/\sqrt{D^{2} + t^{2}}\)입니다. 이 인자는 두 단계를 거쳐 만들어졌습니다.</p>
+
+  <ul>
+    <li>페이지 3의 야코비안에서 \(\cos^{3}\gamma\)가 나왔습니다. 하나는 \(s = D\sin\gamma\)의 기울기 \(\cos\gamma\)이고, 다른 하나는 \(dt = (D/\cos^{2}\gamma)\,d\gamma\)에서 온 \(\cos^{2}\gamma\)입니다.</li>
+    <li>페이지 4의 스케일 성질에서 \(1/\cos^{2}\gamma\)가 나왔습니다. 커널의 입력 \(U\cos\gamma\,(t' - t)\)에 \(\cos\gamma\)가 들어 있었기 때문입니다.</li>
+  </ul>
+
+  <p style="text-align:center">\[\cos^{3}\gamma\times\frac{1}{\cos^{2}\gamma} = \cos\gamma = \frac{D}{\sqrt{D^{2} + t^{2}}}\]</p>
+
+  <p>이 곱을 코사인 가중(<span class="term" data-term="cosweight">Cosine Weighting</span>)이라고 합니다. 야코비안 하나만이 아니라 야코비안과 커널의 스케일 성질에서 나온 두 인자의 곱이라는 점에 주의해야 합니다. 필터링 앞에서 측정값에 곱하므로 사전 가중(<span class="term" data-term="preweight">Pre-weighting</span>)이라고도 합니다.</p>
+
+  <p>두 가중 가운데 하나는 필터링 앞에, 다른 하나는 뒤에 오는 이유는 의존하는 변수에 있습니다. \(\cos\gamma\)는 \(t\)만의 함수이므로 측정값에 먼저 곱해 \(\tilde R_\beta(t) = R_\beta(t)\cos\gamma\)로 두면, 안쪽 적분이 \(\tilde R_\beta\)와 \(h\)의 컨볼루션이 됩니다. 이 컨볼루션은 화소와 무관하므로 선원 각마다 한 번만 하면 됩니다. 반면 \(1/U^{2}\)은 화소마다 값이 달라서 컨볼루션 밖에서 곱합니다.</p>
+
+  <h3>최종 공식</h3>
+
+  <p>페이지 1의 식을 세 줄로 나누어 쓰면 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[\begin{aligned}
+  \tilde R_\beta(t) &= R_\beta(t)\,\frac{D}{\sqrt{D^{2} + t^{2}}} &&\text{(코사인 가중)}\\
+  q_\beta(u) &= \int_{-\infty}^{\infty} \tilde R_\beta(t)\,h(u - t)\,dt &&\text{(램프 필터링)}\\
+  \mu(x, y) &= \frac{1}{2}\int_{0}^{2\pi}\frac{q_\beta(t')}{U^{2}}\,d\beta &&\text{(가중 역투영)}
+  \end{aligned}\]</p>
+
+  <p>평행빔 FBP(5장)와 비교하면 필터링은 같은 컨볼루션이고 커널도 같은 \(h\)입니다. 달라진 점은 세 가지입니다. 필터링 앞에 가중이 하나 있고, 필터링한 값을 읽는 위치가 \(x\cos\theta + y\sin\theta\) 대신 화소마다 다른 \(t'\)이며, 읽은 값에 \(1/U^{2}\)을 곱합니다.</p>
+
+  <h3>두 가중의 모양</h3>
+
+  <p>아래 위젯은 \(D = 3\) cm에서 두 가중이 무엇에 의존하는지 보여 줍니다. 왼쪽은 선원이 도는 궤도(점선 원, 반지름 \(D\)) 안에 영상 영역(\(\pm 1.1\) cm)의 \(1/U^{2}\)을 같은 비율로 그린 것입니다. 선원 S에서 회전 중심 O로 가는 화살표가 중심 광선이고, O를 지나 중심 광선에 수직인 굵은 선이 가상 검출기입니다. 점 P(파랑)를 고르면, S에서 P까지를 중심 광선 방향으로 사영한 길이가 깊이 \(z\)(초록)이고 \(U = z/D\)입니다. 오른쪽 곡선은 코사인 가중 \(\cos\gamma\)입니다. 선원 각과 점 P를 바꿔 보세요.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 430" role="img" aria-label="왼쪽은 선원이 도는 궤도 안에 영상 영역의 거리 가중 1/U²을 색으로 그린 그림이다. 선원 S에서 회전 중심 O로 가는 중심 광선, O를 지나는 가상 검출기, 점 P를 중심 광선 방향으로 사영한 깊이 z가 표시된다. 오른쪽은 가상 검출기 위치 t에 따른 코사인 가중 cosγ 곡선이다">
+      <defs><marker id="r11w-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker></defs>
+      <circle cx="170" cy="214" r="132" fill="none" stroke-width="1.2" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+      <image id="r11w-map" x="121.6" y="165.6" width="96.8" height="96.8" preserveAspectRatio="none" style="image-rendering:pixelated"/>
+      <rect x="121.6" y="165.6" width="96.8" height="96.8" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path d="M164 214 H176 M170 208 V220" fill="none" stroke-width="1.2" style="stroke:var(--fg)"/>
+      <g id="r11w-dyn"></g>
+      <image id="r11w-leg" x="70" y="388" width="200" height="10" preserveAspectRatio="none"/>
+      <rect x="396" y="120" width="230" height="180" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <g fill="none" stroke-width="1" opacity=".5" style="stroke:var(--muted)"><path d="M396 210 H626" stroke-dasharray="3 3"/><path d="M511 120 V300" stroke-dasharray="3 3"/></g>
+      <g fill="none" stroke-width="1" stroke-dasharray="2 3" style="stroke:var(--warn)"><path d="M408.8 120 V300"/><path d="M613.2 120 V300"/></g>
+      <path id="r11w-cos" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <g font-size="12" class="svg-fg" font-weight="700">
+        <text x="14" y="22">거리 가중 1/U² (화소마다)</text>
+        <text x="396" y="22">코사인 가중 cosγ (측정 위치마다)</text>
+      </g>
+      <g font-size="10.5" class="svg-muted">
+        <text x="14" y="38">선원 궤도 안에 영상 영역을 같은 비율로 그림</text>
+        <text x="396" y="38">D = 3 cm, 주황 점선은 t = ±1.6 cm</text>
+        <text x="402" y="262">t = ±1.6 에서 0.882</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="middle">
+        <text x="88.6" y="412">0.5</text><text x="136.4" y="412">1</text><text x="184.2" y="412">2</text><text x="232" y="412">4</text>
+        <text x="170" y="426">1/U² (로그 눈금)</text>
+        <text x="396" y="316">−1.8</text><text x="511" y="316">0</text><text x="626" y="316">1.8</text><text x="511" y="330">t (cm)</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="end">
+        <text x="390" y="124">1.0</text><text x="390" y="214">0.9</text><text x="390" y="304">0.8</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽은 선원의 궤도(점선 원)와 영상 영역을 같은 비율로 그린 그림입니다. 영상 영역(\(\pm 1.1\) cm)은 궤도 안의 작은 사각형이고, 십자가 회전 중심 O입니다. 색은 로그 눈금이며 진한 파랑일수록 \(1/U^{2}\)이 큽니다. S에서 O로 가는 파란 화살표가 중심 광선, O를 지나는 굵은 회색 선이 가상 검출기(\(|t| \le 1.6\) cm)이고 S에서 그 양 끝으로 가는 점선이 팬의 가장자리입니다. 파란 점 P에서 중심 광선에 내린 수선의 발까지 S에서 잰 초록 선분이 깊이 \(z\), 주황 점선이 직선 거리 \(L\)입니다. 오른쪽은 코사인 가중 곡선입니다.</figcaption>
+  </figure>
+
+  <div style="display:grid;grid-template-columns:auto 1fr auto;gap:.35rem .7rem;align-items:center;max-width:36rem;margin:0 auto;font-size:.86rem">
+    <label for="r11w-b">선원 각 β</label><input id="r11w-b" type="range" min="0" max="355" step="5" value="0"><b id="r11w-bv" style="min-width:3.2rem;text-align:right">0°</b>
+    <label for="r11w-x">점 P 의 x</label><input id="r11w-x" type="range" min="-1.1" max="1.1" step="0.05" value="0.6"><b id="r11w-xv" style="min-width:3.2rem;text-align:right">0.60</b>
+    <label for="r11w-y">점 P 의 y</label><input id="r11w-y" type="range" min="-1.1" max="1.1" step="0.05" value="0.5"><b id="r11w-yv" style="min-width:3.2rem;text-align:right">0.50</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r11w-note"></p>
+
+  <ul>
+    <li><b>\(1/U^{2}\)은 선원 각에 따라 회전합니다.</b> 값이 중심 광선 방향의 깊이로만 정해져서, 같은 색의 선이 가상 검출기와 나란합니다. 선원 쪽(깊이가 작은 쪽)이 크고 반대쪽이 작으며, 회전 중심은 어떤 선원 각에서도 \(U = 1\)이므로 값이 1입니다.</li>
+    <li><b>\(U\)는 직선 거리가 아니라 깊이입니다.</b> P를 중심 광선과 수직인 방향으로 옮기면 \(L\)은 바뀌어도 초록 선분 \(z\)는 그대로여서 \(U\)도 그대로입니다. 위젯에서 P를 가상 검출기와 나란한 방향으로 움직여 확인해 보세요.</li>
+    <li><b>\(\cos\gamma\)는 선원 각에 따라 변하지 않습니다.</b> 가상 검출기 위의 위치 \(t\)만으로 정해지고 \(t = 0\)에서 1입니다.</li>
+  </ul>
+
+  <div class="box warn">
+    <p class="box-t">흔한 오해</p>
+    <ul>
+      <li>"선원에 가까운 화소는 광선이 촘촘히 지나므로 가중이 작아야 한다"고 생각하기 쉽습니다. 실제로는 \(U < 1\)에서 \(1/U^{2}\)이 큽니다. 촘촘할수록 화소와 광선 사이의 거리 \(d\)가 작아지고, 램프 커널이 거리의 \(-2\)제곱에 비례하기 때문입니다(페이지 4).</li>
+    </ul>
+  </div>
+
+  <h3>수치 확인</h3>
+
+  <p>공식과 가중의 효과를 원판으로 확인합니다. 원점을 중심으로 반지름 \(0.9\) cm, 값 \(1\)인 원판의 팬빔 데이터를 닫힌 식으로 만들고, 위 세 줄을 합으로 바꾸어 계산했습니다. 설정은 \(D = 3\) cm, 선원 각 \(N_\beta = 720\)개, 가상 검출기 칸 401개(\(|t| \le 1.6\) cm, 간격 \(\Delta t = 0.008\) cm), 커널은 6장의 Ram-Lak 이산 커널을 이 간격으로 쓴 것이고, 필터링한 값은 선형 보간으로 읽었습니다. 재구성 값이 1에 가까울수록 정확합니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>계산 방법</th><th>점 (0, 0)</th><th>점 (0.4, 0)</th><th>점 (0.8, 0)</th><th>점 (0.6, 0.6)</th></tr>
+      <tr><td>공식 그대로</td><td>1.000</td><td>1.000</td><td>1.001</td><td>1.002</td></tr>
+      <tr><td>코사인 가중을 뺌</td><td>0.977</td><td>0.990</td><td>1.033</td><td>1.042</td></tr>
+      <tr><td>\(1/U^{2}\)을 뺌</td><td>1.000</td><td>0.974</td><td>0.898</td><td>0.887</td></tr>
+      <tr><td>둘 다 뺌</td><td>0.977</td><td>0.964</td><td>0.926</td><td>0.921</td></tr>
+    </table>
+  </div>
+
+  <ul>
+    <li>공식 그대로 계산하면 네 점 모두 1에서 0.3% 이내입니다. 이 오차에는 페이지 4에서 무시한 차단 주파수의 차이를 포함해 이산화에서 생긴 모든 오차가 들어 있습니다.</li>
+    <li>코사인 가중을 빼면 이 설정에서는 가운데가 낮고(\(-2.3\%\)) 가장자리 쪽이 높습니다(\(+4.2\%\)).</li>
+    <li>\(1/U^{2}\)을 빼면 회전 중심의 값은 맞고 중심에서 멀수록 낮아집니다. 회전 중심에서는 \(1/U^{2}\)이 모든 선원 각에서 1이므로, 이 가중을 빼도 중심 값이 달라지지 않습니다.</li>
+  </ul>
+
+  <p>이 표는 한 가지 설정의 결과입니다. 팬이 더 넓은 경우와 영상으로 본 모습은 <a href="../quick/day7.html#s2">1편 빠르게 보기 7일차 페이지 2</a>에서 볼 수 있습니다.</p>
+
+<script>
+(function () {
+  var D = 3, N = 80, HALF = 1.1, LO = 0.4, HI = 4.4, CX = 170, CY = 214, KW = 44;
+  var map = document.getElementById('r11w-map'), leg = document.getElementById('r11w-leg'), dyn = document.getElementById('r11w-dyn');
+  var cosP = document.getElementById('r11w-cos'), note = document.getElementById('r11w-note');
+  var sb_ = document.getElementById('r11w-b'), sx_ = document.getElementById('r11w-x'), sy_ = document.getElementById('r11w-y');
+  var vb = document.getElementById('r11w-bv'), vx = document.getElementById('r11w-xv'), vy = document.getElementById('r11w-yv');
+  function fx(v, d) { return v.toFixed(d).replace('-', '−'); }
+  function rgb(s) {
+    var c0 = [250, 247, 232], c1 = [146, 181, 214], c2 = [28, 66, 112], a, b, f;
+    s = Math.max(0, Math.min(1, s));
+    if (s < 0.5) { a = c0; b = c1; f = s / 0.5; } else { a = c1; b = c2; f = (s - 0.5) / 0.5; }
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+  }
+  function sOf(v) { return Math.log(v / LO) / Math.log(HI / LO); }
+  function png(w, h, f) {
+    var cv = document.createElement('canvas'), ctx, im, i, j, c, k;
+    cv.width = w; cv.height = h; ctx = cv.getContext('2d'); im = ctx.createImageData(w, h);
+    for (j = 0; j < h; j++) for (i = 0; i < w; i++) { c = f(i, j); k = 4 * (j * w + i); im.data[k] = c[0]; im.data[k + 1] = c[1]; im.data[k + 2] = c[2]; im.data[k + 3] = 255; }
+    ctx.putImageData(im, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+  leg.setAttribute('href', png(200, 1, function (i) { return rgb(i / 199); }));
+  // 코사인 가중 곡선: t = -1.8 ~ 1.8 → x 396 ~ 626, cosγ 0.8 ~ 1.0 → y 300 ~ 120
+  var d = '', t, k;
+  for (k = 0; k <= 72; k++) { t = -1.8 + k * 0.05; d += (k ? 'L' : 'M') + (396 + (t + 1.8) / 3.6 * 230).toFixed(1) + ' ' + (300 - (D / Math.sqrt(D * D + t * t) - 0.8) * 900).toFixed(1); }
+  cosP.setAttribute('d', d);
+  function ln(a, b, st, w, dash, mk) {
+    return '<path d="M' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' L' + b[0].toFixed(1) + ' ' + b[1].toFixed(1) + '" fill="none" stroke-width="' + w + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + (mk ? ' marker-end="url(#r11w-ar)"' : '') + ' style="' + st + '"/>';
+  }
+  function tx(p, s, st, anc, sz) {
+    return '<text x="' + p[0].toFixed(1) + '" y="' + p[1].toFixed(1) + '" font-size="' + (sz || 11) + '" font-weight="700" text-anchor="' + (anc || 'start') + '" style="' + st + ';paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">' + s + '</text>';
+  }
+  function draw() {
+    var bd = +sb_.value, b = bd * Math.PI / 180, cb = Math.cos(b), sb = Math.sin(b), px = 2 * HALF / N;
+    var x = +sx_.value, y = +sy_.value;
+    map.setAttribute('href', png(N, N, function (i, j) {
+      var xx = -HALF + (i + 0.5) * px, yy = HALF - (j + 0.5) * px, U = (D + xx * sb - yy * cb) / D;
+      return rgb(sOf(1 / (U * U)));
+    }));
+    // 세계 좌표 → 화면 좌표
+    function P(wx, wy) { return [CX + KW * wx, CY - KW * wy]; }
+    var Sw = [-D * sb, D * cb], S = P(Sw[0], Sw[1]), O = [CX, CY];
+    var z = D + x * sb - y * cb, U = z / D;
+    var H = P(Sw[0] + z * sb, Sw[1] - z * cb), Pp = P(x, y);
+    var L = Math.sqrt((x - Sw[0]) * (x - Sw[0]) + (y - Sw[1]) * (y - Sw[1]));
+    var E1 = P(1.6 * cb, 1.6 * sb), E2 = P(-1.6 * cb, -1.6 * sb);
+    var ux = sb, uy = cb, vx_ = cb, vy_ = -sb;           // 화면 좌표에서 S→O 방향, 검출기 방향
+    var sgn = ((Pp[0] - H[0]) * vx_ + (Pp[1] - H[1]) * vy_) >= 0 ? 1 : -1, q = 6;
+    var pa = [H[0] - q * ux, H[1] - q * uy], pb = [pa[0] + sgn * q * vx_, pa[1] + sgn * q * vy_], pc = [H[0] + sgn * q * vx_, H[1] + sgn * q * vy_];
+    var h = '';
+    h += ln(S, E1, 'stroke:var(--muted)', 1, '3 3') + ln(S, E2, 'stroke:var(--muted)', 1, '3 3');
+    h += ln(E1, E2, 'stroke:var(--fg)', 5, '', 0).replace('fill="none"', 'fill="none" stroke-opacity=".45"');
+    h += ln(S, O, 'stroke:var(--accent)', 1.8, '', 1);
+    h += ln(S, Pp, 'stroke:var(--warn)', 1.3, '4 3');
+    h += ln(Pp, H, 'stroke:var(--muted)', 1, '2 2');
+    h += ln(S, H, 'stroke:var(--good)', 3.6);
+    h += '<path d="M' + pa[0].toFixed(1) + ' ' + pa[1].toFixed(1) + ' L' + pb[0].toFixed(1) + ' ' + pb[1].toFixed(1) + ' L' + pc[0].toFixed(1) + ' ' + pc[1].toFixed(1) + '" fill="none" stroke-width="1" style="stroke:var(--muted)"/>';
+    h += '<circle cx="' + Pp[0].toFixed(1) + '" cy="' + Pp[1].toFixed(1) + '" r="4.2" style="fill:var(--accent)"/>';
+    h += '<circle cx="' + H[0].toFixed(1) + '" cy="' + H[1].toFixed(1) + '" r="3" style="fill:var(--good)"/>';
+    h += '<circle cx="' + S[0].toFixed(1) + '" cy="' + S[1].toFixed(1) + '" r="8" style="fill:var(--card);stroke:var(--fg)" stroke-width="1.4"/>';
+    h += '<text x="' + S[0].toFixed(1) + '" y="' + (S[1] + 4).toFixed(1) + '" font-size="11" font-weight="700" text-anchor="middle" style="fill:var(--fg)">S</text>';
+    var mz = [(S[0] + H[0]) / 2, (S[1] + H[1]) / 2], oz = 12;
+    h += tx([mz[0] + sgn * -oz * vx_ * 1.0 - 4, mz[1] + sgn * -oz * vy_ * 1.0], 'z', 'fill:var(--good)', 'middle', 12);
+    h += tx([Pp[0] + 7, Pp[1] - 7], 'P', 'fill:var(--accent)', 'start', 12);
+    h += tx([E2[0] + (E2[0] >= CX ? 8 : -8), E2[1] + 4], '가상 검출기', 'fill:var(--muted)', E2[0] >= CX ? 'start' : 'end', 10.5);
+    dyn.innerHTML = h;
+    vb.textContent = bd + '°'; vx.textContent = fx(x, 2); vy.textContent = fx(y, 2);
+    note.textContent = 'β = ' + bd + '°, P = (' + fx(x, 2) + ', ' + fx(y, 2) + ') · 깊이 z = ' + fx(z, 2) + ' cm, U = z/D = ' + fx(U, 3) + ', 1/U² = ' + fx(1 / (U * U), 3) + ' · 선원–P 직선 거리 L = ' + fx(L, 2) + ' cm (z와 다름) · 회전 중심에서는 1';
+  }
+  sb_.addEventListener('input', draw); sx_.addEventListener('input', draw); sy_.addEventListener('input', draw);
+  draw();
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 6 -->
+<section class="screen" data-title="연속 알고리즘의 순서">
+  <p class="kicker">8장 · 페이지 6</p>
+  <h2>연속 알고리즘의 순서</h2>
+
+  <p>페이지 5의 세 줄을 계산 순서로 바꿉니다. 5장 페이지 4의 평행빔 FBP처럼 연속 데이터를 가정한 순서입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 214" role="img" aria-label="순서도. 팬빔 데이터 R_β(t)와 D를 입력받아, 선원 각 β마다 코사인 가중, 램프 필터링, 화소마다 U와 t′를 구해 q(t′)/U²를 더하는 역투영을 하고, 모든 β를 마치면 영상 μ를 출력한다. β마다 되풀이하는 범위를 점선 상자로 묶었다">
+      <defs>
+        <marker id="r11f-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+      </defs>
+      <rect x="116" y="16" width="440" height="152" rx="10" fill="none" stroke-width="1.2" stroke-dasharray="5 4" style="stroke:var(--muted)"/>
+      <g fill="none" stroke-width="1.4" class="svg-line">
+        <rect x="4" y="42" width="86" height="84" rx="6"/>
+        <rect x="130" y="42" width="112" height="84" rx="6" style="stroke:var(--accent)" stroke-width="2.4"/>
+        <rect x="266" y="42" width="104" height="84" rx="6"/>
+        <rect x="394" y="42" width="148" height="84" rx="6" style="stroke:var(--accent)" stroke-width="2.4"/>
+        <rect x="578" y="42" width="58" height="84" rx="6"/>
+        <path d="M92 84 L128 84" marker-end="url(#r11f-mu)"/>
+        <path d="M244 84 L264 84" marker-end="url(#r11f-mu)"/>
+        <path d="M372 84 L392 84" marker-end="url(#r11f-mu)"/>
+        <path d="M558 84 L576 84" marker-end="url(#r11f-mu)"/>
+        <path d="M468 128 V150 H186 V128" marker-end="url(#r11f-mu)"/>
+      </g>
+      <g font-size="12" text-anchor="middle" class="svg-fg" font-weight="700">
+        <text x="47" y="72">입력</text>
+        <text x="186" y="72">코사인 가중</text>
+        <text x="318" y="72">램프 필터링</text>
+        <text x="468" y="72">가중 역투영</text>
+        <text x="607" y="72">출력</text>
+      </g>
+      <g font-size="10.5" text-anchor="middle" class="svg-muted">
+        <text x="47" y="102">R<tspan font-size="70%" dy="0.25em">β</tspan><tspan dy="-0.175em">(t), D</tspan></text>
+        <text x="186" y="102">R̃ = R·D/√(D²+t²)</text>
+        <text x="318" y="94">q = R̃ 와 h 의</text>
+        <text x="318" y="110">컨볼루션</text>
+        <text x="468" y="94">화소마다 U, t′ 를 구해</text>
+        <text x="468" y="110">μ += ½ · q(t′)/U² · dβ</text>
+        <text x="607" y="102">μ(x, y)</text>
+        <text x="326" y="166">다음 선원 각으로</text>
+        <text x="336" y="34">선원 각 β 마다 되풀이 (0 ≤ β &lt; 2π)</text>
+      </g>
+    </svg>
+    <figcaption>파란 굵은 테두리는 평행빔 FBP에 없던 단계입니다. 점선 상자 안은 선원 각 하나를 처리하는 일이고, 모든 선원 각을 마치면 영상이 완성됩니다.</figcaption>
+  </figure>
+
+<pre><span class="cap">평면 검출기 팬빔 FBP(연속)의 의사코드</span><code>입력  R_β(t)   (0 ≤ β &lt; 2π, 모든 t),  D
+출력  μ(x, y)
+
+ 1  μ(x, y) ← 0
+ 2  각 선원 각 β 에 대해 되풀이한다:
+ 3      R̃(t) ← R_β(t) · D / √(D² + t²)
+ 4      q(u) ← R̃ 와 h 의 컨볼루션
+ 5      영상의 모든 점 (x, y) 에 대해:
+ 6          U  ← (D + x sinβ − y cosβ) / D
+ 7          t′ ← (x cosβ + y sinβ) / U
+ 8          μ(x, y) ← μ(x, y) + ½ · q(t′) / U² · dβ
+</code></pre>
+
+  <ol class="notes">
+    <li><span class="ln">입력·출력</span> 입력은 선원을 한 바퀴 돌려 얻은 팬빔 sinogram의 행들(가로 \(t\), 세로 \(\beta\))과 거리 \(D\)입니다. 검출기가 실제 평면 검출기라면 칸의 위치에 \(D/\mathrm{SDD}\)를 곱해 가상 검출기 좌표 \(t\)로 바꿔 둡니다(7장 페이지 3).</li>
+    <li><span class="ln">1행</span> 영상을 0으로 시작해서 선원 각마다 더해 갑니다.</li>
+    <li><span class="ln">3행</span> 코사인 가중입니다. 선원 각 하나의 투영 \(R_\beta(\cdot)\) 전체에 \(t\)마다 다른 값 \(\cos\gamma\)를 곱합니다.</li>
+    <li><span class="ln">4행</span> 램프 필터링입니다. \(q(u) = \int \tilde R(t)\,h(u - t)\,dt\)이며, 5장 페이지 4의 푸리에 변환 세 줄과 같은 결과를 컨볼루션 한 줄로 쓴 것입니다(5장 페이지 7). 평면 검출기에서는 평행빔과 같은 커널 \(h\)를 씁니다.</li>
+    <li><span class="ln">5~8행</span> 가중 역투영입니다. 6~7행은 점 \((x, y)\)와 \(\beta\)마다 정해지는 \(U\), \(t'\)이고(페이지 2), 8행에서 \(q\)를 \(t'\)에서 읽어 \(1/U^{2}\)을 곱해 더합니다. \(d\beta\)는 연속에서 적분의 미소량이고 \(\beta\)의 범위는 \(0\)~\(2\pi\)이므로, \(\tfrac{1}{2}\)은 한 바퀴를 돌아 같은 직선을 두 번 더하는 것을 보정합니다.</li>
+  </ol>
+
+  <h3>평행빔 FBP와 다른 줄</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:7rem">단계</th><th>평행빔 FBP (5장)</th><th>평면 검출기 팬빔 FBP</th></tr>
+      <tr><td>각의 범위</td><td>\(0 \le \theta < \pi\)</td><td>\(0 \le \beta < 2\pi\)이고 \(\tfrac{1}{2}\)을 곱함</td></tr>
+      <tr><td>필터링 앞</td><td>없음</td><td>코사인 가중</td></tr>
+      <tr><td>필터링</td><td>\(\theta\)의 행(가로 \(s\))에 램프 커널 \(h\)</td><td>\(\beta\)의 행(가로 \(t\))에 같은 램프 커널 \(h\)</td></tr>
+      <tr><td>읽는 위치</td><td>\(s' = x\cos\theta + y\sin\theta\)</td><td>\(t'\) (화소와 \(\beta\)마다 다름)</td></tr>
+      <tr><td>읽은 값에</td><td>그대로 더함</td><td>\(1/U^{2}\)을 곱해 더함</td></tr>
+    </table>
+  </div>
+
+  <ul>
+    <li><b>선원 각마다 독립입니다.</b> 한 선원 각의 필터링과 역투영은 그 선원 각의 투영만 쓰므로, 5장과 마찬가지로 투영을 하나씩 처리해 영상에 더해 갈 수 있습니다.</li>
+    <li><b>읽는 위치와 가중이 화소마다 다릅니다.</b> 평행빔에서는 읽은 값을 그대로 더했지만, 팬빔에서는 화소와 선원 각의 조합마다 \(U\)를 구하고 이로부터 \(t'\)과 \(1/U^{2}\)을 얻습니다.</li>
+    <li><b>선원을 한 바퀴 돌린 데이터를 전제합니다.</b> \(\tfrac{1}{2}\)은 팬이 덮는 모든 직선이 정확히 두 번(광선 \((\beta, \gamma)\)와 짝 \((\beta + \pi + 2\gamma,\ -\gamma)\), 7장 페이지 6) 측정된다는 사실에 기댑니다. 선원을 덜 돌리면 측정 횟수가 직선마다 달라집니다. 팬 반각 \(\gamma_m = 20^{\circ}\)인 장치로 \(180^{\circ}\)만 돌리면 5.5%의 직선이 한 번도 측정되지 않고, \(180^{\circ} + 2\gamma_m = 220^{\circ}\)를 돌리면 모든 직선이 적어도 한 번 측정되지만 두 번 측정된 직선은 22.2%이고 나머지 77.8%는 한 번뿐입니다. 이때는 일정한 \(\tfrac{1}{2}\) 대신 같은 직선의 두 측정에 곱하는 합이 1인 가중 \(w(\beta, \gamma)\)를 광선마다 정해 필터링 앞에서 곱해야 합니다.</li>
+    <li><b>한 평면의 연속 식입니다.</b> 검출기가 여러 줄이어서 광선이 평면을 벗어나는 콘빔은 이 식의 범위 밖입니다. 샘플링한 데이터로 계산하려면 간격과 커널을 정해야 하고, 페이지 4에서 말한 자른 커널의 근사도 이때 영향을 줍니다.</li>
+  </ul>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 7 -->
+<section class="screen" data-title="곡면 검출기의 연속 공식">
+  <p class="kicker">8장 · 페이지 7 · 심화</p>
+  <h2>곡면 검출기의 연속 공식</h2>
+
+  <p>곡면 검출기(<span class="term" data-term="curved">Curved Detector</span>)는 칸 사이의 팬 각이 모두 같아서(7장 페이지 3) 측정값을 \(R_\beta(\gamma)\)로 다루는 것이 자연스럽습니다. 같은 식 (A)에서 출발하되, \(t\)로 바꾸지 않고 \(\gamma\)를 그대로 씁니다. 변수를 바꾸면 달라지는 두 곳, 곧 적분 요소와 커널의 입력을 이번에는 \(\gamma\)로 씁니다.</p>
+
+  <h3>유도</h3>
+
+  <ol>
+    <li><b>적분 요소.</b> 페이지 3의 \(d\theta\,ds = D\cos\gamma\,d\gamma\,d\beta\)를 \(t\)로 더 바꾸지 않고 그대로 씁니다.</li>
+    <li><b>커널의 입력.</b> 페이지 2의 식 (C)에서 \(x\cos\theta + y\sin\theta - s = L\sin(\gamma' - \gamma)\)입니다. 평면 검출기처럼 \(U\cos\gamma\,(t' - t)\)로 옮기지 않고 이 형태로 둡니다.</li>
+    <li><b>스케일 성질.</b> \(\varphi = \gamma' - \gamma\)로 두고 \(L\sin\varphi = \bigl(L\sin\varphi/\varphi\bigr)\,\varphi\)로 씁니다. 페이지 4의 성질을 \(a = L\sin\varphi/\varphi\)로 쓰면 \(h(L\sin\varphi) = h(\varphi)/a^{2} = (\varphi/\sin\varphi)^{2}\,h(\varphi)/L^{2}\)입니다.</li>
+  </ol>
+
+  <p>세 단계를 식 (A)에 모으면 곡면 검출기의 연속 공식이 됩니다.</p>
+
+  <p style="text-align:center">\[\begin{aligned}\mu(x, y) &= \frac{1}{2}\int_{0}^{2\pi}\frac{1}{L^{2}}\int_{-\infty}^{\infty} R_\beta(\gamma)\,D\cos\gamma\;h_c(\gamma' - \gamma)\,d\gamma\,d\beta,\\ h_c(\varphi) &= \Bigl(\frac{\varphi}{\sin\varphi}\Bigr)^{2} h(\varphi)\end{aligned}\]</p>
+
+  <ul>
+    <li><b>\(L\), \(\gamma'\).</b> \(L\)은 선원에서 점 \((x, y)\)까지의 실제 거리이고 \(\gamma'\)은 선원에서 그 점을 본 팬 각입니다. 페이지 2의 \(\xi\), \(\eta\)로 \(L = \sqrt{(D + \eta)^{2} + \xi^{2}}\), \(\gamma' = \arctan\bigl(\xi/(D + \eta)\bigr)\)입니다.</li>
+    <li><b>\(h_c\).</b> 곡면 검출기용 커널(<span class="term" data-term="curvedkernel">h<sub>c</sub></span>)입니다. 입력 \(\varphi\)는 각(라디안)이며, 램프 커널 \(h\)에 숫자 \(\varphi\)를 그대로 넣은 값을 씁니다.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 270" role="img" aria-label="선원 S에서 부채꼴로 퍼진 광선이 선원을 중심으로 한 원호 모양의 곡면 검출기에 닿는다. 점 P는 선원에서 거리 L, 중심 광선에서 γ′만큼 기운 곳에 있다. 팬 각 γ인 다른 광선까지의 수직 거리가 L sin(γ′ − γ)이다">
+      <path d="M69.5 212.0 A210 210 0 0 0 310.5 212.0" fill="none" stroke-width="5" style="stroke:var(--muted)"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M190 40 L85.0 221.9" stroke-dasharray="2 3"/><path d="M190 40 L118.2 237.3" stroke-dasharray="2 3"/>
+        <path d="M190 40 L153.5 246.8" stroke-dasharray="2 3"/><path d="M190 40 L190 250" stroke-dasharray="5 4"/>
+        <path d="M190 40 L261.8 237.3" stroke-dasharray="2 3"/><path d="M190 40 L295 221.9" stroke-dasharray="2 3"/>
+      </g>
+      <g style="fill:var(--accent)">
+        <circle cx="85.0" cy="221.9" r="3"/><circle cx="118.2" cy="237.3" r="3"/><circle cx="153.5" cy="246.8" r="3"/><circle cx="190" cy="250" r="3"/>
+        <circle cx="226.5" cy="246.8" r="3"/><circle cx="261.8" cy="237.3" r="3"/><circle cx="295" cy="221.9" r="3"/>
+      </g>
+      <path d="M190 40 L135.6 242.8" fill="none" stroke-width="2" style="stroke:var(--muted)"/>
+      <path d="M190 40 L226.5 246.8" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <path d="M209.1 148.3 L164.2 136.3" fill="none" stroke-width="2.6" style="stroke:var(--good)"/>
+      <path d="M190 90 A50 50 0 0 0 198.7 89.2" fill="none" stroke-width="1.2" style="stroke:var(--warn)"/>
+      <path d="M167.7 123.1 A86 86 0 0 0 204.9 124.7" fill="none" stroke-width="1.2" style="stroke:var(--good)"/>
+      <circle cx="190" cy="40" r="5" class="svg-fg"/><circle cx="209.1" cy="148.3" r="4.5" class="svg-fg"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="200" y="36">선원 S</text><text x="216" y="146">P</text>
+        <text x="203" y="82" style="fill:var(--warn)">γ′</text>
+        <text x="172" y="150" text-anchor="end" style="fill:var(--good)">φ = γ′ − γ</text>
+        <text x="205" y="196" class="svg-muted">L</text>
+        <text x="190" y="268" text-anchor="middle" class="svg-muted">곡면 검출기: 칸 사이의 팬 각이 같음</text>
+      </g>
+      <g font-size="11.5" class="svg-fg">
+        <text x="344" y="70" font-weight="700">그림에서 쓴 값</text>
+        <text x="344" y="94">L = 110 (선원에서 P 까지)</text>
+        <text x="344" y="114" style="fill:var(--warn)">γ′ = 10° (P 를 본 팬 각)</text>
+        <text x="344" y="134">회색 광선: γ = −15°</text>
+        <text x="344" y="154" style="fill:var(--good)">초록 선 = L sin(γ′ − γ)</text>
+        <text x="344" y="174" style="fill:var(--good)">= 110 × sin 25° ≈ 46.5</text>
+        <text x="344" y="200" class="svg-muted" font-size="10.5">초록 선은 P 에서 회색 광선까지의 수직 거리</text>
+        <text x="344" y="216" class="svg-muted" font-size="10.5">(길이 단위는 그림의 눈금)</text>
+      </g>
+    </svg>
+    <figcaption>곡면 검출기의 광선은 팬 각 \(\gamma\)로 정해지고 칸 사이의 \(\gamma\) 간격이 같습니다. 점 \(P\)에서 광선까지의 거리는 \(L\sin(\gamma' - \gamma)\)이며, 이 거리가 커널 \(h\)의 입력입니다.</figcaption>
+  </figure>
+
+  <h3>평면 검출기 공식과 다른 점</h3>
+
+  <ul>
+    <li><b>사전 가중이 \(D\cos\gamma\)입니다.</b> 야코비안이 그대로 남습니다. 커널의 입력 \(L\sin(\gamma' - \gamma)\)에는 \(\cos\gamma\)가 들어 있지 않으므로 평면 검출기처럼 \(1/\cos^{2}\gamma\)가 곱해지지 않습니다. 사전 가중은 여전히 광선 \(\gamma\)에만 의존해 필터링 앞에서 곱할 수 있습니다.</li>
+    <li><b>거리 가중이 \(1/L^{2}\)입니다.</b> \(L\)은 선원에서 점까지의 실제 거리입니다. 평면 검출기의 \(U\)는 이 거리의 중심 광선 방향 성분을 \(D\)로 나눈 값이어서 \(L\cos\gamma' = UD\)입니다.</li>
+    <li><b>필터 커널이 \(h_c\)입니다.</b> 곡면 검출기에서는 같은 \(\varphi\)라도 실제 거리가 \(L\sin\varphi\)이어서 \(\varphi\)에 비례하지 않습니다. 이 차이가 \((\varphi/\sin\varphi)^{2}\)로 들어갑니다. 이 인자는 \(\varphi\)에만 의존하므로 필터링은 여전히 \(\gamma\) 방향의 컨볼루션입니다.</li>
+  </ul>
+
+  <p>보정 인자 \((\varphi/\sin\varphi)^{2}\)의 크기는 다음과 같습니다. \(\varphi = \gamma' - \gamma\)는 팬 반각이 \(\gamma_m\)이면 \(2\gamma_m\)까지 커질 수 있습니다. 예를 들어 \(\gamma_m = 20^{\circ}\)(0.349 rad)이면 \(\varphi\)의 최댓값은 0.698 rad입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(\varphi\) (rad)</th><td>0.1</td><td>0.3</td><td>0.5</td><td>0.698</td><td>0.8</td><td>1.1</td></tr>
+      <tr><th>\((\varphi/\sin\varphi)^{2}\)</th><td>1.003</td><td>1.031</td><td>1.088</td><td>1.180</td><td>1.244</td><td>1.523</td></tr>
+    </table>
+  </div>
+
+  <p>\(h_c\)를 \(h\)로 바꾸면 영향이 얼마나 되는지 확인했습니다. 페이지 5와 같은 원판(반지름 0.9 cm, 값 1), \(D = 3\) cm, 선원 각 720개, 곡면 검출기 칸 401개(\(|\gamma| \le 0.55\) rad, 간격 \(\Delta\gamma = 0.00275\) rad)에서 계산한 점 \((0, 0)\), \((0.4, 0)\), \((0.8, 0)\), \((0.6, 0.6)\)의 값은 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>커널</th><th>(0, 0)</th><th>(0.4, 0)</th><th>(0.8, 0)</th><th>(0.6, 0.6)</th></tr>
+      <tr><td>\(h_c\) (공식 그대로)</td><td>1.000</td><td>1.000</td><td>1.001</td><td>1.003</td></tr>
+      <tr><td>\(h\)로 바꿈</td><td>1.015</td><td>1.015</td><td>1.017</td><td>1.019</td></tr>
+    </table>
+  </div>
+
+  <p>이 설정에서는 \(h\)를 쓰면 네 점 모두 1.5~1.9% 높게 나옵니다. 이 값은 한 가지 설정의 결과입니다. 팬이 좁으면 \(\varphi\)가 작아져 보정 인자가 1에 가까워집니다.</p>
+
+  <div class="box note">
+    <p class="box-t">두 공식의 출처</p>
+    <p>평면 검출기의 식과 이 페이지의 식은 모두 식 (A)를 정확히 변형한 것이어서 연속에서는 같은 \(\mu\)를 줍니다. 가중과 커널이 다른 것은 필터링을 하는 좌표가 \(t\)와 \(\gamma\)로 다르기 때문입니다. 7장 페이지 9에서 직접 방식의 필터링에 평행빔과 같은 램프 커널을 쓴다고 한 것은 평면 검출기에 해당하는 설명입니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 8 -->
+<section class="screen" data-title="평면과 곡면의 비교">
+  <p class="kicker">8장 · 페이지 8 · 심화</p>
+  <h2>평면 검출기와 곡면 검출기의 비교</h2>
+
+  <p>두 검출기의 연속 공식은 같은 식 (A)에서 나왔고, 적분 변수를 \(t\)로 잡았는지 \(\gamma\)로 잡았는지만 다릅니다. 페이지 5와 7에서 얻은 결과를 한 표에 모읍니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:8.5rem">항목</th><th>평면 검출기</th><th>곡면 검출기</th></tr>
+      <tr><td>칸 간격이 같은 좌표</td><td>\(t = D\tan\gamma\)</td><td>\(\gamma\)</td></tr>
+      <tr><td>적분 요소</td><td>\(d\theta\,ds = \cos^{3}\gamma\,dt\,d\beta\)</td><td>\(d\theta\,ds = D\cos\gamma\,d\gamma\,d\beta\)</td></tr>
+      <tr><td>사전 가중 (필터링 앞)</td><td>\(\cos\gamma = D/\sqrt{D^{2} + t^{2}}\)</td><td>\(D\cos\gamma\)</td></tr>
+      <tr><td>필터 커널</td><td>\(h(t' - t)\), 평행빔과 같은 램프 커널</td><td>\(h_c(\gamma' - \gamma)\), \(h_c(\varphi) = (\varphi/\sin\varphi)^{2}h(\varphi)\)</td></tr>
+      <tr><td>필터링한 값을 읽는 위치</td><td>\(t' = D\tan\gamma'\)</td><td>\(\gamma'\)</td></tr>
+      <tr><td>거리 가중 (역투영에서)</td><td>\(1/U^{2}\)</td><td>\(1/L^{2}\)</td></tr>
+      <tr><td>공통</td><td colspan="2">\(\tfrac{1}{2}\int_0^{2\pi} d\beta\), 필터링 앞의 가중은 측정 위치만의 함수, 역투영의 가중은 점과 선원 각만의 함수</td></tr>
+    </table>
+  </div>
+
+  <p style="text-align:center">\[\text{평면:}\quad \mu = \frac{1}{2}\int_{0}^{2\pi}\frac{1}{U^{2}}\int R_\beta(t)\,\frac{D}{\sqrt{D^{2} + t^{2}}}\,h(t' - t)\,dt\,d\beta\]</p>
+  <p style="text-align:center">\[\text{곡면:}\quad \mu = \frac{1}{2}\int_{0}^{2\pi}\frac{1}{L^{2}}\int R_\beta(\gamma)\,D\cos\gamma\;h_c(\gamma' - \gamma)\,d\gamma\,d\beta\]</p>
+
+  <h3>표를 읽는 법</h3>
+
+  <ul>
+    <li><b>구조가 같습니다.</b> 측정 위치만의 함수인 사전 가중을 곱하고, 컨볼루션으로 필터링하고, 점마다 필터링한 값을 읽어 점과 선원 각만의 함수인 가중을 곱해 더합니다. 이 구조가 평면과 곡면에서 같습니다.</li>
+    <li><b>두 거리는 관계가 있습니다.</b> \(L\)은 선원에서 점까지의 실제 거리이고 \(U\)는 그 거리의 중심 광선 방향 성분을 \(D\)로 나눈 값이어서 \(L\cos\gamma' = UD\)입니다. 따라서 \(1/L^{2} = \cos^{2}\gamma'/(U^{2}D^{2})\)입니다. 두 거리 \(L\)과 \(UD\)는 같은 선분 \(SP\)를 전체 길이와 중심 광선 방향 성분으로 잰 값이고, 두 거리 가중은 \(\cos^{2}\gamma'/D^{2}\)만큼 다릅니다. 이 차이는 사전 가중과 커널의 차이에 흡수됩니다.</li>
+    <li><b>사전 가중과 커널이 함께 달라집니다.</b> 평면 검출기에서는 커널의 입력 \(U\cos\gamma\,(t' - t)\)에 \(\cos\gamma\)가 들어 있어서 사전 가중이 야코비안 \(\cos^{3}\gamma\)를 \(\cos^{2}\gamma\)로 나눈 \(\cos\gamma\)가 됩니다. 곡면 검출기는 커널의 입력에 \(\cos\gamma\)가 없어서 야코비안 \(D\cos\gamma\)가 그대로 사전 가중이 되고, 대신 \(\sin\)에서 오는 인자가 커널 \(h_c\)에 들어갑니다.</li>
+    <li><b>가중은 좌표의 선택에 따라 달라집니다.</b> 같은 광선의 같은 측정값에 대해 표의 두 열은 서로 다른 가중을 씁니다. 페이지 4의 두 번째 근거를 이 표로 확인할 수 있습니다.</li>
+  </ul>
+
+  <h3>같은 원판에서의 확인</h3>
+
+  <p>페이지 5와 7의 원판(반지름 0.9 cm, 값 1)과 \(D = 3\) cm, 선원 각 720개에서 두 공식을 계산한 값입니다. 평면은 칸 401개(\(|t| \le 1.6\) cm), 곡면은 칸 401개(\(|\gamma| \le 0.55\) rad)입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>공식</th><th>(0, 0)</th><th>(0.4, 0)</th><th>(0.8, 0)</th><th>(0.6, 0.6)</th></tr>
+      <tr><td>평면 검출기</td><td>1.000</td><td>1.000</td><td>1.001</td><td>1.002</td></tr>
+      <tr><td>곡면 검출기</td><td>1.000</td><td>1.000</td><td>1.001</td><td>1.003</td></tr>
+    </table>
+  </div>
+
+  <p>두 공식으로 계산한 값은 네 점에서 서로 0.0005 이내로 일치합니다. 이 계산은 두 식이 같은 영상을 준다는 것을 이 설정에서 확인한 것입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">공식 선택 기준</p>
+    <p>평면 검출기를 쓰는 장치는 평면 검출기의 식을, 호 모양의 검출기 배열을 쓰는 장치는 곡면 검출기의 식을 씁니다. 이 책이 평면 검출기를 기준으로 삼은 것은 콘빔 기하가 평면 검출기를 쓰기 때문입니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 9 -->
+<section class="screen" data-title="rebinning과 직접 방식의 비교">
+  <p class="kicker">8장 · 페이지 9 · 심화</p>
+  <h2>rebinning과 직접 방식의 비교</h2>
+
+  <p>팬빔 데이터에서 영상을 만드는 두 방법은 7장에서 소개했습니다. 이 장의 유도를 마쳤으므로, 두 방법이 식 (A)의 어디를 바꾸는지의 관점에서 비교할 수 있습니다. 이 페이지는 연속 식의 관점만 봅니다. rebinning의 보간 오차는 7장 페이지 8에서 수치로 확인했습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="위쪽 상자는 평행빔 FBP 식 (A). 왼쪽 길은 rebinning으로, 데이터를 (β, t)에서 (θ, s)로 옮기고 식은 그대로 쓴다. 오른쪽 길은 직접 방식으로, 데이터는 그대로 두고 식의 변수를 (β, t)로 바꿔 가중과 t′를 얻는다. 두 길 모두 영상 μ에 이른다">
+      <defs>
+        <marker id="r11p-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1.4" class="svg-line">
+        <rect x="150" y="8" width="340" height="44" rx="6"/>
+        <rect x="20" y="98" width="260" height="62" rx="6"/>
+        <rect x="360" y="98" width="260" height="62" rx="6" style="stroke:var(--accent)" stroke-width="2.4"/>
+        <rect x="240" y="198" width="160" height="40" rx="6"/>
+        <path d="M250 54 L150 96" marker-end="url(#r11p-mu)"/>
+        <path d="M390 54 L490 96" marker-end="url(#r11p-mu)"/>
+        <path d="M150 162 L280 196" marker-end="url(#r11p-mu)"/>
+        <path d="M490 162 L360 196" marker-end="url(#r11p-mu)"/>
+      </g>
+      <g font-size="12" text-anchor="middle" class="svg-fg" font-weight="700">
+        <text x="320" y="26">평행빔 FBP 식 (A)</text>
+        <text x="150" y="124">rebinning: 데이터를 옮긴다</text>
+        <text x="490" y="124">직접 방식: 식을 바꾼다</text>
+        <text x="320" y="222">영상 μ(x, y)</text>
+      </g>
+      <g font-size="10.5" text-anchor="middle" class="svg-muted">
+        <text x="320" y="42">μ = ½ ∫∫ p(θ, s) h(x cosθ + y sinθ − s) ds dθ</text>
+        <text x="150" y="142">(β, t) → (θ, s) 로 값을 옮기고</text>
+        <text x="150" y="154">식은 그대로, 가중 없음</text>
+        <text x="490" y="142">데이터는 (β, t) 그대로, 변수를 바꿔</text>
+        <text x="490" y="154">가중 둘과 t′ 에서 읽기가 생김</text>
+      </g>
+    </svg>
+    <figcaption>두 방법 모두 식 (A)에서 출발합니다. 왼쪽은 식 (A)의 입력 \(p(\theta, s)\)를 팬빔 데이터로 채우고, 오른쪽은 식 (A)의 변수를 팬빔 데이터의 좌표로 바꿉니다.</figcaption>
+  </figure>
+
+  <h3>연속에서의 동일한 결과</h3>
+
+  <p>rebinning은 팬빔 광선 하나하나를 같은 직선의 평행빔 좌표 \((\theta, s)\)에 놓는 일입니다. 연속 데이터에서는 이 대응이 값을 바꾸지 않고 이름만 바꾸므로 \(p(\theta, s)\)를 정확히 얻고, 식 (A)를 그대로 쓰면 \(\mu\)가 나옵니다. 직접 방식은 식 (A)의 적분 변수를 바꾸므로 같은 적분을 다른 좌표로 계산한 것입니다. 그래서 연속에서는 두 방법이 같은 영상을 주고, 차이는 이산 데이터를 다룰 때 나타납니다.</p>
+
+  <h3>비교표</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:9rem">비교 항목</th><th>rebinning</th><th>직접 방식 (평면 검출기)</th></tr>
+      <tr><td>데이터에 하는 일</td><td>\((\beta, t)\)의 측정값을 \((\theta, s)\) 격자로 옮김</td><td>옮기지 않고 \((\beta, t)\) 그대로 씀</td></tr>
+      <tr><td>쓰는 식</td><td>5장의 평행빔 FBP</td><td>식 (A)의 변수를 바꾼 이 장의 식</td></tr>
+      <tr><td>가중</td><td>없음</td><td>코사인 가중, 거리 가중</td></tr>
+      <tr><td>필터링하는 좌표</td><td>\(s\), 새 격자의 간격 \(\Delta s\)를 따로 정함</td><td>\(t\), 검출기 칸의 간격</td></tr>
+      <tr><td>필터링한 값을 읽는 위치</td><td>\(s' = x\cos\theta + y\sin\theta\)</td><td>\(t'\) (점과 선원 각마다 다름)</td></tr>
+      <tr><td>필요한 선원 각 (잡음 없는 이상적 데이터)</td><td>\(180^{\circ} + 2\gamma_m\)이면 격자의 모든 칸이 채워짐 (7장 페이지 8)</td><td>이 장의 식은 한 바퀴 \(360^{\circ}\)</td></tr>
+      <tr><td>기존 평행빔 코드</td><td>그대로 씀</td><td>가중과 \(t'\) 계산을 더해야 함</td></tr>
+      <tr><td>이산에서 보간이 일어나는 곳</td><td>재배열과 역투영 (7장 페이지 9)</td><td>역투영</td></tr>
+      <tr><td>연속에서의 결과</td><td>정확</td><td>정확 (같은 영상)</td></tr>
+    </table>
+  </div>
+
+  <h3>선원 각의 범위가 다른 이유</h3>
+
+  <p>표에서 필요한 선원 각이 다른 것은 두 방법이 같은 직선을 다루는 방식이 달라서입니다. rebinning은 \((\theta, s)\) 격자의 칸마다 값을 한 번 채우면 됩니다. 그 칸을 잰 팬빔 광선이 한 개뿐이어도 칸의 값이 정해지므로, 이상적인 데이터에서는 \(180^{\circ} + 2\gamma_m\)이면 충분합니다. 직접 방식의 식은 모든 선원 각의 기여를 \(\tfrac{1}{2}\)씩 더하는 식입니다. 한 직선을 한 번만 재면 그 직선의 기여가 절반만 들어가므로, 선원을 덜 돌린 데이터에 쓰려면 \(\tfrac{1}{2}\) 대신 광선마다 정한 가중이 필요합니다.</p>
+
+  <div class="box note">
+    <p class="box-t">두 방법의 우열</p>
+    <p>연속 식으로는 우열이 없습니다. 기존의 평행빔 코드를 그대로 쓰고 싶으면 rebinning이 간단하고, 보간을 한 번으로 줄이려면 직접 방식이 유리할 수 있습니다. 이산 데이터에서의 차이는 보간이 일어나는 횟수와 위치에서 나옵니다(표의 마지막에서 둘째 줄).</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 10 -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">8장 · 페이지 10</p>
+  <h2>8장 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>평면 검출기 팬빔 FBP의 연속 식은 코사인 가중 \(D/\sqrt{D^{2} + t^{2}}\), 램프 필터링(평행빔과 같은 커널 \(h\)), \(1/U^{2}\)을 곱하는 역투영의 세 단계이고, 선원 각은 \(0\)~\(2\pi\)에서 \(\tfrac{1}{2}\)을 곱해 더합니다.</li>
+      <li>이 식은 한 바퀴로 쓴 평행빔 FBP에 \(\theta = \beta + \gamma\), \(s = D\sin\gamma\)를 대입한 것입니다. 달라진 것은 야코비안 \(d\theta\,ds = D\cos\gamma\,d\gamma\,d\beta\)(평면: \(\cos^{3}\gamma\,dt\,d\beta\))와, 커널의 입력이 점에서 광선까지의 거리 \(U\cos\gamma\,(t' - t)\)가 된 것입니다.</li>
+      <li>코사인 가중은 야코비안 \(\cos^{3}\gamma\)와 스케일 성질 \(h(as) = h(s)/a^{2}\)에서 나온 \(1/\cos^{2}\gamma\)의 곱이며, 측정 위치에만 의존해 필터링 앞에 옵니다. \(1/U^{2}\)은 같은 스케일 성질에서 나오며 점에 의존해 필터링 뒤에 옵니다.</li>
+      <li>두 가중은 변수를 바꾸면서 생긴 수학적 인자입니다. (심화) 곡면 검출기에서는 같은 광선에도 \(D\cos\gamma\), \(1/L^{2}\), 커널 \(h_c\)라는 다른 가중이 붙습니다.</li>
+      <li>이 식은 선원을 한 바퀴 돌려 모든 직선을 두 번씩 잰 데이터를 전제합니다. 덜 돌리면 \(\tfrac{1}{2}\) 대신 광선마다 정한 가중이 필요하며(10~12장), 샘플링한 데이터로 계산하는 방법은 9장에서 다룹니다. 검출기가 물체 전체를 덮지 못해(\(D\sin\gamma_m < r_0\)) 일부 투영값이 없는 절단 데이터가 되면 평행빔처럼 문제가 생깁니다(5장 페이지 11).</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="qn">마무리 퀴즈 1</p>
+    <p class="q">평면 검출기 공식의 코사인 가중 \(D/\sqrt{D^{2} + t^{2}}\)의 출처로 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 입사각에 따른 세기 차이는 플랫필드 보정(0편 2장)에서 비 I/I₀ 로 상쇄되어 재구성 전에 정리됩니다. 이 가중의 유도에는 X선 세기가 나오지 않습니다.">비스듬히 들어오는 광선에서 검출기 칸이 받는 세기가 줄어드는 것을 고치는 인자이다.</li>
+      <li data-why="맞습니다. 야코비안에서 cos³γ 가 나오고 커널의 스케일 성질에서 1/cos²γ 가 나오며, 둘을 곱하면 cosγ = D/√(D² + t²) 입니다.">야코비안 \(\cos^{3}\gamma\)와 커널의 스케일 성질에서 나온 \(1/\cos^{2}\gamma\)를 곱한 결과이다.</li>
+      <li data-why="틀립니다. D cosγ 는 칸 간격이 γ 로 같은 곡면 검출기의 사전 가중입니다. 평면 검출기에서는 야코비안이 cos³γ 가 되고, 커널에서 1/cos²γ 가 더 나옵니다.">곡면 검출기에서 쓰는 야코비안 \(D\cos\gamma\)를 평면 검출기에 그대로 가져온 것이다.</li>
+      <li data-why="틀립니다. 선원–검출기 거리 SDD 는 이 식에 나오지 않습니다. 이 가중은 좌표를 곡면으로 바꿀 때 달라지는 수학적 인자 D cosγ 이고, 세기 차이는 플랫필드 보정이 정리합니다.">선원에서 검출기 칸까지의 거리가 멀수록 약해지는 세기를 고치는 인자이다.</li>
+    </ol>
+    <div class="explain">
+      <p>코사인 가중을 필터링 뒤로 미루면 결과가 달라집니다. 공식에서는 컨볼루션 안의 측정값마다 그 측정 위치 \(t\)의 \(\cos\gamma\)가 곱해지는데, 필터링 뒤에 곱하면 읽는 위치 \(t'\)의 값 하나가 곱해지기 때문입니다. 이 가중이 필터링 앞에 오는 것은 \(t\)에만 의존하기 때문입니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="qn">마무리 퀴즈 2</p>
+    <p class="q">\(D = 4\) cm, 선원 각 \(\beta = 0\)에서 영상의 점 \((x, y) = (1,\ -2)\)에 대한 \(U\), \(t'\), \(1/U^{2}\)은 얼마일까요? \(U = (D + x\sin\beta - y\cos\beta)/D\), \(t' = (x\cos\beta + y\sin\beta)/U\)입니다.</p>
+    <ol class="options">
+      <li data-why="틀립니다. x sinβ − y cosβ = 0 − (−2)(1) = 2 이므로 U = (4 + 2)/4 = 1.5 입니다. y 의 부호를 반대로 적용하면 0.5 가 나오고 t′ 와 1/U² 도 따라서 틀립니다.">\(U = 0.5\), \(t' = 2.0\), \(1/U^{2} = 4.0\)</li>
+      <li data-why="틀립니다. U = 1.5 는 맞지만 t′ = (x cosβ + y sinβ)/U = 1/1.5 입니다. 분자 1 을 그대로 쓰면 U 로 나누는 단계를 빠뜨린 것입니다.">\(U = 1.5\), \(t' = 1.0\), \(1/U^{2} \approx 0.44\)</li>
+      <li data-why="맞습니다. ξ = 1, η = 2 이므로 U = 6/4 = 1.5, t′ = 1/1.5 ≈ 0.67, 1/U² = 1/2.25 ≈ 0.44 입니다.">\(U = 1.5\), \(t' \approx 0.67\), \(1/U^{2} \approx 0.44\)</li>
+      <li data-why="틀립니다. 1/U² = 1/2.25 ≈ 0.44 입니다. 0.67 은 1/U 이어서 제곱을 빠뜨린 값입니다.">\(U = 1.5\), \(t' \approx 0.67\), \(1/U^{2} \approx 0.67\)</li>
+    </ol>
+    <div class="explain">
+      <p>같은 선원 각에서 선원 쪽의 점 \((1,\ 2)\)는 \(U = 0.5\), \(1/U^{2} = 4\)입니다. 반대쪽 점 \((1,\ -2)\)의 9배입니다. 점이 선원 쪽으로 \(D\)의 절반만큼 가 있기 때문에 거리 가중이 이렇게 크게 다릅니다. 영상이 \(D\)에 비해 작으면 \(U\)가 1에 가까워져 거리 가중도 1에 가까워집니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="qn">마무리 퀴즈 3</p>
+    <p class="q">(심화) 같은 팬빔 데이터를 곡면 검출기의 좌표 \(\gamma\)로 재구성하는 식이 평면 검출기의 식과 다른 점으로 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. cosγ 와 1/U² 는 평면 검출기의 가중입니다. 곡면에서는 야코비안 D cosγ 가 그대로 사전 가중이 되고, 거리 가중은 실제 거리 L 의 1/L² 입니다.">사전 가중 \(\cos\gamma\)와 거리 가중 \(1/U^{2}\)은 그대로이고 커널만 \(h_c\)로 바뀐다.</li>
+      <li data-why="틀립니다. 가중은 맞지만 커널은 h 를 그대로 쓸 수 없습니다. 커널 입력이 L sin(γ′ − γ) 라서 (φ/sinφ)² 가 h_c 에 들어가며, 페이지 7 의 원판 계산에서 h 를 쓰면 1.5~1.9% 높게 나왔습니다.">사전 가중 \(D\cos\gamma\)와 거리 가중 \(1/L^{2}\)은 맞지만 커널은 \(h\)를 그대로 쓴다.</li>
+      <li data-why="틀립니다. 곡면 검출기의 거리 가중은 U 가 아니라 L 입니다. U 는 평면 좌표 t′ 와 짝이고, 곡면에서는 L cosγ′ = UD 의 관계로만 L 과 이어집니다.">사전 가중 \(D\cos\gamma\)와 거리 가중 \(1/U^{2}\)으로 바뀌고 커널은 \(h\)를 그대로 쓴다.</li>
+      <li data-why="맞습니다. 야코비안 D cosγ 가 사전 가중으로 남고, 거리 가중은 실제 거리의 1/L² 이며, 커널 입력 L sin(γ′ − γ) 에서 나온 (φ/sinφ)² 가 h_c 에 들어갑니다.">사전 가중이 \(D\cos\gamma\), 거리 가중이 \(1/L^{2}\), 커널이 \(h_c\)로 바뀐다.</li>
+    </ol>
+    <div class="explain">
+      <p>\(h_c\)의 보정 인자 \((\varphi/\sin\varphi)^{2}\)는 팬이 넓을수록 커집니다. 팬 반각이 \(30^{\circ}\)이면 \(\varphi = \gamma' - \gamma\)가 \(60^{\circ}\)(1.047 rad)까지 커져서 인자가 약 1.46이 됩니다. 팬 반각 \(20^{\circ}\)에서의 최댓값 1.18(페이지 7)보다 커서, 넓은 팬일수록 \(h\)와 \(h_c\)의 구분이 중요해집니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="qn">마무리 퀴즈 4</p>
+    <p class="q">팬 반각 \(\gamma_m = 20^{\circ}\)인 장치로 선원을 \(220^{\circ}\)(\(= 180^{\circ} + 2\gamma_m\))만 돌려 얻은 데이터에 이 장의 식을 그대로 쓰면 어떻게 될까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. 220° 에서는 모든 직선이 적어도 한 번 측정되지만 두 번 측정된 직선은 22.2% 뿐입니다. 나머지 77.8% 는 한 번만 측정되어 식의 ½ 때문에 기여가 절반만 들어갑니다.">한 번만 잰 직선(약 78%)의 기여가 \(\tfrac{1}{2}\)만 곱해져 절반만 들어간다.</li>
+      <li data-why="틀립니다. 모든 직선이 두 번 측정되는 것은 한 바퀴(360°)를 돌렸을 때입니다. 220° 에서 두 번 측정된 직선은 22.2% 이고 나머지는 한 번만 측정됩니다.">모든 직선이 두 번씩 측정되므로 \(\tfrac{1}{2}\)을 곱한 식이 그대로 정확하다.</li>
+      <li data-why="틀립니다. 22.2% 는 두 번 측정된 직선의 비율입니다. 220° 에서 한 번도 측정되지 않은 직선은 0% 이며, 5.5% 가 되는 것은 180° 만 돌렸을 때입니다.">한 번도 측정되지 않은 직선이 약 22%여서 영상을 복원할 수 없다.</li>
+      <li data-why="틀립니다. 커널 h 는 투영 좌표에 대한 필터이고 측정 횟수와 무관합니다. 측정 횟수의 차이는 광선마다 정하는 가중으로 보정하며, 같은 직선의 두 측정에서 이 가중의 합이 1 이어야 합니다.">측정이 모자란 만큼 필터링의 커널만 바꾸면 되고 \(\tfrac{1}{2}\)은 그대로 쓴다.</li>
+    </ol>
+    <div class="explain">
+      <p>두 번 잰 광선은 선원 각 범위의 처음 부분과 끝 부분에 있습니다. 가중은 이 부분에서 한 직선의 두 측정에 나누어 주어야 하므로, 가중을 0에서 1로 매끄럽게 바꾸는 방법이 중요해집니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>\(D = 4\) cm, 선원 각 \(\beta = 30^{\circ}\)입니다. (가) 영상의 점 \((x, y) = (1,\ 0.5)\)에 대해 \(\xi = x\cos\beta + y\sin\beta\), \(\eta = x\sin\beta - y\cos\beta\), \(U\), \(t'\), \(1/U^{2}\)을 구하세요. (나) 가상 검출기 위치 \(t = 2\) cm인 광선의 팬 각 \(\gamma\)와 \(\cos\gamma\)를 구하세요. (다) 점에서 이 광선까지의 거리를 \(U\cos\gamma\,(t' - t)\)로 구하고, \(L\sin(\gamma' - \gamma)\)로 구한 값과 같은지 확인하세요. 부호가 음수인 것은 무엇을 뜻하나요?</li>
+      <li>\(D = 2\) cm인 평면 검출기에서 \(t = 0\)인 칸과 \(t = 1.5\) cm인 칸이 \((\theta, s)\) 평면에서 대표하는 넓이의 비를 구하세요(칸 간격 \(\Delta t\)와 선원 각 간격은 같습니다). (심화) 같은 광선(\(\tan\gamma = 0.75\))을 곡면 검출기의 칸(팬 각 간격이 같음)으로 재면 이 비는 얼마인가요? 두 비가 다른 이유를 한 문장으로 쓰세요.</li>
+      <li>동료가 "거리 가중 \(1/U^{2}\)은 선원에서 먼 화소가 약하게 찍히는 것을 보정하는 인자"라고 말합니다. 이 장의 내용으로 반박하는 근거 두 가지를 쓰세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> (가) \(\xi = \cos 30^{\circ} + 0.5\sin 30^{\circ} \approx 1.116\), \(\eta = \sin 30^{\circ} - 0.5\cos 30^{\circ} \approx 0.067\)이므로 \(U = (4 + 0.067)/4 \approx 1.017\), \(t' = \xi/U \approx 1.098\) cm, \(1/U^{2} \approx 0.967\)입니다. (나) \(\gamma = \arctan(2/4) \approx 26.57^{\circ}\), \(\cos\gamma \approx 0.894\)입니다. (다) \(U\cos\gamma\,(t' - t) \approx 1.017 \times 0.894 \times (1.098 - 2) \approx -0.821\) cm입니다. \(L = \sqrt{4.067^{2} + 1.116^{2}} \approx 4.217\), \(\gamma' = \arctan(1.116/4.067) \approx 15.34^{\circ}\)이므로 \(L\sin(\gamma' - \gamma) = 4.217\sin(-11.22^{\circ}) \approx -0.821\) cm로 같습니다. 음수는 점의 \(t'\)이 광선의 \(t\)보다 작은 쪽, 곧 \(\gamma' < \gamma\)인 쪽에 점이 있다는 뜻입니다.</p>
+      <p><b>2번.</b> 평면 검출기의 비는 \(\cos^{3}\gamma = D^{3}/(D^{2} + t^{2})^{3/2} = 8/6.25^{3/2} = 8/15.625 = 0.512\)입니다. (심화) 곡면 검출기의 칸은 야코비안이 \(D\cos\gamma\)이므로 중심 칸(\(\gamma = 0\))과의 비는 \(\cos\gamma = 0.8\)입니다. 두 비가 다른 이유는 칸을 나누는 기준입니다. 평면 검출기는 칸 간격이 \(t\)로 같아서 가장자리 칸이 맡는 팬 각이 \(\cos^{2}\gamma = 0.64\)배로 좁아지고, 여기에 \(s\)가 덜 움직이는 \(\cos\gamma = 0.8\)이 곱해져 \(0.64 \times 0.8 = 0.512\)가 됩니다. 곡면 검출기는 칸마다 팬 각이 같아서 \(\cos\gamma\)만 남습니다.</p>
+      <p><b>3번.</b> 예시 근거입니다. 첫째, 유도에 X선 세기가 나오지 않고 \(1/U^{2}\)은 램프 커널의 스케일 성질 \(h(as) = h(s)/a^{2}\)에서 나온 수학적 인자이며, 세기 차이는 플랫필드 보정이 재구성 전에 정리했습니다. 둘째(심화), 같은 광선이라도 곡면 검출기의 좌표로 적분하면 거리 가중이 \(1/L^{2}\)으로 바뀌고 사전 가중도 달라집니다. 선량은 좌표 선택에 따라 달라지지 않으므로 이 가중은 식 쪽의 성질입니다. 이 밖에 rebinning으로 데이터를 옮기면 가중이 필요 없다는 점, 세기 인자는 로그 뒤에 더해진다는 점도 근거가 됩니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 \(\eta = x\sin\beta - y\cos\beta\)의 부호를 바꾸거나 \(U\)를 구할 때 \(D\)로 나누는 것을 빠뜨리는 것입니다. 점이 선원 쪽에 있을수록 \(\eta\)가 음수이고 \(U\)는 1보다 작습니다.</li>
+        <li>1번에서 \(t'\)을 \(\xi\)와 같다고 쓰는 것입니다. \(t' = \xi/U\)이며 \(U = 1\)인 점(회전 중심을 지나 중심 광선에 수직인 직선 위)에서만 \(\xi\)와 같습니다.</li>
+        <li>(심화) 2번에서 곡면 검출기의 비를 평면과 같은 \(\cos^{3}\gamma\)로 쓰는 것입니다. 칸 간격이 \(t\)로 같은지 \(\gamma\)로 같은지에 따라 야코비안이 다릅니다.</li>
+        <li>3번에서 \(1/U^{2}\)이 역제곱 법칙과 닮았다는 점만으로 보정이라고 답하는 것입니다. 모양이 닮은 것이 출처가 같다는 증거는 아닙니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch09.html"><span>다음 장</span>9장 — 팬빔 FBP를 컴퓨터로 계산해 보기 (이산)</a>
+  </div>
+</section>
+
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

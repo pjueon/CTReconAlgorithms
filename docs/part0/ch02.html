@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch02">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2장 · 검출기가 읽은 숫자, 식으로 적어 보기: 투영과 선적분 — CT 재구성 알고리즘0 - 기초편</title>
+<script src="../assets/theme.js"></script><link rel="stylesheet" href="../assets/base.css">
+<link rel="stylesheet" href="../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../assets/math.css">
+<link rel="stylesheet" href="../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="이 장에서 할 일">
+  <p class="kicker">2장 · 페이지 1</p>
+  <h1>검출기가 읽은 숫자, 식으로 적어 보기: 투영과 선적분</h1>
+
+  <p class="lead">1장에서 CT 영상이 감쇠계수 \(\mu(x, y)\)의 분포를 나타낸다는 것을 확인했습니다.
+  이 장에서는 반대로 검출기가 읽는 숫자에서 출발해, 재구성이 풀어야 할 수학 문제를 정확히 적어 봅니다.</p>
+
+  <p>CT 장치의 기본 구성은 세 가지입니다.
+  X선을 내는 선원(Source), X선이 지나가는 물체(Object), 지나온 X선의 세기를 읽는 검출기(Detector)입니다.
+  검출기는 작은 감지 구획이 한 줄로 늘어선 모양이고, 이 구획 하나를 검출기 칸(<span class="term" data-term="detpixel">Detector Pixel</span>)이라고 합니다.
+  검출기 칸 하나는 선원에서 그 칸까지 이어지는 가느다란 직선 경로, 곧 광선(<span class="term" data-term="ray">Ray</span>) 한 줄기의 세기를 읽습니다.</p>
+
+  <p>영상의 화소와 이름이 비슷하므로 이 책에서는 영상 쪽을 "화소", 검출기 쪽을 "검출기 칸"으로 구분합니다.</p>
+
+  <p>선원과 검출기는 물체를 가운데 두고 함께 돌면서, 방향을 바꿔 가며 같은 측정을 되풀이합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 262" role="img" aria-label="선원에서 나온 광선이 물체를 지나 검출기 칸들에 닿는 장면">
+      <defs><marker id="rot-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-line" stroke-width="1" stroke-dasharray="4 3">
+        <path d="M70 130 L560 42.5"/><path d="M70 130 L560 67.5"/><path d="M70 130 L560 92.5"/><path d="M70 130 L560 117.5"/><path d="M70 130 L560 142.5"/><path d="M70 130 L560 167.5"/><path d="M70 130 L560 192.5"/><path d="M70 130 L560 217.5"/>
+      </g>
+      <g class="svg-fg" fill-opacity=".22">
+        <ellipse cx="315" cy="130" rx="62" ry="70"/>
+      </g>
+      <g class="svg-line" stroke-width="1.5">
+        <ellipse cx="315" cy="130" rx="62" ry="70"/>
+        <rect x="552" y="30" width="16" height="200"/>
+        <path d="M552 55 H568 M552 80 H568 M552 105 H568 M552 130 H568 M552 155 H568 M552 180 H568 M552 205 H568"/>
+      </g>
+      <path d="M200 34 Q315 2 430 34" class="svg-line" stroke-width="1.5" style="stroke:var(--muted)" marker-start="url(#rot-arr)" marker-end="url(#rot-arr)"/>
+      <g class="svg-fg"><circle cx="70" cy="130" r="8"/></g>
+      <g class="svg-fg" font-size="12" font-weight="700" text-anchor="middle">
+        <text x="70" y="155">선원</text><text x="315" y="134">물체</text><text x="560" y="254">검출기</text>
+      </g>
+      <g class="svg-muted" font-size="11" text-anchor="middle">
+        <text x="315" y="48">선원과 검출기가 함께 회전</text>
+        <text x="190" y="100">광선</text>
+      </g>
+    </svg>
+    <figcaption>선원과 검출기 칸 사이를 잇는 직선이 광선입니다. 그림은 개념도이며 광선 수와 크기는 뜻이 없습니다.
+    빔의 모양(평행하게 나가는지, 한 점에서 퍼지는지)은 뒷장에서 다루고, 이 장은 광선 하나가 하는 일만 봅니다.</figcaption>
+  </figure>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>광선 하나의 측정값 \(I\)와 기준값 \(I_0\)가 어디서 오는지 봅니다. 그 과정에서 플랫필드 보정을 정리합니다(페이지 2, 심화).</li>
+      <li>\(-\ln(I/I_0)\)에 이름을 붙이고, 이 값이 \(\mu\)의 선적분임을 보입니다.</li>
+      <li>광선을 식으로 나타내고 선적분을 정의합니다.</li>
+      <li>\(\mu\) 영상에서 측정값을 만드는 일을 투영 연산자로 묶고(페이지 5), 정사각형 두 개의 투영값을 직접 계산해 봅니다(페이지 6).</li>
+      <li>측정값에서 \(\mu\)를 되찾는 일, 곧 재구성이 왜 역문제인지 확인합니다.</li>
+      <li>측정에 잡음이 끼면 로그 변환 뒤의 값이 어떻게 흔들리는지 봅니다.</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지(2, 8)는 처음 읽을 때 건너뛰어도 됩니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="측정과 플랫필드 보정">
+  <p class="kicker">2장 · 페이지 2 · 심화</p>
+  <h2>플랫필드 보정: 광선 하나의 측정값은 어떻게 얻을까요?</h2>
+
+  <p>1장에서는 \(I_0\)를 "물질에 들어가기 전의 세기"로 정의했습니다.
+  실제 장치에서 \(I_0\)는 계산으로 얻는 값이 아니라 측정으로 얻는 값입니다.
+  물체 없이 같은 조건으로 한 번 찍어(공기 스캔, <span class="term" data-term="airscan">Air Scan</span>) 각 검출기 칸이 읽은 값을 그 칸의 기준값(보정 전의 \(I_0\))으로 씁니다.</p>
+
+  <p>그런데 물체가 없어도 모든 검출기 칸의 값이 같지는 않습니다. 대표적인 원인은 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:8.5rem">원인</th><th>무엇이 다른가</th><th style="width:8rem">읽은 값에 미치는 방식</th></tr>
+      <tr><td>선원–검출기 칸 거리</td><td>점 모양의 선원에서 멀수록 세기가 거리의 제곱에 반비례해 줄어듭니다</td><td>곱해집니다</td></tr>
+      <tr><td>입사각</td><td>X선이 비스듬히 들어오는 검출기 칸은 정면에서 받는 검출기 칸과 받는 양이 다릅니다</td><td>곱해집니다</td></tr>
+      <tr><td>검출기 칸별 이득(Gain)</td><td>같은 세기라도 신호로 바꾸는 비율이 검출기 칸마다 조금씩 다릅니다</td><td>곱해집니다</td></tr>
+      <tr><td>암전류(<span class="term" data-term="dark">Dark Current</span>)</td><td>X선이 없어도 검출기 칸이 내는 신호입니다</td><td>더해집니다</td></tr>
+    </table>
+  </div>
+
+  <p>이런 차이는 물체의 감쇠와 아무 상관이 없습니다.
+  그대로 재구성에 넣으면 물체가 없는 곳에서도 감쇠가 있는 것처럼 보입니다.
+  그래서 검출기 칸마다 이 차이를 따로 측정해 두고, 재구성 이전에 한꺼번에 정리합니다.
+  이 전처리를 플랫필드 보정(<span class="term" data-term="flatfield">Flat-field Correction</span>)이라고 합니다.
+  보정이 끝나면 <b>물체가 없을 때 모든 검출기 칸이 같은 값 \(I_0\)를 읽습니다.</b></p>
+
+  <div class="box note">
+    <p class="box-t">이 책의 전제</p>
+    <p>이 책에서 \(I\)는 보정이 끝난 값이고, \(I_0\)는 모든 검출기 칸에 공통인 값입니다.
+    재구성 알고리즘은 선원–검출기 칸 거리, 입사각, 검출기 칸별 이득, 암전류를 다시 다루지 않습니다.
+    선원과 검출기 칸의 위치는 광선이 물체를 어떤 경로로 지나는지를 정하는 데에만 쓰입니다.</p>
+    <p>팬빔과 콘빔의 재구성 식에 나오는 거리·각도 가중치는 좌표를 바꾸는 수학에서 나옵니다.</p>
+    <p>또 \(I_0\)가 모든 검출기 칸에서 같아 보여도, 칸마다 실제로 도달한 광자 수까지 같다는 뜻은 아닙니다. 보정은 읽은 값의 비율을 맞출 뿐이고, 광자 수의 차이에서 오는 잡음은 이 비율 보정으로 없어지지 않습니다.</p>
+  </div>
+
+  <div class="box warn">
+    <p class="box-t">다루지 않는 범위</p>
+    <p>플랫필드 보정을 실제로 수행하는 방법(공기 스캔의 갱신 주기, 불량 검출기 칸 처리 등)과, 보정이 어긋날 때 생기는 링 아티팩트(Ring Artifact)는
+    이 책에서 다루지 않습니다.</p>
+  </div>
+
+  <p>아래 접기에서 보정이 왜 위 표의 네 가지 차이를 없애는지를 간단한 모델로 확인합니다.
+  결과만 필요하면 건너뛰어도 됩니다. 다음 페이지에서 이 결과를 씁니다.</p>
+
+  <details class="fold">
+    <summary>플랫필드 보정의 모델</summary>
+    <div class="fold-body">
+      <p>실제 구현은 장치마다 다릅니다. 여기서는 위 표의 네 원인을 식으로 옮긴 개념 모델만 씁니다.
+      검출기 칸 \(i\)에 대해 기호는 다음과 같습니다.</p>
+      <ul>
+        <li>\(S_i\): 검출기 칸이 읽은 원 신호</li>
+        <li>\(g_i\): 검출기 칸별 이득</li>
+        <li>\(\phi_i\): 물체가 없을 때 검출기 칸에 도달하는 X선 세기(거리와 입사각이 들어 있습니다)</li>
+        <li>\(o_i\): 암전류에 해당하는 신호</li>
+        <li>\(T_i\): 광선 \(i\)에서 물체가 남기는 비율. 1장의 식에서 \(T_i = \exp\!\bigl(-\int \mu\, d\ell\bigr)\)입니다.</li>
+      </ul>
+
+      <p><b>1단계. 원 신호의 모델.</b> 곱해지는 인자는 곱으로, 더해지는 암전류는 합으로 씁니다.</p>
+      <p style="text-align:center">\[S_i = g_i\,\phi_i\,T_i + o_i\]</p>
+
+      <p><b>2단계. 기준 측정 두 가지.</b>
+      X선을 끈 채 측정하면 \(\phi_i = 0\)이어서 곱해지는 항이 사라지므로 \(S_i^{\text{dark}} = o_i\)입니다.
+      물체 없이 X선을 켜면 \(T_i = 1\)이므로 \(S_i^{\text{air}} = g_i\phi_i + o_i\)입니다.</p>
+
+      <p><b>3단계. 암전류 빼기.</b>
+      원 신호와 공기 스캔에서 같은 암전류 신호를 각각 뺍니다.</p>
+      <p style="text-align:center">\[S_i - S_i^{\text{dark}} = g_i\,\phi_i\,T_i, \qquad S_i^{\text{air}} - S_i^{\text{dark}} = g_i\,\phi_i\]</p>
+
+      <p><b>4단계. 비 구하기.</b>
+      두 식을 나누면 \(g_i\phi_i\)가 약분되어 물체의 투과 비율만 남습니다.</p>
+      <p style="text-align:center">\[\frac{S_i - S_i^{\text{dark}}}{S_i^{\text{air}} - S_i^{\text{dark}}} = T_i\]</p>
+
+      <p><b>5단계. 공통 기준값 곱하기.</b>
+      모든 검출기 칸에 공통인 값 \(I_0\)를 곱한 결과를 보정된 세기 \(I_i\)로 둡니다.</p>
+      <p style="text-align:center">\[I_i = I_0\,T_i\]</p>
+
+      <p><b>6단계. 검산.</b>
+      물체가 없으면 \(T_i = 1\)이므로 모든 검출기 칸이 \(I_i = I_0\)를 읽습니다.
+      \(I_0\)에 어떤 공통값을 쓰든 \(I_i / I_0 = T_i\)는 변하지 않으므로, 다음 페이지의 로그 변환은 \(I_0\)의 선택과 무관합니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="왜 로그를 취할까요? 로그 변환">
+  <p class="kicker">2장 · 페이지 3</p>
+  <h2>왜 로그를 취할까요? 로그 변환과 투영값</h2>
+
+  <p>광선 하나의 측정값은 \(I\)이고 기준값은 \(I_0\)입니다.
+  \(I_0\)는 물체 없이 같은 조건으로 잰 기준 세기, 곧 물체에 들어가기 전의 세기입니다(실제 장치에서 검출기 칸마다의 차이를 맞추는 보정 절차는 페이지 2, 심화).
+  1장에서 얻은 식은 \(I = I_0\exp\!\bigl(-\int\mu\,d\ell\bigr)\) 였으므로, 두 값의 비는 물체의 감쇠만 담고 있습니다.</p>
+
+  <p style="text-align:center">\[\frac{I}{I_0} = \exp\!\left(-\int \mu\,d\ell\right)\]</p>
+
+  <p>양변에 자연로그를 취하고 부호를 바꾸면 \(\mu\)의 선적분이 직접 나옵니다.
+  이 값을 이 책에서는 투영값(<span class="term" data-term="projval">Projection Value</span>) \(p\)라고 부릅니다.</p>
+
+  <p style="text-align:center">\[p = -\ln\frac{I}{I_0} = \int \mu\,d\ell\]</p>
+
+  <p>\(p\)는 광선 하나마다 정해지는 숫자 하나입니다. \(\mu\)의 단위가 \(\mathrm{cm}^{-1}\)이고 \(d\ell\)의 단위가 cm이므로 \(p\)는 단위가 없습니다.
+  이 식에서 \(d\ell\)이 가리키는 광선의 위치는 다음 페이지에서 식으로 정의합니다.
+  지금은 1장 페이지 5에서 본 \(\sum_k \mu_k\Delta\ell_k\)를 구간을 잘게 나눌 때의 극한으로 이해하면 됩니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:7rem">\(I/I_0\)</th><th>\(p = -\ln(I/I_0)\)</th><th>읽는 법</th></tr>
+      <tr><td>1</td><td>0</td><td>감쇠가 없습니다</td></tr>
+      <tr><td>0.5</td><td>0.693</td><td>세기가 절반으로 줄었습니다</td></tr>
+      <tr><td>0.1</td><td>2.303</td><td>10%가 남았습니다</td></tr>
+      <tr><td>0.01</td><td>4.605</td><td>1%가 남았습니다</td></tr>
+    </table>
+  </div>
+
+  <p>비는 0.01까지 백 배 변하지만 \(p\)는 0에서 4.6 사이에서 움직입니다.
+  또 두 겹을 지나면 비는 곱해지고 \(p\)는 더해집니다.</p>
+
+  <p>1장 페이지 5의 박스에서 본 것처럼 측정값이 \(\mu\)에 대해 1차식이 되는 것은 이 로그 덕분입니다.</p>
+
+  <details class="fold">
+    <summary>로그 변환의 전개</summary>
+    <div class="fold-body">
+      <p><b>1단계. 비 만들기.</b> 1장에서 얻은 식 \(I = I_0\exp\!\left(-\int \mu\,d\ell\right)\)의 양변을 \(I_0\)로 나눕니다. \(I_0 > 0\)이므로 나눌 수 있습니다.</p>
+      <p style="text-align:center">\[\frac{I}{I_0} = \exp\!\left(-\int \mu\,d\ell\right)\]</p>
+      <p><b>2단계. 로그와 부호.</b> 양변에 자연로그를 취하면 \(\ln\)과 \(\exp\)가 서로 역함수이므로 지수 안의 값만 남고, 양변에 \(-1\)을 곱해 부호를 바꿉니다.
+      (\(I \le 0\)이면 로그를 쓸 수 없지만, 이 책은 \(I > 0\)인 이상적인 경우만 다룹니다.)</p>
+      <p style="text-align:center">\[-\ln\frac{I}{I_0} = \int \mu\,d\ell\]</p>
+      <p><b>3단계. 검산.</b>
+      \(\mu \ge 0\)이므로 적분은 0 이상이고, 따라서 \(p \ge 0\)이며 \(I/I_0 \le 1\)입니다. 위 표의 \(I/I_0\)가 모두 1 이하이고 \(p\)가 0 이상인 것과 맞습니다.
+      1장의 물 10 cm 예(\(I/I_0 \approx 0.15\))에서는 \(-\ln 0.15 \approx 1.897\)로, 선적분 \(0.19 \times 10 = 1.9\)와 반올림 오차 안에서 맞습니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="광선을 식으로: 선적분">
+  <p class="kicker">2장 · 페이지 4</p>
+  <h2>광선을 식으로 적어 보기: 선적분</h2>
+
+  <p>\(p\)를 \(\mu(x, y)\)의 적분으로 쓰려면 "광선 위의 점"을 식으로 나타내야 합니다.
+  광선 위의 한 점을 기준점 \((x_0, y_0)\)으로 잡고, 나아가는 방향을 단위벡터(Unit Vector) \(u = (u_x, u_y)\)로 나타냅니다.
+  기준점에서 광선을 따라 거리 \(\ell\)만큼 간 점은 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[x(\ell) = x_0 + \ell\,u_x, \qquad y(\ell) = y_0 + \ell\,u_y, \qquad u_x^{2} + u_y^{2} = 1\]</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:7rem">기호</th><th>뜻</th><th>단위</th></tr>
+      <tr><td>\((x_0, y_0)\)</td><td>광선 위의 기준점</td><td>cm</td></tr>
+      <tr><td>\((u_x, u_y)\)</td><td>방향을 나타내는 단위벡터 \(u\)의 성분. 제곱의 합이 1</td><td>없음</td></tr>
+      <tr><td>\(\ell\)</td><td>기준점에서 광선을 따라 잰 거리</td><td>cm</td></tr>
+    </table>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 330" role="img" aria-label="원형 물체를 지나는 광선 하나와 기준점, 방향, 거리 ℓ, 광선 위의 점 (x(ℓ), y(ℓ))">
+      <defs>
+        <marker id="ray-arr-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+        <marker id="ray-arr-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+        <marker id="ray-arr-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+      </defs>
+
+      <!-- 물체: 원 -->
+      <circle cx="380" cy="140" r="120" class="svg-fg" fill-opacity=".14"/>
+      <circle cx="380" cy="140" r="120" class="svg-line" stroke-width="1.5"/>
+
+      <!-- 좌표축 -->
+      <g fill="none" stroke-width="1.5" style="stroke:var(--muted)">
+        <path d="M60 300 H602" marker-end="url(#ray-arr-m)"/>
+        <path d="M60 300 V16" marker-end="url(#ray-arr-m)"/>
+      </g>
+      <!-- 기준점에서 축으로 내린 보조선, 방향 성분 삼각형 -->
+      <g class="svg-line" stroke-width="1" stroke-dasharray="3 3">
+        <path d="M124 252 V300"/><path d="M60 252 H124"/>
+        <path d="M124 252 H193.3 V212"/>
+      </g>
+
+      <!-- 광선: 물체 밖은 가늘게, 물체 안은 굵게 -->
+      <path d="M124 252 L264.1 171.1" fill="none" stroke-width="1.5" style="stroke:var(--accent)"/>
+      <path d="M264.1 171.1 L464.9 55.2" fill="none" stroke-width="4" style="stroke:var(--accent)"/>
+      <path d="M464.9 55.2 L506 31.5" fill="none" stroke-width="1.5" style="stroke:var(--accent)" marker-end="url(#ray-arr-a)"/>
+
+      <!-- 방향 벡터 u (길이 1 = 80 px) -->
+      <path d="M124 252 L193.3 212" fill="none" stroke-width="2.5" style="stroke:var(--warn)" marker-end="url(#ray-arr-w)"/>
+
+      <!-- ℓ 치수선 (기준점에서 점 G까지) -->
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M124 252 L109 226"/><path d="M364.5 113.1 L349.5 87.1"/>
+        <path d="M109 226 L349.5 87.1" marker-start="url(#ray-arr-m)" marker-end="url(#ray-arr-m)"/>
+      </g>
+
+      <!-- 점 -->
+      <g class="svg-fg">
+        <circle cx="124" cy="252" r="5"/>
+        <circle cx="264.1" cy="171.1" r="4"/><circle cx="464.9" cy="55.2" r="4"/>
+        <circle cx="364.5" cy="113.1" r="5"/>
+        <circle cx="60" cy="300" r="2.5"/>
+      </g>
+
+      <!-- 글자 -->
+      <g class="svg-fg" font-size="13" font-weight="700">
+        <text x="606" y="318">x</text><text x="68" y="20">y</text>
+        <text x="48" y="316" text-anchor="end">O</text>
+        <text x="380" y="198" text-anchor="middle">물체</text>
+        <text x="380" y="216" text-anchor="middle">μ(x, y)</text>
+      </g>
+      <g class="svg-fg" font-size="12">
+        <text x="116" y="244" text-anchor="end">(x₀, y₀)</text>
+        <text x="124" y="316" text-anchor="middle">x₀</text>
+        <text x="52" y="256" text-anchor="end">y₀</text>
+        <text x="374" y="132">(x(ℓ), y(ℓ))</text>
+        <text x="278" y="192">ℓ<tspan dy="3" font-size="9">a</tspan></text>
+        <text x="476" y="74">ℓ<tspan dy="3" font-size="9">b</tspan></text>
+        <text x="222" y="138" text-anchor="middle">ℓ</text>
+      </g>
+      <g font-size="12" style="fill:var(--warn)">
+        <text x="150" y="203">방향 u (단위벡터)</text>
+      </g>
+      <g class="svg-muted" font-size="11">
+        <text x="158" y="266" text-anchor="middle">u<tspan dy="3" font-size="8">x</tspan></text>
+        <text x="199" y="236">u<tspan dy="3" font-size="8">y</tspan></text>
+        <text x="520" y="210">물체 밖: μ = 0</text>
+        <text x="520" y="226">(광선은 그대로 지남)</text>
+      </g>
+    </svg>
+    <figcaption>원형 물체와 광선 하나를 \(xy\) 평면에 그린 개념도입니다. 광선은 기준점 \((x_0, y_0)\)에서 출발해 방향 \(u = (u_x, u_y)\)로 나아가고,
+    \(\ell\)은 원점이 아니라 기준점에서 광선을 따라 잰 거리입니다. \(\mu\)를 읽는 위치는 광선 위의 점 \((x(\ell), y(\ell))\)입니다.
+    굵은 구간(\(\ell_a\) ~ \(\ell_b\))은 광선이 물체 안에 있는 부분이며, 선적분은 이 구간에서 \(\mu\)를 쌓은 값입니다.</figcaption>
+  </figure>
+
+  <p>방향의 길이를 1로 맞췄기 때문에 \(\ell\)이 곧 실제 거리입니다(근거는 이 페이지 끝의 접기).
+  이제 선적분(<span class="term" data-term="lineint">Line Integral</span>)을 정의할 수 있습니다.
+  광선 위의 점마다 \(\mu\)를 읽어 \(\ell\)에 대한 보통의 1변수 적분으로 바꿔 쓰는 것입니다.</p>
+
+  <p style="text-align:center">\[\int \mu\,d\ell = \int_{\ell_a}^{\ell_b} \mu\bigl(x_0 + \ell\,u_x,\; y_0 + \ell\,u_y\bigr)\,d\ell\]</p>
+
+  <p>\(\ell_a\)와 \(\ell_b\)는 광선이 물체에 들어가고 나오는 위치입니다.
+  물체 밖에서는 \(\mu = 0\)이므로, 물체를 충분히 덮는 구간으로 잡아도 값이 같습니다.
+  방향을 반대로 해도(\(u_x, u_y\)의 부호를 바꿔도) \(\ell\)의 범위는 달라지지만, 같은 직선 위에서 같은 길이를 쌓으므로 값은 변하지 않습니다.</p>
+
+  <div class="box note">
+    <p class="box-t">1장의 합과의 관계</p>
+    <p>\(\mu\)가 구간마다 일정하면 적분은 구간 길이와 \(\mu\)의 곱을 더한 합이 됩니다.
+    1장 페이지 5의 물 5 cm, 뼈 1 cm, 물 4 cm에서는 \(0.19\times5 + 0.45\times1 + 0.19\times4 = 2.16\)이고, 이것이 그 광선의 \(p\)입니다.
+    남는 비율은 \(e^{-2.16} \approx 0.115\)로 1장과 같습니다.</p>
+  </div>
+
+  <h3>대각선 광선의 계산</h3>
+
+  <p>한 변이 2 cm인 정사각형 \([0, 2]\times[0, 2]\) 안에서 \(\mu = 0.20\ \mathrm{cm}^{-1}\)이고 밖에서는 0이라고 합시다.
+  기준점 \((0, 0)\)에서 방향 \((u_x, u_y) = (1/\sqrt2,\ 1/\sqrt2)\)로 나아가는 대각선 광선을 생각합니다.
+  \(\ell\)이 0에서 \(2\sqrt2\)까지 가는 동안 광선은 정사각형 안에 있습니다. \(2\sqrt2\)는 정사각형의 대각선 길이입니다.</p>
+
+  <p style="text-align:center">\[p = \int_0^{2\sqrt2} 0.20\,d\ell = 0.20 \times 2\sqrt2 \approx 0.566\]</p>
+
+  <div class="box warn">
+    <p class="box-t">\(d\ell\)과 \(dx\)의 구분</p>
+    <p>\(d\ell\)은 광선을 따라 잰 길이의 증분이고 \(x\) 축 방향의 증분이 아닙니다.
+    위 대각선 광선에서 \(x\)가 0에서 2까지 움직이는 동안 광선은 \(2\sqrt2\)만큼 나아가므로 \(d\ell = \sqrt2\,dx\)입니다.
+    \(\int_0^2 0.20\sqrt2\,dx = 0.20\times2\sqrt2\)로 같은 값이 나옵니다.</p>
+  </div>
+
+  <details class="fold">
+    <summary>방향의 길이가 1이면 \(\ell\)이 거리가 되는 이유</summary>
+    <div class="fold-body">
+      <p><b>1단계. 두 점 잡기.</b> 광선 위에서 \(\ell_1\)과 \(\ell_2\)에 해당하는 두 점의 좌표 차이를 구합니다.</p>
+      <p style="text-align:center">\[\Delta x = (\ell_2 - \ell_1)\,u_x, \qquad \Delta y = (\ell_2 - \ell_1)\,u_y\]</p>
+      <p><b>2단계. 두 점 사이의 거리.</b> 피타고라스 정리로 구합니다.</p>
+      <p style="text-align:center">\[\sqrt{\Delta x^{2} + \Delta y^{2}} = |\ell_2 - \ell_1|\,\sqrt{u_x^{2} + u_y^{2}}\]</p>
+      <p><b>3단계. 방향의 길이 대입.</b> \(u_x^2 + u_y^2 = 1\)이므로 거리는 \(|\ell_2 - \ell_1|\)입니다.
+      따라서 \(\ell\)이 1 늘면 점은 정확히 1 cm 움직이고, \(d\ell\)은 길이의 증분이 됩니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 -->
+<section class="screen" data-title="투영 연산자">
+  <p class="kicker">2장 · 페이지 5</p>
+  <h2>투영 연산자</h2>
+
+  <p>지금까지 광선 하나를 따라 \(\mu\)에서 \(p\)가 나오는 과정을 보았습니다.
+  영상 전체로 넓히면, 영상 \(\mu(x, y)\)를 넣었을 때 광선마다 숫자 \(p\) 하나가 나오는 대응이 생깁니다.
+  이 대응을 투영(<span class="term" data-term="fwdproj">Projection, Forward Projection</span>)이라 하고, 기호 \(\mathcal{P}\)로 씁니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 170" role="img" aria-label="물체의 감쇠계수에서 세기를 거쳐 투영값이 나오는 순서도">
+      <g class="svg-line" fill="none" stroke-width="1.4">
+        <rect x="10" y="40" width="130" height="50" rx="6"/>
+        <rect x="190" y="40" width="200" height="50" rx="6"/>
+        <rect x="440" y="40" width="190" height="50" rx="6"/>
+        <path d="M140 65 H190 M390 65 H440"/>
+        <path d="M180 60 l10 5 l-10 5 M430 60 l10 5 l-10 5"/>
+        <path d="M10 112 V122 H630 V112"/>
+      </g>
+      <g text-anchor="middle" font-size="12" font-weight="700" class="svg-fg">
+        <text x="75" y="62">감쇠계수</text><text x="290" y="62">측정 세기</text><text x="535" y="62">투영값</text>
+      </g>
+      <g text-anchor="middle" font-size="10.5" class="svg-muted">
+        <text x="75" y="79">μ(x, y)</text><text x="290" y="79">I = I₀ exp(−∫ μ dℓ)</text><text x="535" y="79">p = −ln(I/I₀) = ∫ μ dℓ</text>
+        <text x="165" y="33">X선 물리</text><text x="415" y="33">보정과 로그</text>
+        <text x="320" y="142">투영 연산자 : 영상 μ → 광선마다의 p</text>
+      </g>
+    </svg>
+    <figcaption>투영은 영상에서 측정값으로 가는 방향의 계산입니다. 재구성은 이 화살표를 거꾸로 따라가는 문제입니다.</figcaption>
+  </figure>
+
+  <p style="text-align:center">\[p_i = (\mathcal{P}\mu)_i = \int_{\text{광선 } i} \mu\,d\ell\]</p>
+
+  <p>광선마다 \(p_i\) 하나가 정해집니다. 한 방향에서 모든 광선의 \(p\)를 모은 것을 그 방향의 투영 한 장, 곧 투영 프로파일(Projection Profile)이라고 합니다.
+  연산 \(\mathcal{P}\)와 구분해 "한 방향의 투영 데이터"라고 읽으면 됩니다.
+  방향을 바꿔 가며 모은 투영들이 측정 데이터 전체입니다. 이것을 정리하는 방법은 뒷장에서 다룹니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="타원 물체를 지나는 평행한 광선들이 검출기 평면에 닿고, 검출기 위치마다 읽은 투영값을 이은 곡선이 그 방향의 투영 프로파일이 되는 그림">
+      <defs>
+        <marker id="par-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+      </defs>
+
+      <!-- 평행한 광선 -->
+      <g fill="none" stroke-width="1.5" style="stroke:var(--accent)">
+        <path d="M40 50 H416" marker-end="url(#par-arr)"/>
+        <path d="M40 75 H416" marker-end="url(#par-arr)"/>
+        <path d="M40 100 H416" marker-end="url(#par-arr)"/>
+        <path d="M40 125 H416" marker-end="url(#par-arr)"/>
+        <path d="M40 150 H416" marker-end="url(#par-arr)"/>
+        <path d="M40 175 H416" marker-end="url(#par-arr)"/>
+        <path d="M40 200 H416" marker-end="url(#par-arr)"/>
+        <path d="M40 225 H416" marker-end="url(#par-arr)"/>
+        <path d="M40 250 H416" marker-end="url(#par-arr)"/>
+      </g>
+
+      <!-- 물체: 타원 -->
+      <ellipse cx="228" cy="150" rx="75" ry="85" class="svg-fg" fill-opacity=".22"/>
+      <ellipse cx="228" cy="150" rx="75" ry="85" class="svg-line" stroke-width="1.5"/>
+
+      <!-- 검출기 평면 -->
+      <rect x="418" y="40" width="12" height="220" class="svg-fg" fill-opacity=".35"/>
+      <rect x="418" y="40" width="12" height="220" class="svg-line" stroke-width="1.5"/>
+
+      <!-- 프로파일: 기준선과 곡선 -->
+      <path d="M452 40 V260" class="svg-line" stroke-width="1.2" style="stroke:var(--muted)"/>
+      <g class="svg-line" stroke-width="1" stroke-dasharray="2 3">
+        <path d="M430 75 H499.1"/><path d="M430 100 H532.9"/><path d="M430 125 H547.6"/>
+        <path d="M430 150 H552"/>
+        <path d="M430 175 H547.6"/><path d="M430 200 H532.9"/><path d="M430 225 H499.1"/>
+      </g>
+      <path d="M452 65 A100 85 0 0 1 452 235" fill="none" stroke-width="2.5" style="stroke:var(--warn)"/>
+      <g style="fill:var(--warn)">
+        <circle cx="499.1" cy="75" r="3.5"/><circle cx="532.9" cy="100" r="3.5"/><circle cx="547.6" cy="125" r="3.5"/>
+        <circle cx="552" cy="150" r="3.5"/>
+        <circle cx="547.6" cy="175" r="3.5"/><circle cx="532.9" cy="200" r="3.5"/><circle cx="499.1" cy="225" r="3.5"/>
+        <circle cx="452" cy="50" r="3.5"/><circle cx="452" cy="250" r="3.5"/>
+      </g>
+
+      <!-- 글자 -->
+      <g class="svg-fg" font-size="13" font-weight="700" text-anchor="middle">
+        <text x="228" y="154">물체</text>
+        <text x="424" y="284">검출기 평면</text>
+      </g>
+      <g class="svg-muted" font-size="12" text-anchor="middle">
+        <text x="150" y="30">평행한 광선들</text>
+        <text x="540" y="284">투영 프로파일</text>
+        <text x="540" y="30">p</text>
+      </g>
+      <path d="M452 36 H585" fill="none" stroke-width="1.2" style="stroke:var(--muted)" marker-end="url(#par-arr)"/>
+    </svg>
+    <figcaption>평행빔(Parallel Beam, 광선이 모두 나란한 경우)의 한 방향. 같은 방향으로 나란히 나아가는 광선들이 물체를 지나 검출기 평면에 닿고,
+    검출기의 위치마다 광선 하나의 \(p\)가 정해집니다. 이 값들을 위치 순서로 이은 곡선(오른쪽, 점은 각 광선의 \(p\))이 그 방향의 투영 한 장입니다.
+    곡선은 균일한 타원 물체의 예이며, 광선이 물체를 길게 지날수록 \(p\)가 큽니다.</figcaption>
+  </figure>
+
+  <h3>선형성</h3>
+
+  <p>투영은 선형입니다. 두 영상 \(\mu^{(1)}, \mu^{(2)}\)와 상수 \(a, b\)에 대해 다음이 성립합니다.</p>
+  <p style="text-align:center">\[\mathcal{P}(a\mu^{(1)} + b\mu^{(2)}) = a\,\mathcal{P}\mu^{(1)} + b\,\mathcal{P}\mu^{(2)}\]</p>
+  <p>영상을 두 배로 하면 측정값도 두 배가 되고, 두 영상을 겹치면 측정값도 더해진다는 뜻입니다.
+  \(-\ln\)을 취하면 곱으로 합쳐지던 감쇠가 합이 되어 이 선형성이 생깁니다. 로그 변환을 거치기 전의 \(I\)는 영상에 대해 선형이 아닙니다.</p>
+
+  <h3>격자 영상에서의 투영</h3>
+
+  <p>영상을 화소 \(j = 1, 2, \dots\)로 나누어 화소마다 \(\mu_j\)가 일정하다고 놓으면, 광선 \(i\)의 투영값은 1장 페이지 5의 합이 됩니다.</p>
+  <p style="text-align:center">\[p_i = \sum_{j} w_{ij}\,\mu_j\]</p>
+  <p>\(w_{ij}\)는 광선 \(i\)가 화소 \(j\) 안에서 지나는 길이이고, 지나지 않는 화소는 0입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 410" role="img" aria-label="화소 격자로 나눈 원형 물체 위를 대각선 광선이 지나며 화소마다 길이 √2를 쌓아 검출기 칸 i의 값 p_i가 되는 그림">
+      <defs>
+        <marker id="grid-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+      </defs>
+
+      <!-- 같은 μ로 칠한 물체 화소 -->
+      <g class="svg-fg"><rect x="110" y="40" width="50" height="50" fill-opacity="0.20"/><rect x="160" y="40" width="50" height="50" fill-opacity="0.26"/><rect x="210" y="40" width="50" height="50" fill-opacity="0.32"/><rect x="260" y="40" width="50" height="50" fill-opacity="0.38"/><rect x="60" y="90" width="50" height="50" fill-opacity="0.29"/><rect x="110" y="90" width="50" height="50" fill-opacity="0.38"/><rect x="160" y="90" width="50" height="50" fill-opacity="0.20"/><rect x="210" y="90" width="50" height="50" fill-opacity="0.29"/><rect x="260" y="90" width="50" height="50" fill-opacity="0.38"/><rect x="310" y="90" width="50" height="50" fill-opacity="0.20"/><rect x="60" y="140" width="50" height="50" fill-opacity="0.17"/><rect x="110" y="140" width="50" height="50" fill-opacity="0.29"/><rect x="160" y="140" width="50" height="50" fill-opacity="0.14"/><rect x="210" y="140" width="50" height="50" fill-opacity="0.26"/><rect x="260" y="140" width="50" height="50" fill-opacity="0.38"/><rect x="310" y="140" width="50" height="50" fill-opacity="0.23"/><rect x="60" y="190" width="50" height="50" fill-opacity="0.32"/><rect x="110" y="190" width="50" height="50" fill-opacity="0.20"/><rect x="160" y="190" width="50" height="50" fill-opacity="0.35"/><rect x="210" y="190" width="50" height="50" fill-opacity="0.23"/><rect x="260" y="190" width="50" height="50" fill-opacity="0.38"/><rect x="310" y="190" width="50" height="50" fill-opacity="0.26"/><rect x="60" y="240" width="50" height="50" fill-opacity="0.20"/><rect x="110" y="240" width="50" height="50" fill-opacity="0.38"/><rect x="160" y="240" width="50" height="50" fill-opacity="0.29"/><rect x="210" y="240" width="50" height="50" fill-opacity="0.20"/><rect x="260" y="240" width="50" height="50" fill-opacity="0.38"/><rect x="310" y="240" width="50" height="50" fill-opacity="0.29"/><rect x="110" y="290" width="50" height="50" fill-opacity="0.29"/><rect x="160" y="290" width="50" height="50" fill-opacity="0.23"/><rect x="210" y="290" width="50" height="50" fill-opacity="0.17"/><rect x="260" y="290" width="50" height="50" fill-opacity="0.38"/></g>
+      <!-- 광선이 지나는 물체 화소 강조 -->
+      <g fill="none" stroke-width="2" style="stroke:var(--accent)"><rect x="110" y="90" width="50" height="50"/><rect x="160" y="140" width="50" height="50"/><rect x="210" y="190" width="50" height="50"/><rect x="260" y="240" width="50" height="50"/></g>
+      <!-- 격자선 -->
+      <g class="svg-line" stroke-width="1"><path d="M60 40 V340"/><path d="M60 40 H360"/><path d="M110 40 V340"/><path d="M60 90 H360"/><path d="M160 40 V340"/><path d="M60 140 H360"/><path d="M210 40 V340"/><path d="M60 190 H360"/><path d="M260 40 V340"/><path d="M60 240 H360"/><path d="M310 40 V340"/><path d="M60 290 H360"/><path d="M360 40 V340"/><path d="M60 340 H360"/></g>
+
+      <!-- 광선 (선원 → 검출기 칸 i) -->
+      <path d="M30 10 L373 353" fill="none" stroke-width="2" style="stroke:var(--accent)" marker-end="url(#grid-arr)"/>
+      <circle cx="30" cy="10" r="5" class="svg-fg"/>
+      <text class="svg-fg" x="42" y="14" font-size="12" font-weight="700">선원</text>
+
+      <!-- 검출기: 광선에 수직인 띠, 가운데가 화소 i -->
+      <g transform="translate(375 355) rotate(45)">
+        <g class="svg-line" stroke-width="1.2" fill="none">
+          <rect x="0" y="-55" width="12" height="22"/><rect x="0" y="-33" width="12" height="22"/>
+          <rect x="0" y="11" width="12" height="22"/><rect x="0" y="33" width="12" height="22"/>
+        </g>
+        <rect x="0" y="-11" width="12" height="22" style="fill:var(--warn)"/>
+      </g>
+
+      <!-- 길이 √2 -->
+      <text class="svg-muted" x="88" y="56" font-size="11">√2</text><text class="svg-fg" x="138" y="106" font-size="11">√2</text><text class="svg-fg" x="188" y="156" font-size="11">√2</text><text class="svg-fg" x="238" y="206" font-size="11">√2</text><text class="svg-fg" x="288" y="256" font-size="11">√2</text><text class="svg-muted" x="338" y="306" font-size="11">√2</text>
+
+      <!-- 광선이 지나는 물체 화소의 μ 값 -->
+      <g class="svg-fg" font-size="12" font-weight="700"><text x="114" y="133">μ<tspan dy="3" font-size="9">1</tspan></text><text x="164" y="183">μ<tspan dy="3" font-size="9">2</tspan></text><text x="214" y="233">μ<tspan dy="3" font-size="9">3</tspan></text><text x="264" y="283">μ<tspan dy="3" font-size="9">4</tspan></text></g>
+
+      <!-- 화소 j 설명선 -->
+      <path d="M235 115 L400 95" class="svg-line" stroke-width="1" style="stroke:var(--muted)"/>
+      <circle cx="235" cy="115" r="3" class="svg-fg"/>
+      <g class="svg-fg" font-size="12">
+        <text x="406" y="92">화소 j</text>
+      </g>
+      <g class="svg-muted" font-size="11">
+        <text x="406" y="108">화소 안에서 μ는 일정 (μ<tspan dy="3" font-size="9">j</tspan><tspan dy="-3">)</tspan></text>
+        <text x="335" y="62" text-anchor="middle">배경</text><text x="335" y="76" text-anchor="middle">μ = 0</text>
+        <text x="210" y="360" text-anchor="middle">화소 한 변 = 1 cm</text>
+      </g>
+      <g font-size="12" style="fill:var(--warn)">
+        <text x="432" y="352" font-weight="700">검출기 칸 i</text>
+        <text x="432" y="370">읽은 값 p<tspan dy="3" font-size="9">i</tspan></text>
+      </g>
+    </svg>
+    <figcaption>화소 격자로 나눈 원형 물체의 예입니다. 화소마다 색이 조금씩 다른 것은 \(\mu\)가 화소마다 다르다는 뜻이고, 각 화소 안에서는 \(\mu\)가 일정합니다(\(\mu_j\)).
+    대각선 광선이 지나는 물체 화소 네 개를 차례로 \(\mu_1 \sim \mu_4\)로 표시했고, 이 광선은 화소마다 \(\sqrt2\) cm를 지납니다.
+    광선이 지나지 않는 화소는 \(w_{ij} = 0\)이고, 배경 화소는 \(\mu = 0\)이라 길이를 지나도 더해지는 값이 없습니다.</figcaption>
+  </figure>
+
+  <p>그림의 광선을 예로 들어 봅시다. 화소의 한 변은 1 cm이고, 광선이 지나는 물체 화소 네 개의 값을 차례로 \(\mu_1, \mu_2, \mu_3, \mu_4\) 라 하겠습니다.
+  45° 대각선 광선은 한 화소를 꼭짓점에서 꼭짓점으로 가로지르므로 화소마다 \(\sqrt2\) cm 씩 지납니다.
+  양 끝의 배경 화소 두 개도 \(\sqrt2\) cm 씩 지나지만 \(\mu = 0\)이라 더해지는 값이 없습니다. 따라서 이 광선의 투영값은 다음과 같습니다.</p>
+  <p style="text-align:center">\[p_i = \sqrt2\,\mu_1 + \sqrt2\,\mu_2 + \sqrt2\,\mu_3 + \sqrt2\,\mu_4\]</p>
+  <p>이렇게 광선마다 \(\mu_j\)의 1차식이 하나씩 생깁니다. 이 식들을 모아 쓰는 방법은 2편(대수적 재구성편)에서 행렬로 정리합니다.</p>
+
+  <details class="fold">
+    <summary>선형성의 확인</summary>
+    <div class="fold-body">
+      <p><b>1단계. 정의에 넣기.</b> 영상 \(a\mu^{(1)} + b\mu^{(2)}\)에 대한 광선 위 값은 점마다 \(a\mu^{(1)} + b\mu^{(2)}\)입니다.</p>
+      <p style="text-align:center">\[\mathcal{P}(a\mu^{(1)} + b\mu^{(2)}) = \int \bigl(a\,\mu^{(1)} + b\,\mu^{(2)}\bigr)\,d\ell\]</p>
+      <p><b>2단계. 적분을 나누기.</b> 정적분은 합과 상수배를 그대로 통과시킵니다.</p>
+      <p style="text-align:center">\[= a\int \mu^{(1)}\,d\ell + b\int \mu^{(2)}\,d\ell\]</p>
+      <p><b>3단계. 정의로 되돌리기.</b> 각각이 \(\mathcal{P}\mu^{(1)}\), \(\mathcal{P}\mu^{(2)}\)의 같은 광선 값이므로 결론이 나옵니다.</p>
+      <p style="text-align:center">\[= a\,\mathcal{P}\mu^{(1)} + b\,\mathcal{P}\mu^{(2)}\]</p>
+      <p><b>4단계. 검산.</b> \(a = b = 1\), \(\mu^{(1)} = \mu^{(2)} = 0.19\)인 물이면 10 cm 길이의 광선에서 \(\mathcal{P}(\mu^{(1)} + \mu^{(2)}) = 0.19\times10 + 0.19\times10 = 3.8\)이고, 이는 \(\mu = 0.38\)인 영상의 \(0.38\times10 = 3.8\)과 같습니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 6 -->
+<section class="screen" data-title="정사각형 두 개의 투영값 구해 보기">
+  <p class="kicker">2장 · 페이지 6</p>
+  <h2>정사각형 두 개의 투영값 직접 구해 보기</h2>
+
+  <p>투영값을 직접 계산해 봅시다. 공기 속에 한 변이 1 cm인 정사각형 두 개가 있다고 합시다.
+  두 정사각형의 중심은 \((-2, 2)\)와 \((2, -2)\)이고, 둘 다 \(\mu = 0.45\ \mathrm{cm}^{-1}\)(1장의 뼈 예시값)입니다.
+  나머지 공간은 공기이므로 \(\mu = 0\)으로 둡니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 548" role="img" aria-label="공기 속 한 변 1 cm인 정사각형 두 개를 위에서 아래로, 왼쪽에서 오른쪽으로 지나는 광선들과 검출기에서 읽은 광선별 투영값. 아래와 오른쪽에는 검출기 위치에 따른 투영값의 프로파일을 그렸고, 정사각형이 있는 폭 1 cm 구간에서 0.45이고 그 밖은 0이다">
+      <defs>
+        <marker id="sq-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+        <marker id="sq-axis" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--fg)"/></marker>
+      </defs>
+
+      <rect x="110" y="40" width="280" height="280" class="svg-line" stroke-width="1.2"/>
+
+      <!-- 좌표축 -->
+      <g fill="none" stroke-width="1.2" style="stroke:var(--fg)" stroke-opacity=".7">
+        <path d="M110 180 H388" marker-end="url(#sq-axis)"/>
+        <path d="M250 318 V46" marker-end="url(#sq-axis)"/>
+        <path d="M138 176 V184"/><path d="M246 292 H254"/><path d="M194 176 V184"/><path d="M246 236 H254"/><path d="M306 176 V184"/><path d="M246 124 H254"/><path d="M362 176 V184"/><path d="M246 68 H254"/>
+      </g>
+      <text x="376" y="170" font-size="12" font-weight="700" class="svg-fg">x</text>
+      <text x="257" y="56" font-size="12" font-weight="700" class="svg-fg">y</text>
+      <text x="237" y="194" font-size="11" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">O</text>
+
+      <!-- 광선 -->
+      <g class="svg-line" stroke-width="1.3" style="stroke:var(--muted)"><path d="M138 30 V328" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/><path d="M100 292 H402" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/><path d="M194 30 V328" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/><path d="M100 236 H402" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/><path d="M250 30 V328" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/><path d="M100 180 H402" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/><path d="M306 30 V328" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/><path d="M100 124 H402" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/><path d="M362 30 V328" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/><path d="M100 68 H402" stroke-dasharray="4 3" marker-end="url(#sq-arr)"/></g>
+
+      <!-- 검출기 -->
+      <rect x="110" y="330" width="280" height="8" class="svg-fg" fill-opacity=".55"/>
+      <rect x="404" y="40" width="8" height="280" class="svg-fg" fill-opacity=".55"/>
+      <text x="400" y="348" font-size="11" class="svg-muted">검출기</text>
+      <text x="408" y="32" text-anchor="middle" font-size="11" class="svg-muted">검출기</text>
+
+      <!-- 정사각형 두 개 -->
+      <g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.5">
+        <rect x="180" y="110" width="28" height="28"/>
+        <rect x="292" y="222" width="28" height="28"/>
+      </g>
+      <text x="194" y="104" text-anchor="middle" font-size="10.5" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">(−2, 2)</text><text x="306" y="264" text-anchor="middle" font-size="10.5" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">(2, −2)</text>
+
+      <!-- 값과 좌표 -->
+      <g><text x="138" y="358" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--muted)">0</text><text x="138" y="372" text-anchor="middle" font-size="10" class="svg-muted">x=−4</text><text x="424" y="296" font-size="12" font-weight="700" style="fill:var(--muted)">0</text><text x="96" y="296" text-anchor="end" font-size="10" class="svg-muted">y=−4</text><text x="194" y="358" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="194" y="372" text-anchor="middle" font-size="10" class="svg-muted">x=−2</text><text x="424" y="240" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="96" y="240" text-anchor="end" font-size="10" class="svg-muted">y=−2</text><text x="250" y="358" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--muted)">0</text><text x="250" y="372" text-anchor="middle" font-size="10" class="svg-muted">x=0</text><text x="424" y="184" font-size="12" font-weight="700" style="fill:var(--muted)">0</text><text x="96" y="184" text-anchor="end" font-size="10" class="svg-muted">y=0</text><text x="306" y="358" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="306" y="372" text-anchor="middle" font-size="10" class="svg-muted">x=2</text><text x="424" y="128" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="96" y="128" text-anchor="end" font-size="10" class="svg-muted">y=2</text><text x="362" y="358" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--muted)">0</text><text x="362" y="372" text-anchor="middle" font-size="10" class="svg-muted">x=4</text><text x="424" y="72" font-size="12" font-weight="700" style="fill:var(--muted)">0</text><text x="96" y="72" text-anchor="end" font-size="10" class="svg-muted">y=4</text></g>
+      <text x="250" y="392" text-anchor="middle" font-size="12" class="svg-fg">아래 검출기: 위에서 아래로 지나는 광선의 p</text>
+      <g class="svg-fg" font-size="12">
+        <text x="440" y="378">오른쪽 검출기: 왼쪽에서</text>
+        <text x="440" y="396">오른쪽으로 지나는 광선의 p</text>
+      </g>
+      <!-- 투영 프로파일: 아래 검출기 -->
+      <text x="110" y="418" font-size="12" font-weight="700" class="svg-fg">아래 검출기의 프로파일 p(x)</text>
+      <path d="M110 506 H398" fill="none" stroke-width="1.2" style="stroke:var(--fg)" stroke-opacity=".7" marker-end="url(#sq-axis)"/>
+      <text x="402" y="510" font-size="11" font-weight="700" class="svg-fg">x</text>
+      <rect x="180.0" y="450.2" width="28.0" height="55.8" fill-opacity=".35" stroke-width="1.6" style="fill:var(--accent);stroke:var(--accent)"/>
+      <rect x="292.0" y="450.2" width="28.0" height="55.8" fill-opacity=".35" stroke-width="1.6" style="fill:var(--accent);stroke:var(--accent)"/>
+      <circle cx="138" cy="506.0" r="3.6" style="fill:var(--muted)"/>
+      <text x="138" y="497.0" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--muted)">0</text>
+      <text x="138" y="521" text-anchor="middle" font-size="10" class="svg-muted">x=-4</text>
+      <circle cx="194" cy="450.2" r="3.6" style="fill:var(--accent)"/>
+      <text x="194" y="441.2" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text>
+      <text x="194" y="521" text-anchor="middle" font-size="10" class="svg-muted">x=-2</text>
+      <circle cx="250" cy="506.0" r="3.6" style="fill:var(--muted)"/>
+      <text x="250" y="497.0" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--muted)">0</text>
+      <text x="250" y="521" text-anchor="middle" font-size="10" class="svg-muted">x=0</text>
+      <circle cx="306" cy="450.2" r="3.6" style="fill:var(--accent)"/>
+      <text x="306" y="441.2" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text>
+      <text x="306" y="521" text-anchor="middle" font-size="10" class="svg-muted">x=2</text>
+      <circle cx="362" cy="506.0" r="3.6" style="fill:var(--muted)"/>
+      <text x="362" y="497.0" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--muted)">0</text>
+      <text x="362" y="521" text-anchor="middle" font-size="10" class="svg-muted">x=4</text>
+      <!-- 투영 프로파일: 오른쪽 검출기 -->
+      <text x="478" y="30" font-size="12" font-weight="700" class="svg-fg">오른쪽 프로파일 p(y)</text>
+      <path d="M478 318 V46" fill="none" stroke-width="1.2" style="stroke:var(--fg)" stroke-opacity=".7" marker-end="url(#sq-axis)"/>
+      <text x="471" y="58" text-anchor="end" font-size="11" font-weight="700" class="svg-fg">y</text>
+      <rect x="478" y="110.0" width="55.8" height="28.0" fill-opacity=".35" stroke-width="1.6" style="fill:var(--accent);stroke:var(--accent)"/>
+      <rect x="478" y="222.0" width="55.8" height="28.0" fill-opacity=".35" stroke-width="1.6" style="fill:var(--accent);stroke:var(--accent)"/>
+      <circle cx="478.0" cy="292" r="3.6" style="fill:var(--muted)"/>
+      <text x="487.0" y="296" font-size="12" font-weight="700" style="fill:var(--muted)">0</text>
+      <circle cx="533.8" cy="236" r="3.6" style="fill:var(--accent)"/>
+      <text x="542.8" y="240" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text>
+      <circle cx="478.0" cy="180" r="3.6" style="fill:var(--muted)"/>
+      <text x="487.0" y="184" font-size="12" font-weight="700" style="fill:var(--muted)">0</text>
+      <circle cx="533.8" cy="124" r="3.6" style="fill:var(--accent)"/>
+      <text x="542.8" y="128" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text>
+      <circle cx="478.0" cy="68" r="3.6" style="fill:var(--muted)"/>
+      <text x="487.0" y="72" font-size="12" font-weight="700" style="fill:var(--muted)">0</text>
+      <text x="476" y="344" font-size="10" class="svg-muted">점 = 그림의 광선(위 숫자와 같은 값)</text>
+    </svg>
+    <figcaption>파란 정사각형이 한 변 1 cm인 두 정사각형(중심 \((-2, 2)\)와 \((2, -2)\))이고, 점선은 광선입니다. 눈금의 단위는 cm입니다.
+    회색 막대는 검출기이며, 숫자는 그 위치에 닿은 광선의 투영값 \(p\)입니다.
+    정사각형을 지나는 광선만 \(p = 0.45 \times 1 = 0.45\)이고 나머지는 0입니다.
+    아래와 오른쪽 그래프는 검출기 위치를 연속으로 바꿔 가며 투영값을 그린 프로파일(Profile)이고, 점은 그림의 광선 다섯 개에 해당하는 값입니다.
+    프로파일은 정사각형이 있는 폭 1 cm 구간에서 \(0.45\)이고 그 밖에서는 0입니다.</figcaption>
+  </figure>
+
+  <p>세로 광선이 \(x = -2\)에서 정사각형을 지나는 길이는 1 cm이므로 \(p = 0.45 \times 1 = 0.45\)입니다.
+  \(x = 2\)도 마찬가지입니다. 가로 광선도 \(y = 2\)와 \(y = -2\)에서 같은 값이 나옵니다.
+  그림에서 0.45가 적힌 광선은 세로 두 줄과 가로 두 줄, 모두 네 줄이고 나머지 여섯 줄은 공기만 지나 \(p = 0\)입니다.
+  그러면 거꾸로, 이 투영값들만 보고 정사각형의 위치를 알아낼 수 있을까요? 다음 페이지에서 확인합니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 7 -->
+<section class="screen" data-title="재구성이 풀려는 문제: 역문제">
+  <p class="kicker">2장 · 페이지 7</p>
+  <h2>그래서 재구성이 풀려는 문제는 무엇일까요? 역문제</h2>
+
+  <p>지금까지는 \(\mu\)를 알고 \(p\)를 계산했습니다. 이 방향을 순문제(Forward Problem)라고 합니다.
+  재구성은 반대입니다. 모든 광선의 \(p\)가 주어졌을 때 \(\mu(x, y)\)를 구하는 것이고, 이를 역문제(<span class="term" data-term="inverse">Inverse Problem</span>)라고 합니다.</p>
+
+  <p style="text-align:center">\[\text{구하는 것: } \mu(x, y) \qquad \text{주어진 것: 광선마다의 } p = \int \mu\,d\ell\]</p>
+
+  <p>이 문제는 데이터가 모자라면 해가 하나로 정해지지 않습니다. 페이지 6의 정사각형 두 개로 확인해 봅시다.</p>
+
+  <h3>한 방향만으로는 부족한 이유</h3>
+  <p>세로 광선만 쓰면 \(x = -2\)와 \(x = 2\)에 \(p = 0.45\)가 있다는 것만 알 수 있습니다.
+  정사각형의 \(y\) 좌표는 광선이 나아가는 방향의 위치라서, 값이 합쳐지는 과정에서 사라집니다.
+  \((-2, 2), (2, -2)\)도, \((-2, 0), (2, 4)\)도, \((-2, -3), (2, 1)\)도 똑같은 데이터를 줍니다.
+  광선 위의 \(\mu\)가 어느 위치에 있든 합이 같으면 같은 값이 읽히기 때문입니다(1장 페이지 5의 "한 줄기 측정의 한계"에서 본 내용입니다).</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 266" role="img" aria-label="세로 광선만 쓸 때 서로 다른 세 가지 정사각형 배치가 같은 검출기 값을 주는 그림">
+      <defs><marker id="ip1-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <rect x="40" y="30" width="140" height="140" class="svg-line" stroke-width="1.2"/><g class="svg-line" stroke-width="1.2" style="stroke:var(--muted)"><path d="M54 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M82 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M110 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M138 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M166 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/></g><rect x="40" y="176" width="140" height="7" class="svg-fg" fill-opacity=".55"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="75.0" y="65.0" width="14" height="14"/><rect x="131.0" y="121.0" width="14" height="14"/></g><text x="54" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="82" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="110" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="138" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="166" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="110" y="230" text-anchor="middle" font-size="12" class="svg-fg">배치 ①: (−2, 2), (2, −2)</text><rect x="250" y="30" width="140" height="140" class="svg-line" stroke-width="1.2"/><g class="svg-line" stroke-width="1.2" style="stroke:var(--muted)"><path d="M264 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M292 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M320 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M348 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M376 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/></g><rect x="250" y="176" width="140" height="7" class="svg-fg" fill-opacity=".55"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="285.0" y="93.0" width="14" height="14"/><rect x="341.0" y="37.0" width="14" height="14"/></g><text x="264" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="292" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="320" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="348" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="376" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="320" y="230" text-anchor="middle" font-size="12" class="svg-fg">배치 ②: (−2, 0), (2, 4)</text><rect x="460" y="30" width="140" height="140" class="svg-line" stroke-width="1.2"/><g class="svg-line" stroke-width="1.2" style="stroke:var(--muted)"><path d="M474 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M502 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M530 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M558 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/><path d="M586 24 V174" stroke-dasharray="4 3" marker-end="url(#ip1-a)"/></g><rect x="460" y="176" width="140" height="7" class="svg-fg" fill-opacity=".55"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="495.0" y="135.0" width="14" height="14"/><rect x="551.0" y="79.0" width="14" height="14"/></g><text x="474" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="502" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="530" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="558" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="586" y="194" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="530" y="230" text-anchor="middle" font-size="12" class="svg-fg">배치 ③: (−2, −3), (2, 1)</text><text x="320" y="256" text-anchor="middle" font-size="12" style="fill:var(--accent)">세 배치의 검출기 값이 모두 같아서, 위에서 아래로 지나는 광선만으로는 구분할 수 없습니다.</text>
+    </svg>
+    <figcaption>세로 광선만 쓰면 정사각형의 \(y\) 좌표가 데이터에 나타나지 않습니다. 정사각형의 \(x\) 좌표만 같으면 세 배치의 값이 같습니다.</figcaption>
+  </figure>
+
+  <h3>두 방향으로도 부족한 이유</h3>
+  <p>가로 광선까지 더하면 \(y = 2\)와 \(y = -2\)에 정사각형이 있다는 것을 압니다.
+  물체가 "한 변 1 cm, \(\mu = 0.45\)인 정사각형 두 개"라는 것을 미리 안다고 해도, \(x\) 후보는 \(\pm 2\), \(y\) 후보도 \(\pm 2\)이어서 정사각형이 있을 수 있는 자리는 네 곳입니다.
+  그중 가로·세로 데이터를 모두 설명하는 배치는 서로 마주 보는 두 곳을 고르는 두 가지, 곧 \((-2, 2), (2, -2)\)와 \((-2, -2), (2, 2)\)이고, 두 배치의 가로·세로 데이터는 같습니다.
+  다른 배치가 하나 남는 것입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 296" role="img" aria-label="가로와 세로 광선을 모두 써도 실제 배치와 다른 배치가 같은 검출기 값을 주는 그림">
+      <defs><marker id="ip2-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <rect x="70" y="30" width="160" height="160" class="svg-line" stroke-width="1.2"/><g class="svg-line" stroke-width="1.2" style="stroke:var(--muted)"><path d="M86 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M64 174 H234" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M118 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M64 142 H234" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M150 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M64 110 H234" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M182 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M64 78 H234" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M214 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M64 46 H234" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/></g><rect x="70" y="196" width="160" height="7" class="svg-fg" fill-opacity=".55"/><rect x="236" y="30" width="7" height="160" class="svg-fg" fill-opacity=".55"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="110.0" y="70.0" width="16" height="16"/><rect x="174.0" y="134.0" width="16" height="16"/></g><text x="86" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="252" y="178" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="118" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="252" y="146" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="150" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="252" y="114" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="182" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="252" y="82" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="214" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="252" y="50" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="150" y="258" text-anchor="middle" font-size="12" class="svg-fg">실제 배치: (−2, 2), (2, −2)</text><rect x="390" y="30" width="160" height="160" class="svg-line" stroke-width="1.2"/><g class="svg-line" stroke-width="1.2" style="stroke:var(--muted)"><path d="M406 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M384 174 H554" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M438 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M384 142 H554" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M470 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M384 110 H554" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M502 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M384 78 H554" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M534 24 V194" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/><path d="M384 46 H554" stroke-dasharray="4 3" marker-end="url(#ip2-a)"/></g><rect x="390" y="196" width="160" height="7" class="svg-fg" fill-opacity=".55"/><rect x="556" y="30" width="7" height="160" class="svg-fg" fill-opacity=".55"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="430.0" y="134.0" width="16" height="16"/><rect x="494.0" y="70.0" width="16" height="16"/></g><text x="406" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="572" y="178" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="438" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="572" y="146" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="470" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="572" y="114" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="502" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="572" y="82" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="534" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="572" y="50" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="470" y="258" text-anchor="middle" font-size="12" class="svg-fg">다른 배치: (−2, −2), (2, 2)</text><text x="310" y="284" text-anchor="middle" font-size="12" style="fill:var(--accent)">두 배치의 가로·세로 검출기 값이 모두 같습니다.</text>
+    </svg>
+    <figcaption>정사각형 두 개라는 것을 미리 알아도, 가로·세로 두 방향만으로는 \(x = \pm2\), \(y = \pm2\)의 조합 네 곳 가운데 마주 보는 두 곳을 고르는 두 배치가 구분되지 않습니다.</figcaption>
+  </figure>
+
+  <h3>방향을 더하면 풀리는 경우</h3>
+  <p>대각선 방향의 광선(방향 \((1, -1)/\sqrt2\), 직선 \(y = -x\))을 하나 더하면 구분됩니다.
+  이 직선은 \((-2, 2)\)와 \((2, -2)\)의 중심을 지나므로 정사각형 두 개를 대각선 길이 \(\sqrt2\) cm 씩 지나 \(p = 0.45 \times 2\sqrt2 \approx 1.27\)입니다.
+  다른 배치에서는 이 직선이 정사각형을 지나지 않아 \(p = 0\)입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 256" role="img" aria-label="대각선 광선이 실제 배치에서는 정사각형 두 개를 지나고 다른 배치에서는 지나지 않는 그림">
+      <defs><marker id="ip3-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker></defs>
+      <rect x="70" y="30" width="160" height="160" class="svg-line" stroke-width="1.2"/><path d="M70 30 L230 190" fill="none" stroke-width="2" stroke-dasharray="5 3" style="stroke:var(--warn)" marker-end="url(#ip3-b)"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="110.0" y="70.0" width="16" height="16"/><rect x="174.0" y="134.0" width="16" height="16"/></g><text x="150" y="224" text-anchor="middle" font-size="12" class="svg-fg">실제 배치</text><text x="150" y="244" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">대각선 광선: p = 0.45 × 2√2 ≈ 1.27</text><rect x="390" y="30" width="160" height="160" class="svg-line" stroke-width="1.2"/><path d="M390 30 L550 190" fill="none" stroke-width="2" stroke-dasharray="5 3" style="stroke:var(--warn)" marker-end="url(#ip3-b)"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="430.0" y="134.0" width="16" height="16"/><rect x="494.0" y="70.0" width="16" height="16"/></g><text x="470" y="224" text-anchor="middle" font-size="12" class="svg-fg">다른 배치</text><text x="470" y="244" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--muted)">대각선 광선: p = 0</text>
+    </svg>
+    <figcaption>주황색 점선이 직선 \(y = -x\)를 따라 지나는 대각선 광선입니다. 이 광선이 실제 배치에서는 정사각형 두 개를 지나지만 다른 배치에서는 하나도 지나지 않아, 두 배치가 구분됩니다.</figcaption>
+  </figure>
+
+  <div class="box note">
+    <p class="box-t">2×2 화소로 다시 보기</p>
+    <p>한 변이 1 cm인 \(2\times2\) 화소(윗줄 \(\mu_1, \mu_2\), 아랫줄 \(\mu_3, \mu_4\))에서 가로·세로 광선 네 개의 값은 \(\mu_1+\mu_2,\ \mu_3+\mu_4,\ \mu_1+\mu_3,\ \mu_2+\mu_4\)입니다.
+    미지수는 네 개이지만 네 식의 합 사이에 \((\mu_1+\mu_2)+(\mu_3+\mu_4) = (\mu_1+\mu_3)+(\mu_2+\mu_4)\)라는 관계가 있어서 서로 독립인 식은 세 개뿐입니다.
+    그래서 같은 데이터를 주는 영상이 무수히 많고, 대각선 광선 \(\sqrt2(\mu_1+\mu_4)\)를 더해야 구별됩니다. 아래 그림은 그 가운데 두 영상입니다.</p>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 248" role="img" aria-label="화소 2×2 영상 두 개가 가로와 세로 합은 같고 대각선 합은 다른 그림">
+      <defs><marker id="ip4-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker></defs>
+      <text x="166" y="30" text-anchor="middle" font-size="13" font-weight="700" class="svg-fg">영상 A</text><rect x="110" y="44" width="56" height="56" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity=".55"/><text x="138.0" y="77.0" text-anchor="middle" font-size="13" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">1</tspan><tspan dy="-3"> = 0.45</tspan></text><rect x="166" y="44" width="56" height="56" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity=".05"/><text x="194.0" y="77.0" text-anchor="middle" font-size="13" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">2</tspan><tspan dy="-3"> = 0</tspan></text><rect x="110" y="100" width="56" height="56" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity=".05"/><text x="138.0" y="133.0" text-anchor="middle" font-size="13" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">3</tspan><tspan dy="-3"> = 0</tspan></text><rect x="166" y="100" width="56" height="56" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity=".55"/><text x="194.0" y="133.0" text-anchor="middle" font-size="13" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">4</tspan><tspan dy="-3"> = 0.45</tspan></text><text x="232" y="76.0" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="232" y="132.0" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="138.0" y="174" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="194.0" y="174" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><path d="M104 38 L228 162" fill="none" stroke-width="1.8" stroke-dasharray="5 3" style="stroke:var(--warn)" marker-end="url(#ip4-b)"/><text x="166" y="206" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--warn)">대각선 광선: 1.27</text><text x="456" y="30" text-anchor="middle" font-size="13" font-weight="700" class="svg-fg">영상 B</text><rect x="400" y="44" width="56" height="56" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity=".05"/><text x="428.0" y="77.0" text-anchor="middle" font-size="13" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">1</tspan><tspan dy="-3"> = 0</tspan></text><rect x="456" y="44" width="56" height="56" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity=".55"/><text x="484.0" y="77.0" text-anchor="middle" font-size="13" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">2</tspan><tspan dy="-3"> = 0.45</tspan></text><rect x="400" y="100" width="56" height="56" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity=".55"/><text x="428.0" y="133.0" text-anchor="middle" font-size="13" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">3</tspan><tspan dy="-3"> = 0.45</tspan></text><rect x="456" y="100" width="56" height="56" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity=".05"/><text x="484.0" y="133.0" text-anchor="middle" font-size="13" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">4</tspan><tspan dy="-3"> = 0</tspan></text><text x="522" y="76.0" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="522" y="132.0" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="428.0" y="174" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><text x="484.0" y="174" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">0.45</text><path d="M394 38 L518 162" fill="none" stroke-width="1.8" stroke-dasharray="5 3" style="stroke:var(--warn)" marker-end="url(#ip4-b)"/><text x="456" y="206" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--warn)">대각선 광선: 0</text><text x="320" y="132" text-anchor="middle" font-size="22" class="svg-muted">≠</text><text x="320" y="236" text-anchor="middle" font-size="12" style="fill:var(--accent)">가로·세로 네 값(파란 글씨)은 같고, 대각선 값만 다릅니다.</text>
+    </svg>
+    <figcaption>\(2\times2\) 화소의 두 영상입니다. 각 화소의 값은 \(\mu_1\)부터 \(\mu_4\) 까지이고, 가로·세로 광선 네 개의 값은 두 영상에서 모두 0.45로 같습니다. 대각선 광선의 값 \(\sqrt2(\mu_1+\mu_4)\)만 달라서 영상 A와 B가 구분됩니다.</figcaption>
+  </figure>
+
+  <h3>그다음 문제</h3>
+  <p>방향이 많을수록 같은 데이터를 주는 서로 다른 영상이 줄어듭니다. 정사각형 두 개처럼 단순한 경우는 대각선 방향을 더하는 것만으로 위치가 정해졌습니다.
+  다만 방향 수가 유한하면 일반적인 영상에서는 여전히 같은 데이터를 주는 다른 영상이 있을 수 있습니다.
+  그래서 실제 CT는 물체 둘레를 돌며 수백 개가 넘는 방향에서 촘촘하게 측정합니다.
+  이렇게 모은 측정 전체를 하나의 함수로 정리한 것이 Radon 변환(직선마다 선적분을 모은 변환)과 sinogram입니다.</p>
+  <p>방향을 충분히 모아도 실제 측정값에는 늘 잡음이 섞이므로 구한 \(\mu\)에도 그 영향이 남습니다.
+  잡음이 투영값에 어떻게 들어오는지는 다음 페이지에서 봅니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 8 -->
+<section class="screen" data-title="측정 잡음">
+  <p class="kicker">2장 · 페이지 8 · 심화</p>
+  <h2>측정 잡음과 투영값</h2>
+
+  <p>같은 광선을 같은 조건으로 두 번 재도 \(I\)는 똑같이 나오지 않습니다.
+  검출기에 도착하는 광자의 수가 우연히 달라지기 때문입니다.
+  광자를 세는 경우 그 수는 푸아송 분포(<span class="term" data-term="poisson">Poisson Distribution</span>)를 따른다고 보는 것이 표준 모델입니다.
+  평균이 \(\bar N\)이면 분산도 \(\bar N\), 곧 표준편차는 \(\sqrt{\bar N}\)입니다. 푸아송 분포가 무엇이고 왜 광자 수에 쓰이는지는 아래 접기에서 개념만 짚습니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">모델의 범위</p>
+    <p>임상용 검출기는 광자를 하나씩 세지 않고 신호의 총량을 읽는 경우가 많고, 검출기 자체의 전자잡음도 있습니다.
+    그래서 푸아송 모델은 근사입니다. 이 책에서는 근사로 쓰고 \(I_0\)는 잡음 없이 정확히 안다고 놓습니다.</p>
+  </div>
+
+  <p>검출기가 읽는 세기 \(I\)는 센 광자 수 \(N\)에 비례하므로 \(I/I_0 = N/N_0\)입니다.
+  평균 입사 광자 수를 \(N_0\)이라 하면 광선 하나에서 검출기가 세는 광자 수 \(N\)의 평균은 \(\bar N = N_0\,e^{-p}\)입니다.
+  잡음이 섞인 측정값으로 계산한 투영값을 \(\hat p = -\ln(N/N_0)\)이라 쓰고(모자는 측정값이라는 표시입니다), \(\bar N\)이 충분히 크면 다음이 성립합니다.</p>
+
+  <p style="text-align:center">\[\sigma_p \approx \frac{1}{\sqrt{\bar N}} = \frac{e^{p/2}}{\sqrt{N_0}}\]</p>
+
+  <p>페이지 2의 보정으로 모든 검출기 칸의 \(I_0\)가 같아 보여도, 검출기 칸마다 실제로 입사한 광자 수는 서로 다를 수 있습니다. 잡음의 크기는 보정된 값이 아니라 이 광자 수로 정해집니다.</p>
+
+  <p>\(\sigma_p\)는 \(\hat p\)의 표준편차입니다. 이 식에서 두 가지를 읽을 수 있습니다.</p>
+  <ul>
+    <li>\(N_0\)이 4배가 되면 \(\sigma_p\)는 절반이 됩니다.</li>
+    <li>\(p\)가 클수록, 곧 두꺼운 방향일수록 \(\sigma_p\)가 커집니다. 물에서는 두께가 약 7.3 cm 늘 때마다 \(\sigma_p\)가 2배가 됩니다(\(p\)가 \(2\ln2 \approx 1.39\) 늘면 \(e^{p/2}\)가 2배이고, 물에서는 \(1.39/0.19 \approx 7.3\) cm에 해당합니다).</li>
+  </ul>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:8rem">평균 입사 광자 수 \(N_0\)</th><th>매질</th><th>\(p\)</th><th>평균 \(\bar N\)</th><th>\(\sigma_p\)</th><th>\(\sigma_p/p\)</th></tr>
+      <tr><td>\(10^{5}\)</td><td>물 10 cm</td><td>1.9</td><td>약 14960</td><td>0.0082</td><td>0.43%</td></tr>
+      <tr><td>\(10^{5}\)</td><td>물 20 cm</td><td>3.8</td><td>약 2240</td><td>0.021</td><td>0.56%</td></tr>
+      <tr><td>\(4\times10^{5}\)</td><td>물 10 cm</td><td>1.9</td><td>약 59830</td><td>0.0041</td><td>0.22%</td></tr>
+    </table>
+  </div>
+
+  <div class="box warn">
+    <p class="box-t">다루지 않는 범위</p>
+    <p>광자가 거의 잡히지 않는 두꺼운 방향의 처리, 로그 변환이 \(\hat p\)에 일으키는 치우침(Bias, 평균이 참값에서 한쪽으로 쏠리는 현상), 잡음의 크기를 일정하게 맞추는 분산 안정화 변환(Variance-stabilizing Transform, 예: Anscombe 변환)은
+    이 책에서 다루지 않습니다.</p>
+  </div>
+
+  <details class="fold">
+    <summary>푸아송 분포란 무엇인가 (개념만)</summary>
+    <div class="fold-body">
+      <p><b>1. 어떤 분포인가.</b>
+      광자가 한 개씩, 서로 무관하게, 아무 때나 도착한다고 합시다.
+      같은 시간 동안 센 개수는 매번 달라지지만 평균은 일정합니다.
+      이렇게 무작위로 일어나는 일의 횟수를 센 값이 따르는 분포를 푸아송 분포라 하고, 평균 \(\bar N\) 하나로 모양이 정해집니다.</p>
+      <p><b>2. 감쇠 모델과의 연결.</b>
+      1장에서 얇은 판 하나는 광자의 일정 비율을 빼 간다고 했습니다. 광자 한 개의 입장에서 이 비율은 "빠질 확률"입니다.
+      광선을 끝까지 지나 도착할 확률이 \(e^{-p}\)이므로, 평균 \(N_0\) 개가 입사하면 도착하는 개수의 평균은 \(N_0 e^{-p}\)입니다.
+      광자마다 서로 무관하게 같은 확률 \(e^{-p}\)로 살아남는다면, 입사 개수가 푸아송 분포를 따를 때 도착 개수도 푸아송 분포를 따릅니다.</p>
+      <p><b>3. 모양.</b>
+      푸아송 분포는 평균과 분산이 같다는 성질이 있어서(증명은 생략합니다) 표준편차가 \(\sqrt{\bar N}\)입니다.
+      평균이 클수록 종 모양에 가까워지고, 평균에 비한 흔들림 \(\sqrt{\bar N}/\bar N = 1/\sqrt{\bar N}\)은 작아집니다.</p>
+      <figure class="fig">
+        <svg viewBox="0 0 640 224" role="img" aria-label="평균이 5와 50일 때의 푸아송 분포 막대그래프"><g style="fill:var(--accent)" fill-opacity=".6"><rect x="60.0" y="165.4" width="13" height="4.6"/><rect x="76.0" y="147.0" width="13" height="23.0"/><rect x="92.0" y="112.4" width="13" height="57.6"/><rect x="108.0" y="74.0" width="13" height="96.0"/><rect x="124.0" y="50.0" width="13" height="120.0"/><rect x="140.0" y="50.0" width="13" height="120.0"/><rect x="156.0" y="70.0" width="13" height="100.0"/><rect x="172.0" y="98.6" width="13" height="71.4"/><rect x="188.0" y="125.4" width="13" height="44.6"/><rect x="204.0" y="145.2" width="13" height="24.8"/><rect x="220.0" y="157.6" width="13" height="12.4"/><rect x="236.0" y="164.4" width="13" height="5.6"/><rect x="252.0" y="167.7" width="13" height="2.3"/><rect x="268.0" y="169.1" width="13" height="0.9"/><rect x="284.0" y="169.7" width="13" height="0.3"/></g><path d="M146.5 36 V170" class="svg-line" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--warn)"/><path d="M56 170 H301" class="svg-line" stroke-width="1.2"/><text x="66.5" y="186" text-anchor="middle" font-size="10" class="svg-muted">0</text><text x="146.5" y="186" text-anchor="middle" font-size="10" class="svg-muted">5</text><text x="226.5" y="186" text-anchor="middle" font-size="10" class="svg-muted">10</text><text x="178.5" y="22" text-anchor="middle" font-size="13" font-weight="700" class="svg-fg">평균 5</text><text x="178.5" y="214" text-anchor="middle" font-size="11" class="svg-muted">표준편차 √5 ≈ 2.2 (평균의 약 45%)</text><text x="178.5" y="199" text-anchor="middle" font-size="10" class="svg-muted">센 광자 수 N</text><g style="fill:var(--accent)" fill-opacity=".6"><rect x="360.0" y="169.5" width="4.4" height="0.5"/><rect x="365.4" y="169.1" width="4.4" height="0.9"/><rect x="370.8" y="168.6" width="4.4" height="1.4"/><rect x="376.2" y="167.7" width="4.4" height="2.3"/><rect x="381.6" y="166.4" width="4.4" height="3.6"/><rect x="387.0" y="164.5" width="4.4" height="5.5"/><rect x="392.4" y="161.9" width="4.4" height="8.1"/><rect x="397.8" y="158.4" width="4.4" height="11.6"/><rect x="403.2" y="153.9" width="4.4" height="16.1"/><rect x="408.6" y="148.3" width="4.4" height="21.7"/><rect x="414.0" y="141.4" width="4.4" height="28.6"/><rect x="419.4" y="133.4" width="4.4" height="36.6"/><rect x="424.8" y="124.2" width="4.4" height="45.8"/><rect x="430.2" y="114.1" width="4.4" height="55.9"/><rect x="435.6" y="103.5" width="4.4" height="66.5"/><rect x="441.0" y="92.7" width="4.4" height="77.3"/><rect x="446.4" y="82.1" width="4.4" height="87.9"/><rect x="451.8" y="72.4" width="4.4" height="97.6"/><rect x="457.2" y="63.9" width="4.4" height="106.1"/><rect x="462.6" y="57.1" width="4.4" height="112.9"/><rect x="468.0" y="52.4" width="4.4" height="117.6"/><rect x="473.4" y="50.0" width="4.4" height="120.0"/><rect x="478.8" y="50.0" width="4.4" height="120.0"/><rect x="484.2" y="52.4" width="4.4" height="117.6"/><rect x="489.6" y="56.9" width="4.4" height="113.1"/><rect x="495.0" y="63.3" width="4.4" height="106.7"/><rect x="500.4" y="71.2" width="4.4" height="98.8"/><rect x="505.8" y="80.2" width="4.4" height="89.8"/><rect x="511.2" y="89.8" width="4.4" height="80.2"/><rect x="516.6" y="99.6" width="4.4" height="70.4"/><rect x="522.0" y="109.3" width="4.4" height="60.7"/><rect x="527.4" y="118.6" width="4.4" height="51.4"/><rect x="532.8" y="127.2" width="4.4" height="42.8"/><rect x="538.2" y="134.9" width="4.4" height="35.1"/><rect x="543.6" y="141.7" width="4.4" height="28.3"/><rect x="549.0" y="147.5" width="4.4" height="22.5"/><rect x="554.4" y="152.4" width="4.4" height="17.6"/><rect x="559.8" y="156.5" width="4.4" height="13.5"/><rect x="565.2" y="159.8" width="4.4" height="10.2"/><rect x="570.6" y="162.4" width="4.4" height="7.6"/><rect x="576.0" y="164.4" width="4.4" height="5.6"/><rect x="581.4" y="165.9" width="4.4" height="4.1"/><rect x="586.8" y="167.1" width="4.4" height="2.9"/><rect x="592.2" y="168.0" width="4.4" height="2.0"/><rect x="597.6" y="168.6" width="4.4" height="1.4"/></g><path d="M481.0 36 V170" class="svg-line" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--warn)"/><path d="M356 170 H606.0" class="svg-line" stroke-width="1.2"/><text x="373.0" y="186" text-anchor="middle" font-size="10" class="svg-muted">30</text><text x="481.0" y="186" text-anchor="middle" font-size="10" class="svg-muted">50</text><text x="589.0" y="186" text-anchor="middle" font-size="10" class="svg-muted">70</text><text x="481.0" y="22" text-anchor="middle" font-size="13" font-weight="700" class="svg-fg">평균 50</text><text x="481.0" y="214" text-anchor="middle" font-size="11" class="svg-muted">표준편차 √50 ≈ 7.1 (평균의 약 14%)</text><text x="481.0" y="199" text-anchor="middle" font-size="10" class="svg-muted">센 광자 수 N</text></svg>
+        <figcaption>평균이 5일 때와 50일 때의 모양입니다. 점선이 평균입니다. 평균이 클수록 평균에 비한 폭이 좁아집니다.</figcaption>
+      </figure>
+      <p><b>4. 투영값으로.</b>
+      세는 수 \(N\)이 평균에 비해 \(1/\sqrt{\bar N}\)만큼 흔들리고, 로그는 이 상대적인 흔들림을 그대로 \(\hat p\)의 흔들림으로 옮깁니다.
+      그래서 \(\sigma_p \approx 1/\sqrt{\bar N}\)입니다.</p>
+      <p><b>5. 전개로 확인.</b> 위 직관을 식으로 따라가 봅니다. \(\bar N\)이 충분히 큰 경우만 다룹니다.</p>
+      <p>(1) 센 수를 평균과 흔들림으로 나눕니다.
+      \(N = \bar N + \delta\) 라 두면 \(\delta\)는 평균이 0이고 분산이 \(\bar N\) 입니다(푸아송 분포의 성질).</p>
+      <p>(2) 로그를 둘로 나눕니다.</p>
+      <p style="text-align:center">\[\ln N = \ln\bar N + \ln\!\Bigl(1 + \frac{\delta}{\bar N}\Bigr)\]</p>
+      <p>(3) 1차로 근사합니다.
+      \(\bar N\)이 크면 \(|\delta|\)는 \(\bar N\)보다 훨씬 작아 \(|\delta/\bar N| \ll 1\)이고, 이때 \(\ln(1+z) \approx z\)이므로 \(\ln N \approx \ln\bar N + \delta/\bar N\)입니다.
+      \(N\)이 평균보다 1% 크면 \(\ln N\)이 약 0.01 커진다는 뜻입니다.</p>
+      <p>(4) 투영값에 대입합니다.
+      \(\hat p = -\ln N + \ln N_0\)이고 \(-\ln\bar N + \ln N_0 = -\ln(\bar N/N_0) = p\)이므로 다음과 같습니다.</p>
+      <p style="text-align:center">\[\hat p \approx p - \frac{\delta}{\bar N}\]</p>
+      <p>(5) 분산을 구합니다.
+      \(p\)와 \(\bar N\)은 상수이고 \(\delta\)만 흔들립니다. 상수는 분산에 영향을 주지 않고 상수배는 제곱으로 나옵니다.</p>
+      <p style="text-align:center">\[\operatorname{Var}(\hat p) \approx \frac{\operatorname{Var}(\delta)}{\bar N^{2}} = \frac{\bar N}{\bar N^{2}} = \frac{1}{\bar N}\]</p>
+      <p>(6) 표준편차로 바꾸고 검산합니다.
+      \(\sigma_p \approx 1/\sqrt{\bar N}\)이고 \(\bar N = N_0 e^{-p}\)를 대입하면 \(e^{p/2}/\sqrt{N_0}\)입니다.
+      \(N_0 = 10^5,\ p = 1.9\)이면 \(\bar N \approx 14957\)이고 \(\sigma_p \approx 1/\sqrt{14957} \approx 0.0082\)로 표의 첫 줄과 같습니다.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 9 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">2장 · 페이지 9</p>
+  <h2>2장 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>(심화) 플랫필드 보정을 거치면 물체가 없을 때 모든 검출기 칸이 같은 \(I_0\)를 읽습니다. 재구성은 이렇게 보정된 데이터를 입력으로 받으며, 거리·입사각·이득·암전류는 다시 다루지 않습니다.</li>
+      <li>광선 하나의 투영값은 \(p = -\ln(I/I_0) = \int \mu\,d\ell\)입니다. (심화) 같은 검출기 칸의 비를 쓰기 때문에 곱해지는 위치 차이가 상쇄됩니다.</li>
+      <li>광선은 \(x(\ell) = x_0 + \ell u_x,\ y(\ell) = y_0 + \ell u_y\) (\(u_x^2 + u_y^2 = 1\)) 로 나타내며, \(\ell\)은 광선을 따라 잰 거리입니다.</li>
+      <li>투영 \(\mathcal{P}\)는 영상 \(\mu\)에서 광선마다의 \(p\)를 만드는 선형 연산입니다.</li>
+      <li>재구성은 \(p\)에서 \(\mu\)를 구하는 역문제입니다. 한 방향만으로는 물체의 위치를 알 수 없고, 가로·세로 두 방향으로도 같은 데이터를 주는 서로 다른 영상이 남아서 대각선 같은 방향을 더해야 구별됩니다.</li>
+      <li>(심화) 광자 수를 세는 잡음 때문에 투영값은 \(\sigma_p \approx e^{p/2}/\sqrt{N_0}\) 정도로 흔들리며, 두꺼운 방향일수록 큽니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">한 광선에서 \(I/I_0 = 0.05\)로 읽혔습니다. 이 광선의 투영값 \(p\)는 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 0.05는 남는 비율이고, 투영값은 그 비의 로그에 부호를 바꾼 값입니다.">\(p = I/I_0 = 0.05\)</li>
+      <li data-why="틀립니다. 1 − 0.05는 줄어든 비율입니다. 여러 구간을 지나면 남는 비율은 곱해지고 투영값은 더해지는데, 줄어든 비율은 그 어느 쪽도 아니어서 선적분과 이어지지 않습니다.">\(p = 1 - I/I_0 = 0.95\)</li>
+      <li data-why="맞습니다. −ln 0.05 = ln 20 ≈ 3.0입니다.">\(p = -\ln(I/I_0) = -\ln 0.05 \approx 3.0\)</li>
+      <li data-why="틀립니다. ln 0.05는 약 −3.0이지만 투영값은 부호를 바꾼 −ln이므로 +3.0입니다. I ≤ I₀이면 p는 0 이상입니다.">\(p = \ln(I/I_0) = \ln 0.05 \approx -3.0\)</li>
+    </ol>
+    <div class="explain">
+      <p>\(p\)를 물의 \(\mu = 0.19\ \mathrm{cm}^{-1}\)로 나누면 물 두께로 환산한 값이 됩니다. \(3.0 / 0.19 \approx 15.8\) cm이므로, 이 광선은 물 약 16 cm를 지난 것과 같은 감쇠를 받았습니다.
+      이렇게 \(p\)를 "물 등가 두께"로 읽으면 광선마다의 값을 머릿속으로 가늠하기 쉽습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">한 변이 3 cm인 정사각형 안에서 \(\mu = 0.10\ \mathrm{cm}^{-1}\)이고 밖에서는 0입니다. 이 정사각형의 한 꼭짓점에서 반대쪽 꼭짓점까지 대각선을 따라 지나는 광선의 투영값 \(p\)는 얼마일까요?</p>
+    <figure class="fig">
+      <svg viewBox="0 0 400 230" role="img" aria-label="한 변 3 cm 정사각형의 한 꼭짓점에서 반대쪽 꼭짓점까지 대각선으로 지나는 광선">
+        <defs><marker id="qz2-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker><marker id="qz2-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+        <rect x="100" y="40" width="130" height="130" style="fill:var(--accent)" fill-opacity=".25" class="svg-line" stroke-width="1.5"/><path d="M78 192 L252 18" fill="none" stroke-width="2" stroke-dasharray="6 3" style="stroke:var(--warn)" marker-end="url(#qz2-w)"/><circle cx="100" cy="170" r="4" class="svg-fg"/><circle cx="230" cy="40" r="4" class="svg-fg"/><path d="M100 184 H230" class="svg-line" stroke-width="1" style="stroke:var(--muted)" marker-start="url(#qz2-a)" marker-end="url(#qz2-a)"/><text x="165.0" y="200" text-anchor="middle" font-size="12" class="svg-fg">3 cm</text><path d="M86 40 V170" class="svg-line" stroke-width="1" style="stroke:var(--muted)" marker-start="url(#qz2-a)" marker-end="url(#qz2-a)"/><text x="80" y="109.0" text-anchor="end" font-size="12" class="svg-fg">3 cm</text><text x="137.0" y="83.0" text-anchor="middle" font-size="12" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ = 0.10</text><text x="137.0" y="97.0" text-anchor="middle" font-size="11" class="svg-muted" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">cm⁻¹</text><text x="248" y="164" font-size="11" class="svg-muted">정사각형 밖: μ = 0</text><text x="260" y="48" font-size="12" font-weight="700" style="fill:var(--warn)">광선</text><text x="187.0" y="113.0" font-size="12" font-weight="700" style="fill:var(--warn);paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">길이 = ?</text>
+      </svg>
+      <figcaption>정사각형 안에서만 \(\mu = 0.10\ \mathrm{cm}^{-1}\)이고, 주황색 점선이 한 꼭짓점에서 반대쪽 꼭짓점으로 지나는 광선입니다.</figcaption>
+    </figure>
+    <ol class="options">
+      <li data-why="틀립니다. 3 cm는 정사각형의 한 변의 길이이고, 대각선을 따라 지나는 길이가 아닙니다.">\(p = 0.10 \times 3 = 0.30\)</li>
+      <li data-why="맞습니다. 광선이 정사각형 안에서 지나는 길이는 대각선 길이 3√2 ≈ 4.24 cm이고, μ가 일정하므로 선적분은 μ에 이 길이를 곱한 값입니다.">\(p = 0.10 \times 3\sqrt2 \approx 0.42\)</li>
+      <li data-why="틀립니다. 6 cm는 두 변의 길이를 더한 값이고, 광선은 변을 따라 꺾이지 않고 직선으로 지납니다.">\(p = 0.10 \times 6 = 0.60\)</li>
+      <li data-why="틀립니다. 3/√2 ≈ 2.12 cm는 대각선의 절반입니다. 이 광선은 꼭짓점에서 꼭짓점까지 대각선 전체를 지납니다.">\(p = 0.10 \times 3/\sqrt2 \approx 0.21\)</li>
+    </ol>
+    <div class="explain">
+      <p>선적분 \(\int \mu\,d\ell\)의 \(d\ell\)은 광선을 따라 잰 길이의 증분입니다. \(\mu\)가 일정한 구간에서는 \(\mu\)와 광선이 그 구간에서 지나는 길이의 곱이 됩니다.
+      45° 대각선이 한 변이 1 cm인 화소를 가로지르면 길이가 \(\sqrt2\) cm라는 것도 같은 계산입니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">한 변이 1 cm이고 \(\mu = 0.45\ \mathrm{cm}^{-1}\)인 정사각형 두 개(중심 \((-2, 2)\)와 \((2, -2)\))를 위에서 아래로 지나는 세로 광선만으로 측정했습니다. 이 데이터로 알 수 있는 것은 무엇일까요?</p>
+    <figure class="fig">
+      <svg viewBox="0 0 400 282" role="img" aria-label="정사각형 두 개와 위에서 아래로 지나는 세로 광선과 검출기">
+        <defs><marker id="qz3-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+        <rect x="100" y="45" width="180" height="180" class="svg-line" stroke-width="1.2"/><g fill="none" stroke-width="1.2" style="stroke:var(--fg)" stroke-opacity=".7"><path d="M100 135 H278" marker-end="url(#qz3-a)"/><path d="M190 225 V47" marker-end="url(#qz3-a)"/></g><text x="268" y="127" font-size="12" font-weight="700" class="svg-fg">x</text><text x="197" y="57" font-size="12" font-weight="700" class="svg-fg">y</text><g class="svg-line" stroke-width="1.2" style="stroke:var(--muted)"><path d="M118 37 V229" stroke-dasharray="4 3" marker-end="url(#qz3-a)"/><path d="M154 37 V229" stroke-dasharray="4 3" marker-end="url(#qz3-a)"/><path d="M190 37 V229" stroke-dasharray="4 3" marker-end="url(#qz3-a)"/><path d="M226 37 V229" stroke-dasharray="4 3" marker-end="url(#qz3-a)"/><path d="M262 37 V229" stroke-dasharray="4 3" marker-end="url(#qz3-a)"/></g><rect x="100" y="231" width="180" height="7" class="svg-fg" fill-opacity=".55"/><text x="288" y="239" font-size="11" class="svg-muted">검출기</text><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="145.0" y="90.0" width="18" height="18"/><rect x="217.0" y="162.0" width="18" height="18"/></g><text x="154" y="85" text-anchor="middle" font-size="10.5" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">(−2, 2)</text><text x="226" y="195" text-anchor="middle" font-size="10.5" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">(2, −2)</text><text x="118" y="261" text-anchor="middle" font-size="10" class="svg-muted">x=−4</text><text x="154" y="261" text-anchor="middle" font-size="10" class="svg-muted">x=−2</text><text x="190" y="261" text-anchor="middle" font-size="10" class="svg-muted">x=0</text><text x="226" y="261" text-anchor="middle" font-size="10" class="svg-muted">x=2</text><text x="262" y="261" text-anchor="middle" font-size="10" class="svg-muted">x=4</text><text x="88" y="23" font-size="11" style="fill:var(--warn)">위 → 아래로 지나는 세로 광선</text>
+      </svg>
+      <figcaption>파란 정사각형(한 변 1 cm, \(\mu = 0.45\ \mathrm{cm}^{-1}\))과 세로 광선입니다. 검출기에서 광선마다 \(p\)를 읽습니다.</figcaption>
+    </figure>
+    <ol class="options">
+      <li data-why="틀립니다. 세로 광선은 광선 위의 μ를 모두 더해 숫자 하나로 만들기 때문에, 광선이 나아가는 방향의 위치(y 좌표)는 데이터에 남지 않습니다.">두 정사각형의 \(x\) 좌표와 \(y\) 좌표를 모두 알 수 있습니다.</li>
+      <li data-why="맞습니다. 정사각형을 지나는 광선의 위치 x = −2와 2 에서만 p = 0.45가 나오므로 x 좌표는 알 수 있지만, y 좌표는 데이터에 나타나지 않습니다.">두 정사각형의 \(x\) 좌표는 알 수 있지만 \(y\) 좌표는 알 수 없습니다.</li>
+      <li data-why="틀립니다. 정사각형 두 개라는 것을 알아도 가로 광선을 더해서는 실제 배치와 다른 배치((−2, −2), (2, 2))의 데이터가 같아서 구분되지 않습니다. 대각선 같은 다른 방향이 더 필요합니다.">가로 광선만 더해도 두 정사각형의 위치가 하나로 정해집니다.</li>
+      <li data-why="틀립니다. 광선이 정사각형을 지나는 x = −2와 2에서는 p = 0.45가 읽히므로 x 좌표를 알 수 있습니다.">이 데이터로는 정사각형의 위치를 전혀 알 수 없습니다.</li>
+    </ol>
+    <div class="explain">
+      <p>한 방향의 투영은 광선 위의 정보를 하나의 숫자로 합칩니다. 그래서 \(\mu\)가 광선을 따라 어디에 있는지는 사라집니다.
+      재구성에는 방향을 바꿔 가며 모은 여러 투영이 필요합니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">(심화) 광자 수가 푸아송 분포를 따른다고 볼 때, 같은 광선에서 입사 광자 수 \(N_0\)를 4배로 늘리면 투영값의 표준편차 \(\sigma_p\)는 어떻게 될까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 광자가 많을수록 세는 수의 상대적인 흔들림은 작아지므로 σₚ는 줄어듭니다.">4배로 커집니다.</li>
+      <li data-why="틀립니다. σₚ는 광자 수의 제곱근에 반비례하지 광자 수에 반비례하지 않으므로 4배 늘면 1/4이 아니라 1/2이 됩니다.">1/4로 줄어듭니다.</li>
+      <li data-why="맞습니다. σₚ ≈ 1/√N̄이고 N̄이 4배가 되면 σₚ는 1/√4 = 1/2이 됩니다.">1/2로 줄어듭니다.</li>
+      <li data-why="틀립니다. 로그를 취하기 전에 비를 만들더라도 비의 흔들림은 N이 클수록 작아지므로 σₚ는 N₀에 의존합니다.">변하지 않습니다. 비를 취하면 광자 수가 약분됩니다.</li>
+    </ol>
+    <div class="explain">
+      <p>광자 수를 4배로 하면 선량(Dose, 흡수된 방사선의 양)도 대략 4배가 됩니다. 잡음을 절반으로 줄이는 데 선량이 4배 드는 것이 저선량 촬영이 어려운 이유 가운데 하나입니다.
+      반대로 두께가 물 기준 약 7.3 cm 늘면 \(\sigma_p\)가 2배가 되므로, 몸통이 두꺼운 방향일수록 같은 선량에서 잡음이 큽니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <p>\(2\times2\) 화소(한 변 1 cm)의 값이 다음과 같습니다. 윗줄은 \(\mu_1 = 0.2,\ \mu_2 = 0.5\), 아랫줄은 \(\mu_3 = 0.1,\ \mu_4 = 0.3\) 입니다(단위 \(\mathrm{cm}^{-1}\)).</p>
+    <figure class="fig">
+      <svg viewBox="0 0 460 290" role="img" aria-label="2×2 화소와 가로 광선 둘, 세로 광선 둘, 대각선 광선 하나">
+        <defs><marker id="qz4-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker><marker id="qz4-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+        <rect x="190" y="70" width="60" height="60" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity="0.28"/><text x="205" y="104" text-anchor="middle" font-size="12" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">1</tspan></text><text x="205" y="125" text-anchor="middle" font-size="11" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">0.2</text><rect x="250" y="70" width="60" height="60" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity="0.55"/><text x="265" y="104" text-anchor="middle" font-size="12" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">2</tspan></text><text x="265" y="125" text-anchor="middle" font-size="11" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">0.5</text><rect x="190" y="130" width="60" height="60" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity="0.19"/><text x="205" y="164" text-anchor="middle" font-size="12" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">3</tspan></text><text x="205" y="185" text-anchor="middle" font-size="11" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">0.1</text><rect x="250" y="130" width="60" height="60" class="svg-line" stroke-width="1.2" style="fill:var(--accent)" fill-opacity="0.37"/><text x="265" y="164" text-anchor="middle" font-size="12" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">μ<tspan dy="3" font-size="9">4</tspan></text><text x="265" y="185" text-anchor="middle" font-size="11" class="svg-fg" style="paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round">0.3</text><g class="svg-line" stroke-width="1.3" style="stroke:var(--muted)"><path d="M140 100.0 H340" stroke-dasharray="4 3" marker-end="url(#qz4-a)"/><path d="M140 160.0 H340" stroke-dasharray="4 3" marker-end="url(#qz4-a)"/><path d="M220.0 36 V204" stroke-dasharray="4 3" marker-end="url(#qz4-a)"/><path d="M280.0 36 V204" stroke-dasharray="4 3" marker-end="url(#qz4-a)"/></g><path d="M164 44 L336 216" fill="none" stroke-width="2" stroke-dasharray="6 3" style="stroke:var(--warn)" marker-end="url(#qz4-w)"/><g class="svg-fg" font-size="13" font-weight="700"><text x="132" y="104.0" text-anchor="end">가로 ①</text><text x="132" y="164.0" text-anchor="end">가로 ②</text><text x="220.0" y="28" text-anchor="middle">세로 ③</text><text x="280.0" y="28" text-anchor="middle">세로 ④</text></g><text x="160" y="38" text-anchor="end" font-size="13" font-weight="700" style="fill:var(--warn)">대각선 ⑤</text><path d="M190 216 H250" class="svg-line" stroke-width="1" style="stroke:var(--muted)" marker-start="url(#qz4-a)" marker-end="url(#qz4-a)"/><text x="220" y="232" text-anchor="middle" font-size="11" class="svg-muted">화소 한 변 = 1 cm</text>
+      </svg>
+      <figcaption>화소의 값이 \(\mu_1 \sim \mu_4\)이고, 가로 ①②와 세로 ③④는 화소의 한가운데를, 대각선 ⑤는 왼쪽 위 모서리에서 오른쪽 아래 모서리를 지납니다.</figcaption>
+    </figure>
+    <ol>
+      <li>가로 광선 ①②와 세로 광선 ③④의 투영값 \(p\)를 구하세요.</li>
+      <li>대각선 광선 ⑤의 \(p\)와 \(I/I_0\)를 구하세요.</li>
+      <li>1번의 ①② 두 값의 합과 ③④ 두 값의 합을 비교하세요. 그 결과가 "가로·세로 네 값만으로는 \(\mu_1 \sim \mu_4\)를 정할 수 없다"는 것과 어떻게 이어지는지 설명하세요.</li>
+      <li>가로·세로 네 값은 같지만 \(\mu_1 \sim \mu_4\)는 다른 영상을 하나 만들고, 그 영상에서 대각선 광선의 \(p\)가 달라지는 것을 확인하세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> 가로 ①은 \(0.2 + 0.5 = 0.7\), 가로 ②는 \(0.1 + 0.3 = 0.4\)입니다.
+      세로 ③은 \(0.2 + 0.1 = 0.3\), 세로 ④는 \(0.5 + 0.3 = 0.8\)입니다. 각 광선이 화소 두 개를 1 cm 씩 지나기 때문입니다.</p>
+      <p><b>2번.</b> 대각선 광선 ⑤는 화소 1과 4를 \(\sqrt2\) cm 씩 지나므로 \(p = \sqrt2\,(0.2 + 0.3) \approx 0.707\)이고, \(I/I_0 = e^{-0.707} \approx 0.493\)입니다.</p>
+      <p><b>3번.</b> ① ②의 합은 \(0.7 + 0.4 = 1.1\)이고 ③ ④의 합은 \(0.3 + 0.8 = 1.1\)로 같습니다.
+      둘 다 네 화소를 한 번씩 더한 \(\mu_1 + \mu_2 + \mu_3 + \mu_4\)이기 때문입니다.
+      이 관계 때문에 네 값 가운데 독립인 것은 세 개뿐이어서, 미지수 네 개를 정할 수 없습니다.</p>
+      <p><b>4번.</b> \(\mu_1, \mu_4\)에 \(+t\), \(\mu_2, \mu_3\)에 \(-t\)를 더하면 가로·세로 값이 그대로입니다.
+      \(t = 0.1\)이면 \((\mu_1, \mu_2, \mu_3, \mu_4) = (0.3,\ 0.4,\ 0.0,\ 0.4)\)이고, 윗줄 \(0.7\), 아랫줄 \(0.4\), 왼쪽 열 \(0.3\), 오른쪽 열 \(0.8\)로 1번과 같습니다.
+      대각선 광선은 \(\sqrt2\,(0.3 + 0.4) \approx 0.990\)으로 2번의 \(0.707\)과 달라서, 대각선 광선을 더하면 두 영상이 구분됩니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>대각선 광선이 화소 하나를 지나는 길이를 1 cm로 쓰는 것입니다. 한 변이 1 cm인 화소를 꼭짓점에서 꼭짓점으로 지나면 \(\sqrt2\) cm입니다.</li>
+        <li>\(p\)를 \(I/I_0\)와 혼동하는 것입니다. \(p\)는 클수록 많이 약해진 광선이고, \(I/I_0\)는 작을수록 많이 약해진 광선입니다.</li>
+        <li>식이 네 개이면 미지수 네 개가 정해진다고 생각하는 것입니다. 중요한 것은 식의 개수가 아니라 서로 독립인 식의 개수입니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch03.html"><span>다음 장</span>3장 — 재구성 방법의 큰 지도</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../assets/katex/katex.min.js"></script>
+<script src="../assets/katex/auto-render.min.js"></script>
+<script src="../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../assets/book.js"></script>
+</body>
+</html>

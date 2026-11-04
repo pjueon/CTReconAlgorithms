@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch04">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4장 · 투영에서 영상으로: 푸리에 슬라이스 정리와 역투영 — CT 재구성 알고리즘1 - 해석적 재구성편</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="투영의 1차원 푸리에 변환">
+  <p class="kicker">4장 · 페이지 1</p>
+  <h1>투영에서 영상으로: 푸리에 슬라이스 정리와 역투영</h1>
+
+  <p class="lead">3장에서는 평행빔 데이터 \(p(\theta, s)\)가 각도와 검출기 위치로 정해지는 값의 모음이라는 것을 보았습니다.
+  이 장에서는 이 데이터에서 영상을 만드는 두 방법을 비교합니다. 하나는 푸리에 공간에서 바로 영상을 만드는 방법이고, 다른 하나는 영상 공간에서 측정값을 되돌려 더하는 역투영입니다. 두 방법을 푸리에 공간에서 겹쳐 보면 필터 역투영(<span class="term" data-term="fbp">FBP</span>)의 원리가 보입니다.</p>
+
+  <h2>투영의 1차원 푸리에 변환</h2>
+
+  <p>3장 페이지 10의 이산 sinogram에서 행 하나는 각도 하나의 투영이었습니다. 연속으로 보면 각도 \(\theta\)를 고정한 \(p(\theta, s)\)는 \(s\)의 1차원 함수이므로, 2장의 규약대로 \(s\)에 대해 푸리에 변환할 수 있습니다.</p>
+  <p style="text-align:center">\[P_\theta(\omega) = \int_{-\infty}^{\infty} p(\theta, s)\,e^{-i2\pi\omega s}\,ds\]</p>
+  <ul>
+    <li>\(\omega\)는 검출기 방향의 주파수이며, 2장의 규약대로 1 cm당 반복 횟수(\(\mathrm{cm}^{-1}\))입니다.</li>
+    <li>\(P_\theta(\omega)\)는 각도 \(\theta\)의 투영에 주파수 \(\omega\)인 파동이 얼마나 들어 있는지를 나타냅니다.</li>
+  </ul>
+  <p>그렇다면 \(P_\theta(\omega)\)는 영상 \(\mu(x, y)\)의 무엇에 해당할까요? 영상의 주파수 성분은 2차원 푸리에 변환 \(F(\omega_x, \omega_y)\)가 나타내므로(2장 페이지 6), \(P_\theta\)가 \(F\)의 어느 부분인지를 찾으면 됩니다.</p>
+
+  <h3>세로 광선의 투영</h3>
+
+  <p>가장 단순한 각도부터 계산해 봅니다. \(\theta = 0\)이면 광선은 세로 직선 \(x = s\)이고, 광선 위의 거리 \(\ell\)은 \(y\)입니다(3장 페이지 2). 따라서 투영은 영상을 \(y\) 방향으로 적분한 것입니다.</p>
+  <p style="text-align:center">\[p(0, s) = \int_{-\infty}^{\infty} \mu(s, y)\,dy\]</p>
+  <p>이것을 \(s\)에 대해 푸리에 변환하고, 적분 변수 \(s\)를 \(x\)로 바꿔 쓰면 다음과 같습니다.</p>
+  <p style="text-align:center">\[P_0(\omega) = \int\!\left[\int \mu(x, y)\,dy\right] e^{-i2\pi\omega x}\,dx = \iint \mu(x, y)\,e^{-i2\pi\omega x}\,dx\,dy\]</p>
+  <p>마지막 식은 2차원 푸리에 변환의 정의에 \(\omega_x = \omega,\ \omega_y = 0\)을 넣은 것입니다. 그러므로 \(P_0(\omega) = F(\omega, 0)\)입니다.</p>
+
+  <p>세로 광선의 투영을 1차원 푸리에 변환하면, 영상의 2차원 푸리에 변환을 \(\omega_x\) 축 위에서 읽은 값이 나옵니다. \(y\) 방향으로 진동하는 성분은 \(y\)로 적분하면 0이 되고, \(y\) 방향으로 진동하지 않는 성분(\(\omega_y = 0\))만 투영에 남기 때문입니다.
+  3장 페이지 7의 질량 보존(투영 한 장의 합이 어느 각도에서나 영상 전체의 합과 같다는 사실, 증명은 페이지 8의 심화)을 푸리에 변환으로 쓴 \(P_\theta(0) = F(0, 0)\)은 이 직선의 원점 값입니다.</p>
+
+  <p>줄무늬 영상으로 두 경우를 비교하면 다음과 같습니다. \(\omega_x\) 축 위의 점은 \(x\) 방향으로만 변하는 세로 줄무늬이고, 세로 광선은 줄 하나를 따라 지나므로 투영에 같은 무늬가 그대로 남습니다. 반대로 \(y\) 방향으로 변하는 가로 줄무늬는 광선 하나가 짙은 줄과 옅은 줄을 같은 만큼 지나므로 더하면 0입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 282" role="img" aria-label="두 줄무늬에 세로 광선을 지나게 한 결과. 왼쪽 세로 줄무늬는 광선이 한 줄을 따라가므로 투영이 같은 코사인 무늬로 남고, 오른쪽 가로 줄무늬는 광선마다 짙은 줄과 옅은 줄을 같은 만큼 지나 투영이 0">
+<defs><marker id="s1v-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker><linearGradient id="s1v-gL" gradientUnits="userSpaceOnUse" spreadMethod="repeat" x1="140.0" y1="94.0" x2="180.0" y2="94.0"><stop offset="0.000" style="stop-color:var(--fg)" stop-opacity="0.800"/><stop offset="0.083" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="0.167" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.250" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.333" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.417" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.500" style="stop-color:var(--fg)" stop-opacity="0.000"/><stop offset="0.583" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.667" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.750" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.833" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.917" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="1.000" style="stop-color:var(--fg)" stop-opacity="0.800"/></linearGradient><linearGradient id="s1v-gR" gradientUnits="userSpaceOnUse" spreadMethod="repeat" x1="480.0" y1="94.0" x2="480.0" y2="54.0"><stop offset="0.000" style="stop-color:var(--fg)" stop-opacity="0.800"/><stop offset="0.083" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="0.167" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.250" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.333" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.417" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.500" style="stop-color:var(--fg)" stop-opacity="0.000"/><stop offset="0.583" style="stop-color:var(--fg)" stop-opacity="0.054"/><stop offset="0.667" style="stop-color:var(--fg)" stop-opacity="0.200"/><stop offset="0.750" style="stop-color:var(--fg)" stop-opacity="0.400"/><stop offset="0.833" style="stop-color:var(--fg)" stop-opacity="0.600"/><stop offset="0.917" style="stop-color:var(--fg)" stop-opacity="0.746"/><stop offset="1.000" style="stop-color:var(--fg)" stop-opacity="0.800"/></linearGradient></defs>
+<text x="60" y="22" font-size="12" font-weight="700" class="svg-fg">세로 줄무늬 (ω<tspan font-size="8" dy="3">x</tspan><tspan dy="-3">, ω</tspan><tspan font-size="8" dy="3">y</tspan><tspan dy="-3">) = (1, 0)</tspan></text>
+<rect x="60" y="34" width="160" height="120" fill="url(#s1v-gL)"/>
+<rect x="60" y="34" width="160" height="120" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+<g fill="none" stroke-width="1.1" stroke-dasharray="4 3" style="stroke:var(--warn)"><path d="M70.0 30 V184"/><path d="M90.0 30 V184"/><path d="M110.0 30 V184"/><path d="M130.0 30 V184"/><path d="M150.0 30 V184"/><path d="M170.0 30 V184"/><path d="M190.0 30 V184"/><path d="M210.0 30 V184"/></g>
+<path d="M60 229 H220" fill="none" stroke-width="1" stroke-dasharray="2 3" style="stroke:var(--muted)"/>
+<path d="M60.0 202.0 L61.0 202.3 L62.0 203.3 L63.0 204.9 L64.0 207.2 L65.0 209.9 L66.0 213.1 L67.0 216.7 L68.0 220.7 L69.0 224.8 L70.0 229.0 L71.0 233.2 L72.0 237.3 L73.0 241.3 L74.0 244.9 L75.0 248.1 L76.0 250.8 L77.0 253.1 L78.0 254.7 L79.0 255.7 L80.0 256.0 L81.0 255.7 L82.0 254.7 L83.0 253.1 L84.0 250.8 L85.0 248.1 L86.0 244.9 L87.0 241.3 L88.0 237.3 L89.0 233.2 L90.0 229.0 L91.0 224.8 L92.0 220.7 L93.0 216.7 L94.0 213.1 L95.0 209.9 L96.0 207.2 L97.0 204.9 L98.0 203.3 L99.0 202.3 L100.0 202.0 L101.0 202.3 L102.0 203.3 L103.0 204.9 L104.0 207.2 L105.0 209.9 L106.0 213.1 L107.0 216.7 L108.0 220.7 L109.0 224.8 L110.0 229.0 L111.0 233.2 L112.0 237.3 L113.0 241.3 L114.0 244.9 L115.0 248.1 L116.0 250.8 L117.0 253.1 L118.0 254.7 L119.0 255.7 L120.0 256.0 L121.0 255.7 L122.0 254.7 L123.0 253.1 L124.0 250.8 L125.0 248.1 L126.0 244.9 L127.0 241.3 L128.0 237.3 L129.0 233.2 L130.0 229.0 L131.0 224.8 L132.0 220.7 L133.0 216.7 L134.0 213.1 L135.0 209.9 L136.0 207.2 L137.0 204.9 L138.0 203.3 L139.0 202.3 L140.0 202.0 L141.0 202.3 L142.0 203.3 L143.0 204.9 L144.0 207.2 L145.0 209.9 L146.0 213.1 L147.0 216.7 L148.0 220.7 L149.0 224.8 L150.0 229.0 L151.0 233.2 L152.0 237.3 L153.0 241.3 L154.0 244.9 L155.0 248.1 L156.0 250.8 L157.0 253.1 L158.0 254.7 L159.0 255.7 L160.0 256.0 L161.0 255.7 L162.0 254.7 L163.0 253.1 L164.0 250.8 L165.0 248.1 L166.0 244.9 L167.0 241.3 L168.0 237.3 L169.0 233.2 L170.0 229.0 L171.0 224.8 L172.0 220.7 L173.0 216.7 L174.0 213.1 L175.0 209.9 L176.0 207.2 L177.0 204.9 L178.0 203.3 L179.0 202.3 L180.0 202.0 L181.0 202.3 L182.0 203.3 L183.0 204.9 L184.0 207.2 L185.0 209.9 L186.0 213.1 L187.0 216.7 L188.0 220.7 L189.0 224.8 L190.0 229.0 L191.0 233.2 L192.0 237.3 L193.0 241.3 L194.0 244.9 L195.0 248.1 L196.0 250.8 L197.0 253.1 L198.0 254.7 L199.0 255.7 L200.0 256.0 L201.0 255.7 L202.0 254.7 L203.0 253.1 L204.0 250.8 L205.0 248.1 L206.0 244.9 L207.0 241.3 L208.0 237.3 L209.0 233.2 L210.0 229.0 L211.0 224.8 L212.0 220.7 L213.0 216.7 L214.0 213.1 L215.0 209.9 L216.0 207.2 L217.0 204.9 L218.0 203.3 L219.0 202.3 L220.0 202.0" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+<text x="228" y="207" font-size="11" class="svg-fg">투영: 3 cos(2πs)</text>
+<text x="54" y="233" font-size="10" text-anchor="end" class="svg-muted">0</text>
+<text x="140" y="273" font-size="10.5" text-anchor="middle" class="svg-muted">검출기 좌표 s (가로 4 cm)</text>
+<text x="400" y="22" font-size="12" font-weight="700" class="svg-fg">가로 줄무늬 (ω<tspan font-size="8" dy="3">x</tspan><tspan dy="-3">, ω</tspan><tspan font-size="8" dy="3">y</tspan><tspan dy="-3">) = (0, 1)</tspan></text>
+<rect x="400" y="34" width="160" height="120" fill="url(#s1v-gR)"/>
+<rect x="400" y="34" width="160" height="120" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+<g fill="none" stroke-width="1.1" stroke-dasharray="4 3" style="stroke:var(--warn)"><path d="M410.0 30 V184"/><path d="M430.0 30 V184"/><path d="M450.0 30 V184"/><path d="M470.0 30 V184"/><path d="M490.0 30 V184"/><path d="M510.0 30 V184"/><path d="M530.0 30 V184"/><path d="M550.0 30 V184"/></g>
+<path d="M400 229 H560" fill="none" stroke-width="1" stroke-dasharray="2 3" style="stroke:var(--muted)"/>
+<path d="M400 229 H560" fill="none" stroke-width="2.4" style="stroke:var(--accent)"/>
+<text x="568" y="233" font-size="11" class="svg-fg">투영: 0</text>
+<text x="394" y="233" font-size="10" text-anchor="end" class="svg-muted">0</text>
+<text x="480" y="273" font-size="10.5" text-anchor="middle" class="svg-muted">검출기 좌표 s (가로 4 cm)</text>
+</svg>
+    <figcaption>두 줄무늬 \(\cos\bigl(2\pi(\omega_x x + \omega_y y)\bigr)\)를 가로 4 cm, 세로 3 cm 영역에 그리고 세로 광선(주황 점선)을 지나게 했습니다. \(\omega\)의 단위는 \(\mathrm{cm}^{-1}\)입니다. 짙은 줄이 \(+1\), 옅은 줄이 \(-1\)이고, 아래 파란 선이 투영입니다.
+    왼쪽은 광선마다 같은 값을 3 cm 더하므로 \(3\cos(2\pi s)\)이고, 오른쪽은 광선마다 세 주기를 온전히 지나므로 0입니다.</figcaption>
+  </figure>
+
+  <p>다른 각도에서는 어떻게 될까요? 광선 방향을 돌리면 적분으로 사라지는 방향도 함께 돌아갑니다. 그래서 투영의 푸리에 변환은 주파수 평면에서 같은 각만큼 돌아간 직선 위의 값이 될 것으로 짐작할 수 있습니다. 이 짐작이 맞다는 것이 다음 페이지의 푸리에 슬라이스 정리입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">이 장의 진행</p>
+    <ol>
+      <li>투영의 푸리에 변환이 영상의 2차원 푸리에 변환의 한 직선임을 보이고 증명합니다(푸리에 슬라이스 정리, 페이지 2~3. 증명인 페이지 3은 심화). 투영 각도가 180°에 못 미칠 때 주파수 평면에 생기는 빈 곳도 봅니다(페이지 2).</li>
+      <li>이 정리로 바로 재구성하는 방법과 그 어려움을 봅니다(페이지 4, 심화).</li>
+      <li>영상 공간에서 측정값을 되돌려 더하는 역투영을 직관과 식으로 설명합니다(페이지 5~6).</li>
+      <li>역투영이 푸리에 공간에서 하는 일을 보고, 필터 역투영의 원리를 알아봅니다(페이지 7~8).</li>
+      <li>Shepp-Logan 팬텀으로 단순 역투영과 필터 역투영을 비교합니다(페이지 9).</li>
+    </ol>
+    <p>페이지 머리에 "심화"가 붙은 페이지(3, 4)는 처음 읽을 때 건너뛰어도 됩니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="투영 하나는 직선 하나: 푸리에 슬라이스 정리">
+  <p class="kicker">4장 · 페이지 2</p>
+  <h2>투영 하나는 주파수 평면의 직선 하나: 푸리에 슬라이스 정리</h2>
+
+  <p>페이지 1에서 \(\theta = 0\)일 때 얻은 결과는 모든 각도에서 성립합니다. 각도 \(\theta\)의 투영을 1차원 푸리에 변환한 것은, 영상의 2차원 푸리에 변환을 주파수 평면의 원점을 지나 \(\theta\) 방향으로 놓인 직선 위에서 읽은 값과 같습니다.</p>
+  <p style="text-align:center">\[P_\theta(\omega) = F(\omega\cos\theta,\ \omega\sin\theta),\qquad -\infty &lt; \omega &lt; \infty\]</p>
+  <ul>
+    <li>\(\theta\)는 3장의 투영 각도, 즉 광선의 법선 방향 각입니다. 주파수 평면의 직선도 같은 \(\theta\) 방향이며, 이 방향은 검출기 방향(회전 좌표의 \(x'\) 축)입니다.</li>
+    <li>\(\omega\)는 그 직선 위에서 원점으로부터 잰 부호 있는 위치입니다. 음수이면 원점의 반대쪽입니다.</li>
+    <li>\(P_\theta\)는 투영의 1차원 푸리에 변환(페이지 1), \(F\)는 영상 \(\mu\)의 2차원 푸리에 변환입니다.</li>
+  </ul>
+
+  <p>푸리에 슬라이스 정리(<span class="term" data-term="fst">Fourier Slice Theorem</span>)가 이 식입니다. 2차원 함수를 원점을 지나는 직선으로 잘라 낸 단면을 슬라이스라고 부르는 데서 이름이 왔고, 중심 단면 정리(Central Slice Theorem) 또는 투영 단면 정리(Projection-Slice Theorem)라고도 합니다.
+  전파 천문학에서 Bracewell이 1956년에 이 관계를 썼습니다(R. N. Bracewell, Strip integration in radio astronomy, Australian Journal of Physics 9, 198–217, 1956).
+  2장에서 \(2\pi\)를 지수 안에 두는 규약을 정했으므로 식에 상수가 붙지 않습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="왼쪽은 영상과 각도 θ의 평행 광선, 검출기 위의 투영 곡선. 오른쪽은 주파수 평면에서 원점을 지나 θ 방향으로 놓인 직선. 투영의 1차원 푸리에 변환이 그 직선 위의 2차원 푸리에 변환 값과 같음">
+    <defs>
+    <marker id="s2-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+    <marker id="s2-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+    <marker id="s2-fg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--fg)"/></marker>
+    <marker id="s2-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+    </defs>
+    <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+    <path d="M35 165 H272" marker-end="url(#s2-mu)"/><path d="M150 292 V40" marker-end="url(#s2-mu)"/>
+    <path d="M375 165 H612" marker-end="url(#s2-mu)"/><path d="M490 292 V40" marker-end="url(#s2-mu)"/>
+    <path d="M63.4 215.0 L252.2 106.0" stroke-dasharray="5 3"/>
+    </g>
+    <path d="M201.7 146.2 L200.5 143.6 L199.0 141.3 L197.1 139.0 L194.8 137.0 L192.2 135.2 L189.3 133.7 L186.1 132.3 L182.6 131.3 L178.8 130.4 L174.8 129.9 L170.7 129.6 L166.4 129.6 L161.9 129.8 L157.4 130.3 L152.8 131.1 L148.2 132.1 L143.6 133.4 L139.1 134.9 L134.6 136.7 L130.2 138.7 L126.1 140.8 L122.0 143.2 L118.2 145.7 L114.7 148.4 L111.4 151.2 L108.4 154.1 L105.7 157.0 L103.4 160.1 L101.4 163.2 L99.8 166.3 L98.5 169.3 L97.7 172.4 L97.2 175.4 L97.2 178.3 L97.6 181.1 L98.3 183.8 L99.5 186.4 L101.0 188.7 L102.9 191.0 L105.2 193.0 L107.8 194.8 L110.7 196.3 L113.9 197.7 L117.4 198.7 L121.2 199.6 L125.2 200.1 L129.3 200.4 L133.6 200.4 L138.1 200.2 L142.6 199.7 L147.2 198.9 L151.8 197.9 L156.4 196.6 L160.9 195.1 L165.4 193.3 L169.8 191.3 L173.9 189.2 L178.0 186.8 L181.8 184.3 L185.3 181.6 L188.6 178.8 L191.6 175.9 L194.3 173.0 L196.6 169.9 L198.6 166.8 L200.2 163.7 L201.5 160.7 L202.3 157.6 L202.8 154.6 L202.8 151.7 L202.4 148.9 L201.7 146.2 Z" stroke-width="1.4" class="svg-line" style="fill:var(--accent)" fill-opacity=".28"/>
+    <g fill="none" stroke-width="1.1" stroke-dasharray="4 3" style="stroke:var(--warn)"><path d="M132.5 284.8 L43.5 130.6"/><path d="M154.2 272.3 L65.2 118.1"/><path d="M175.8 259.8 L86.8 105.6"/><path d="M197.5 247.3 L108.5 93.1"/><path d="M219.2 234.8 L130.2 80.6"/><path d="M240.8 222.3 L151.8 68.1"/><path d="M262.5 209.8 L173.5 55.6"/></g>
+    <path d="M36.7 128.8 L175.3 48.8" fill="none" stroke-width="5" style="stroke:var(--muted)" opacity=".55"/>
+    <path d="M50.6 113.8 L55.8 110.8 L53.6 103.3 L53.6 99.7 L54.0 96.8 L54.6 94.2 L55.4 91.9 L56.3 89.8 L57.2 87.8 L58.2 85.9 L59.3 84.1 L60.4 82.4 L61.5 80.7 L62.7 79.1 L63.9 77.6 L65.2 76.1 L66.4 74.7 L67.7 73.3 L69.0 72.0 L70.4 70.7 L71.8 69.4 L73.1 68.2 L74.5 67.0 L76.0 65.8 L77.4 64.7 L78.9 63.6 L80.4 62.5 L81.8 61.5 L83.4 60.5 L84.9 59.5 L86.4 58.5 L88.0 57.6 L89.6 56.7 L91.2 55.9 L92.8 55.0 L94.4 54.2 L96.1 53.4 L97.7 52.7 L99.4 52.0 L101.1 51.3 L102.8 50.6 L104.6 50.0 L106.3 49.4 L108.1 48.9 L109.9 48.4 L111.7 47.9 L113.6 47.5 L115.5 47.1 L117.4 46.8 L119.3 46.5 L121.3 46.2 L123.3 46.1 L125.3 46.0 L127.4 46.0 L129.5 46.0 L131.7 46.2 L134.0 46.5 L136.4 47.0 L138.9 47.8 L141.6 48.9 L144.7 50.6 L150.2 56.4 L155.4 53.4" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+    <path d="M186 165 A36 36 0 0 0 181.2 147.0" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+    <g fill="none" stroke-width="1" stroke-dasharray="3 4" style="stroke:var(--muted)" opacity=".8"><path d="M378.0 165.0 L602.0 165.0"/><path d="M434.0 262.0 L546.0 68.0"/><path d="M490.0 277.0 L490.0 53.0"/><path d="M546.0 262.0 L434.0 68.0"/><path d="M587.0 221.0 L393.0 109.0"/></g>
+    <path d="M393.0 221.0 L587.0 109.0" fill="none" stroke-width="3" style="stroke:var(--accent)"/>
+    <path d="M526 165 A36 36 0 0 0 521.2 147.0" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+    <path d="M260 52 H376" fill="none" stroke-width="1.6" style="stroke:var(--fg)" marker-end="url(#s2-fg)"/>
+    <path d="M260 262 H376" fill="none" stroke-width="1.6" style="stroke:var(--accent)" marker-end="url(#s2-ac)"/>
+    <g font-size="12" class="svg-fg">
+    <text x="20" y="18" font-weight="700">영상 μ(x, y)</text>
+    <text x="380" y="18" font-weight="700">주파수 평면 F(ω<tspan font-size="8" dy="3">x</tspan><tspan dy="-3">, ω</tspan><tspan font-size="8" dy="3">y</tspan><tspan dy="-3">)</tspan></text>
+    <text x="8.4" y="52.5" style="fill:var(--accent)">투영 p(θ, s)</text>
+    <text x="529.0" y="95.0" style="fill:var(--accent)">θ 방향 직선</text>
+    <text x="242.2" y="122.0" class="svg-muted">x′</text>
+    </g>
+    <g font-size="11" text-anchor="middle" class="svg-fg">
+    <text x="318" y="30">영상 μ(x, y)의</text><text x="318" y="43">2차원 푸리에 변환</text>
+    <text x="318" y="232" style="fill:var(--accent)">투영 p(θ, s)의</text><text x="318" y="245" style="fill:var(--accent)">1차원 푸리에 변환</text>
+    <text x="318" y="280" class="svg-muted">결과 = 직선 위의 F</text>
+    </g>
+    <g font-size="11" class="svg-muted">
+    <text x="190" y="159">θ</text><text x="530" y="159">θ</text>
+    <text x="264" y="181">x</text><text x="156" y="50">y</text>
+    <text x="600" y="181">ω<tspan font-size="8" dy="3">x</tspan></text><text x="496" y="50">ω<tspan font-size="8" dy="3">y</tspan></text>
+    </g>
+    </svg>
+    <figcaption>왼쪽은 각도 \(\theta = 30^{\circ}\)의 평행 광선(주황 점선)이 물체를 지나 회색 검출기에 닿고, 그 바깥에 투영 곡선(파랑)이 그려진 모습입니다. 오른쪽은 영상의 2차원 푸리에 변환이 놓인 주파수 평면입니다.
+    투영 곡선을 1차원 푸리에 변환하면, 주파수 평면에서 원점을 지나 같은 \(\theta\) 방향으로 놓인 굵은 직선 위의 \(F\) 값이 나옵니다. 가는 점선은 다른 각도의 투영이 주는 직선입니다.</figcaption>
+  </figure>
+
+  <p>2장 페이지 6에서 본 것처럼, 주파수 평면에서 \(\theta\) 방향 직선 위의 점은 모두 \(\theta\) 방향으로 변하는 줄무늬(파동)의 성분이고, 이 줄무늬의 줄은 광선과 나란합니다. 각도 \(\theta\)의 광선은 \(\theta\)에 수직인 방향을 따라 적분하므로, 다른 방향으로 변하는 줄무늬는 광선이 짙은 줄과 옅은 줄을 함께 지나 더하면 상쇄됩니다. 투영 한 장에는 광선과 나란한 줄무늬 성분만 남고, 그래서 투영 한 장은 주파수 평면에서 정확히 직선 하나의 정보를 줍니다.</p>
+
+  <h3>정사각형 하나의 예</h3>
+
+  <p>중심이 원점이고 한 변이 1, 값이 1인 정사각형으로 정리를 확인해 봅니다. 식으로는 \(\mu(x, y) = \mathrm{rect}(x)\,\mathrm{rect}(y)\)이고, \(\mathrm{rect}(x)\)는 \(|x| &lt; 1/2\)에서 1, 나머지에서 0인 사각 함수입니다. 2장의 변환 쌍 \(\mathrm{rect} \longleftrightarrow \mathrm{sinc}\)를 \(x\)와 \(y\) 두 방향에 쓰면 영상의 푸리에 변환은 \(F(\omega_x, \omega_y) = \mathrm{sinc}(\omega_x)\,\mathrm{sinc}(\omega_y)\)입니다. 여기서 \(\mathrm{sinc}(\omega) = \sin\pi\omega\,/\,\pi\omega\)입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 280" role="img" aria-label="세 패널. 왼쪽은 정사각형 영상과 θ가 0도, 45도인 광선 방향. 가운데는 두 투영 곡선으로 θ가 0도이면 사각형, 45도이면 삼각형. 오른쪽은 주파수 평면에서 sinc와 sinc의 곱 무늬와 두 방향의 직선. ω가 1일 때 θ가 0도이면 값이 0, 45도이면 약 0.128">
+    <defs><marker id="s2a-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+    <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M15 150 H145" marker-end="url(#s2a-mu)"/><path d="M80 215 V85" marker-end="url(#s2a-mu)"/><path d="M235 105 H365" marker-end="url(#s2a-mu)"/><path d="M235 225 H365" marker-end="url(#s2a-mu)"/><path d="M443 150 H597" marker-end="url(#s2a-mu)"/><path d="M520 228 V72" marker-end="url(#s2a-mu)"/></g>
+    <rect x="50" y="120" width="60" height="60" stroke-width="1.4" style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".28"/>
+    <g fill="none" stroke-width="1.6" stroke-dasharray="5 3"><path d="M80 92 V208" style="stroke:var(--accent)"/><path d="M35 105 L125 195" style="stroke:var(--warn)"/></g>
+    <path d="M270 105 V55 H330 V105" fill-opacity=".28" stroke-width="2" style="fill:var(--accent);stroke:var(--accent)"/>
+    <path d="M257.6 225 L300 154.3 L342.4 225" fill-opacity=".25" stroke-width="2" style="fill:var(--warn);stroke:var(--warn)"/>
+    <g fill="none" stroke-width="1" stroke-dasharray="2 3" opacity=".6" style="stroke:var(--muted)"><path d="M460 80 V220"/><path d="M490 80 V220"/><path d="M550 80 V220"/><path d="M580 80 V220"/><path d="M450 90 H590"/><path d="M450 120 H590"/><path d="M450 180 H590"/><path d="M450 210 H590"/></g>
+    <rect x="498" y="128" width="44" height="44" rx="14" stroke-width="1.6" fill-opacity=".18" style="fill:var(--accent);stroke:var(--accent)"/>
+    <path d="M445 150 H595" fill="none" stroke-width="3" style="stroke:var(--accent)"/>
+    <path d="M452 218 L588 82" fill="none" stroke-width="3" style="stroke:var(--warn)"/>
+    <circle cx="550" cy="150" r="4.5" stroke-width="2" style="fill:var(--bg);stroke:var(--accent)"/>
+    <circle cx="541.2" cy="128.8" r="4.5" style="fill:var(--warn)"/>
+    <g font-size="12" class="svg-fg"><text x="10" y="18" font-weight="700">영상 μ(x, y)</text><text x="235" y="18" font-weight="700">투영 p(θ, s)</text><text x="445" y="18" font-weight="700">주파수 평면 F</text></g>
+    <g font-size="11" class="svg-muted"><text x="10" y="34">정사각형(한 변 1)</text><text x="445" y="34">F = sinc(ω<tspan font-size="8" dy="3">x</tspan><tspan dy="-3">)·sinc(ω</tspan><tspan font-size="8" dy="3">y</tspan><tspan dy="-3">)</tspan></text><text x="140" y="166">x</text><text x="68" y="92">y</text><text x="360" y="100">s</text><text x="360" y="220">s</text><text x="600" y="146">ω<tspan font-size="8" dy="3">x</tspan></text><text x="526" y="76">ω<tspan font-size="8" dy="3">y</tspan></text><text x="520" y="262" text-anchor="middle">점선: F = 0인 곳</text></g>
+    <g font-size="11"><text x="88" y="106" style="fill:var(--accent)">θ = 0°</text><text x="8" y="98" style="fill:var(--warn)">θ = 45°</text><text x="300" y="46" text-anchor="middle" style="fill:var(--accent)">θ = 0°: 사각형</text><text x="300" y="124" text-anchor="middle" style="fill:var(--accent)">P(ω) = sinc(ω)</text><text x="300" y="146" text-anchor="middle" style="fill:var(--warn)">θ = 45°: 삼각형</text><text x="300" y="246" text-anchor="middle" style="fill:var(--warn)">P(ω) = sinc²(ω/√2)</text><text x="447" y="143" style="fill:var(--accent)">θ = 0°</text><text x="591" y="76" style="fill:var(--warn)">θ = 45°</text><text x="556" y="170" style="fill:var(--accent)">ω = 1에서 0</text><text x="514" y="108" text-anchor="end" style="fill:var(--warn)">ω = 1에서</text><text x="514" y="121" text-anchor="end" style="fill:var(--warn)">약 0.128</text></g>
+    </svg>
+    <figcaption>왼쪽은 정사각형과 두 광선 방향 \(\theta = 0^{\circ}\)(파랑), \(45^{\circ}\)(주황)입니다. \(45^{\circ}\) 광선은 정사각형의 대각선을 따라 지납니다. 가운데는 두 방향의 투영입니다. 오른쪽은 \(F = \mathrm{sinc}(\omega_x)\,\mathrm{sinc}(\omega_y)\)가 놓인 주파수 평면으로, 점선은 \(F = 0\)인 곳이고 곡선은 중심 무늬의 윤곽입니다. 굵은 직선 위의 \(F\)를 읽은 것이 각 투영의 푸리에 변환 \(P\)입니다.</figcaption>
+  </figure>
+
+  <p>두 방향의 결과는 다음과 같습니다.</p>
+  <ul>
+    <li><b>\(\theta = 0\).</b> 투영은 폭 1, 높이 1인 사각형이고 \(P_0(\omega) = \mathrm{sinc}(\omega)\)입니다.</li>
+    <li><b>\(\theta = 45^{\circ}\).</b> 투영은 밑변과 높이가 모두 \(\sqrt2\)인 삼각형이고 \(P_{45^{\circ}}(\omega) = \mathrm{sinc}^{2}(\omega/\sqrt2)\)입니다.</li>
+  </ul>
+  <p>두 식은 각각 주파수 평면의 해당 직선 위에서 \(F\)를 읽은 값 \(F(\omega, 0)\), \(F(\omega/\sqrt2,\ \omega/\sqrt2)\)와 같습니다. 계산은 아래 접기에 있습니다.</p>
+  <p>\(\omega = 1\)에서 \(\theta = 0\)의 값 \(\mathrm{sinc}(1)\)은 0이지만, \(\theta = 45^{\circ}\)의 값 \(\mathrm{sinc}^{2}(1/\sqrt2)\)는 약 0.128입니다. 같은 영상이라도 방향마다 주파수 성분이 다르고, 각 투영은 자기 방향의 성분만 알려 줍니다.</p>
+
+  <details class="fold">
+    <summary>두 방향의 계산</summary>
+    <div class="fold-body">
+      <p><b>\(\theta = 0\).</b> 세로 광선이 정사각형을 지나는 길이는 \(|s| &lt; 1/2\)에서 1이므로 \(p(0, s) = \mathrm{rect}(s)\)이고 \(P_0(\omega) = \mathrm{sinc}(\omega)\)입니다. 정리의 오른쪽은 \(F(\omega, 0) = \mathrm{sinc}(\omega)\,\mathrm{sinc}(0) = \mathrm{sinc}(\omega)\)로 같습니다.</p>
+      <p><b>\(\theta = 45^{\circ}\).</b> 광선이 지나는 길이는 \(s = 0\)에서 대각선 길이 \(\sqrt2\)이고, 양쪽으로 곧게 줄어 \(|s| = \sqrt2/2\)에서 0이 되는 삼각형입니다. 이 삼각형은 폭 \(\sqrt2/2\), 높이 1인 사각형 둘을 컨볼루션해 2배 한 모양이므로, 2장 페이지 3의 컨볼루션 정리로 \(P_{45^{\circ}}(\omega) = \mathrm{sinc}^{2}(\omega/\sqrt2)\)입니다. 정리의 오른쪽은 \(F(\omega/\sqrt2,\ \omega/\sqrt2) = \mathrm{sinc}(\omega/\sqrt2)\,\mathrm{sinc}(\omega/\sqrt2)\)로 같습니다.</p>
+    </div>
+  </details>
+
+  <p>영상에서 넓게 퍼진 방향일수록 주파수 평면에서는 좁게 모입니다(2장 페이지 3의 스케일 성질). 정사각형은 가로와 세로의 폭이 같아 \(F\)가 두 축 방향에서 같은 모양이지만, 폭이 다른 직사각형에서는 이 차이가 드러납니다. 다음 위젯에서 확인합니다.</p>
+
+  <h3>각도를 바꿔 가며 확인</h3>
+
+  <p>두 방향만으로는 정리가 모든 각도에서 성립하는지 알 수 없습니다. 아래 위젯은 \(\theta\)를 \(0^{\circ}\)에서 \(179^{\circ}\)까지 바꾸며 같은 비교를 합니다. 그래프의 점은 투영 곡선을 수치 적분으로 1차원 푸리에 변환한 \(|P_\theta(\omega)|\)이고, 선은 \(F\)의 식에 직선 위의 점을 넣은 값입니다. 영상은 앞의 예와 같은 정사각형이 기본이며, 선택 상자에서 가로 2 cm, 세로 1 cm인 직사각형으로 바꿀 수 있습니다.</p>
+  <ul>
+    <li>영상의 광선과 검출기, 주파수 평면의 초록 직선이 같은 \(\theta\)로 함께 돕니다. \(\theta = 0\)이면 직선은 \(\omega_x\) 축, \(\theta = 90^{\circ}\)이면 \(\omega_y\) 축입니다.</li>
+    <li>모든 각도에서 점(투영에서 계산)과 선(영상의 2차원 변환)이 겹칩니다. 슬라이더 아래에 둘의 가장 큰 차이가 적힙니다.</li>
+    <li>정사각형에서는 \(\theta = 0^{\circ}\)와 \(90^{\circ}\)의 그래프가 같습니다(\(\omega = 1\)에서 0). 직사각형으로 바꾸면 \(\theta = 0^{\circ}\)에서는 영상이 넓은 가로 방향이어서 그래프가 \(\omega = 0.5\)에서 0이 되고, \(\theta = 90^{\circ}\)에서는 \(\omega = 1\)에서 0이 됩니다. 영상에서 넓은 방향일수록 주파수 평면에서는 좁게 모입니다.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 432" role="img" aria-label="왼쪽 위는 선택한 직사각형 또는 정사각형 영상과 현재 각도의 광선과 검출기, 가운데 위는 투영 곡선, 오른쪽 위는 주파수 평면의 2차원 푸리에 변환 크기와 현재 각도의 직선. 아래는 투영의 1차원 푸리에 변환 크기(점)와 직선 위의 2차원 푸리에 변환 크기(선)">
+      <rect x="10" y="34" width="190" height="190" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <rect id="s2w-rect" x="55" y="104" width="100" height="50" stroke-width="1.2" class="svg-line" style="fill:var(--muted)" fill-opacity=".5"/>
+      <g id="s2w-w-rays" fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--warn)"></g>
+      <path id="s2w-w-det" fill="none" stroke-width="5" style="stroke:var(--accent)" opacity=".8"/>
+      <text id="s2w-w-splus" font-size="11" font-weight="700" text-anchor="middle" style="fill:var(--accent)">+s</text>
+      <rect x="222" y="34" width="200" height="190" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path id="s2w-w-prof" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <image id="s2w-w-F" x="440" y="34" width="190" height="190" preserveAspectRatio="none"/>
+      <rect x="440" y="34" width="190" height="190" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path id="s2w-w-line" fill="none" stroke-width="2.4" style="stroke:var(--good)"/>
+      <text id="s2w-w-pos" font-size="10.5" font-weight="700" text-anchor="middle" style="fill:var(--good)">ω &gt; 0</text>
+      <rect x="50" y="262" width="580" height="130" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path id="s2w-w-Fl" fill="none" stroke-width="2.2" style="stroke:var(--good)"/>
+      <g id="s2w-w-Pd" style="fill:var(--accent)"></g>
+      <g font-size="11.5" class="svg-fg" font-weight="700">
+        <text x="10" y="24">영상과 광선</text>
+        <text x="222" y="24">투영 p(θ, s)</text>
+        <text x="440" y="24">주파수 평면의 |F|</text>
+        <text x="50" y="254">|P<tspan font-size="8.5" dy="3">θ</tspan><tspan dy="-3">(ω)| (점, 투영에서 계산)과 직선 위의 |F| (초록 선)</tspan></text>
+      </g>
+      <g font-size="10" class="svg-muted" text-anchor="middle">
+        <text x="222" y="238">−1.6</text><text x="322" y="238">0</text><text x="422" y="238">1.6</text><text x="410" y="250">s (cm)</text>
+        <text x="440" y="238">−3</text><text x="535" y="238">0</text><text x="630" y="238">3</text>
+        <text x="50" y="406">−3</text><text x="146.7" y="406">−2</text><text x="243.3" y="406">−1</text><text x="340" y="406">0</text><text x="436.7" y="406">1</text><text x="533.3" y="406">2</text><text x="630" y="406">3</text>
+        <text x="610" y="424">ω (cm⁻¹)</text>
+      </g>
+      <g font-size="10" class="svg-muted" text-anchor="end">
+        <text id="s2w-yt1" x="44" y="270">2</text><text id="s2w-yt2" x="44" y="330">1</text><text x="44" y="394">0</text>
+      </g>
+      <g fill="none" stroke-width=".8" stroke-dasharray="2 3" style="stroke:var(--muted)">
+        <path d="M50 331 H630"/><path d="M98.3 262 V392 M146.7 262 V392 M195 262 V392 M243.3 262 V392 M291.7 262 V392 M340 262 V392 M388.3 262 V392 M436.7 262 V392 M485 262 V392 M533.3 262 V392 M581.7 262 V392"/>
+      </g>
+    </svg>
+    <figcaption>왼쪽 위: 영상(정사각형 한 변 1 cm 또는 직사각형 가로 2 cm, 세로 1 cm)과 현재 각도의 광선(주황 점선), 검출기(파란 선, \(+s\) 쪽 표시). 가운데 위: 그 검출기에서 얻는 투영 곡선이며 가로축은 \(s\)입니다.
+    오른쪽 위: 영상의 2차원 푸리에 변환의 크기 \(|F|\)를 \(-3 \le \omega_x, \omega_y \le 3\)에서 밝기로 그린 것이고, 작은 값도 보이도록 밝기를 \(|F|\)의 제곱근에 비례하게 했습니다. 초록 직선이 원점을 지나는 \(\theta\) 방향 직선입니다.
+    아래: 가로축 \(\omega\)의 점선 간격은 \(0.5\ \mathrm{cm}^{-1}\)입니다. 두 값은 복소수이므로 크기만 그렸습니다. 영상을 바꾸면 투영 곡선과 아래 그래프의 세로 눈금도 함께 바뀝니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="s2w-sel">영상</label>
+    <select id="s2w-sel" style="font-size:.86rem">
+      <option value="sq">정사각형 (한 변 1 cm)</option>
+      <option value="rc">직사각형 (2 × 1 cm)</option>
+    </select>
+    <label for="s2w-th">투영 각도 θ</label>
+    <input id="s2w-th" type="range" min="0" max="179" step="1" value="30" style="width:15rem">
+    <b id="s2w-th-val">30°</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="s2w-note"></p>
+
+<script>
+(function () {
+  var D = Math.PI / 180, A = 0.5, B = 0.5;        // 영상 |x| ≤ A, |y| ≤ B (cm), 안쪽 값 1. 기본은 정사각형(한 변 1)
+  function sinc(u) { return Math.abs(u) < 1e-12 ? 1 : Math.sin(Math.PI * u) / (Math.PI * u); }
+  function F(wx, wy) { return 4 * A * B * sinc(2 * A * wx) * sinc(2 * B * wy); }   // 4AB sinc(2Aωx) sinc(2Bωy)
+  function lim(a, b, half) {                     // a + ℓb 가 [−half, half] 안에 드는 ℓ 구간
+    if (Math.abs(b) < 1e-12) return Math.abs(a) <= half ? [-1e9, 1e9] : null;
+    var l1 = (-half - a) / b, l2 = (half - a) / b;
+    return l1 < l2 ? [l1, l2] : [l2, l1];
+  }
+  function proj(t, s) {                          // 광선 (θ, s) 가 직사각형을 지나는 길이 = 투영값
+    var c = Math.cos(t), sn = Math.sin(t), u = lim(s * c, -sn, A), v = lim(s * sn, c, B);
+    if (!u || !v) return 0;
+    return Math.max(0, Math.min(u[1], v[1]) - Math.max(u[0], v[0]));
+  }
+  var th = document.getElementById('s2w-th'), thv = document.getElementById('s2w-th-val'), note = document.getElementById('s2w-note'),
+      sel = document.getElementById('s2w-sel'), rect = document.getElementById('s2w-rect'), yt1 = document.getElementById('s2w-yt1'), yt2 = document.getElementById('s2w-yt2'),
+      rays = document.getElementById('s2w-w-rays'), det = document.getElementById('s2w-w-det'), splus = document.getElementById('s2w-w-splus'),
+      prof = document.getElementById('s2w-w-prof'), line = document.getElementById('s2w-w-line'), pos = document.getElementById('s2w-w-pos'),
+      Fl = document.getElementById('s2w-w-Fl'), Pd = document.getElementById('s2w-w-Pd'), Fimg = document.getElementById('s2w-w-F');
+  var W = 1.9, R = 1.2, WM = 3;
+  function buildF() {                            // |F| 영상(영상 모양을 바꿀 때 다시 그림)
+    var n = 190, cv = document.createElement('canvas'), ctx, im, i, j, g, k, wx, wy;
+    cv.width = n; cv.height = n; ctx = cv.getContext('2d'); im = ctx.createImageData(n, n);
+    for (j = 0; j < n; j++) for (i = 0; i < n; i++) {
+      wx = -WM + (i + 0.5) * 2 * WM / n; wy = WM - (j + 0.5) * 2 * WM / n;
+      g = Math.round(255 * Math.sqrt(Math.min(1, Math.abs(F(wx, wy)) / (4 * A * B)))); k = 4 * (j * n + i);
+      im.data[k] = im.data[k + 1] = im.data[k + 2] = g; im.data[k + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    Fimg.setAttribute('href', cv.toDataURL('image/png'));
+  }
+  var pmax = 1, fmax = 1;                        // 투영 곡선과 |F| 그래프의 세로 스케일
+  function setShape() {                          // 선택한 모양에 맞게 영상·스케일을 다시 맞춤
+    var rc = sel.value === 'rc';
+    A = rc ? 1 : 0.5; B = 0.5;
+    rect.setAttribute('x', 105 - 50 * A); rect.setAttribute('y', 129 - 50 * B);
+    rect.setAttribute('width', 100 * A); rect.setAttribute('height', 100 * B);
+    pmax = 2 * Math.sqrt(A * A + B * B) * 1.07; fmax = 4 * A * B * 1.05;
+    yt1.textContent = rc ? '2' : '1'; yt2.textContent = rc ? '1' : '0.5';
+    buildF();
+  }
+  var NS = 1250, S0 = -1.25, DS = 2.5 / NS;      // 투영의 표본(구간 중점), 간격 0.002 cm
+  function draw() {
+    var t = +th.value * D, c = Math.cos(t), sn = Math.sin(t), k, s, h = '', d = [], ps = [], w, re, im, P, Fv, err = 0, dots = '';
+    function X(x) { return 10 + (x + W) / (2 * W) * 190; }
+    function Y(y) { return 34 + (W - y) / (2 * W) * 190; }
+    function Pt(s, l) { return X(s * c - l * sn).toFixed(1) + ' ' + Y(s * sn + l * c).toFixed(1); }
+    for (k = 0; k < 9; k++) { s = -1 + k * 0.25; h += '<path d="M' + Pt(s, -1.5) + ' L' + Pt(s, 1.2) + '"/>'; }
+    rays.innerHTML = h;
+    det.setAttribute('d', 'M' + Pt(-R, 1.32) + ' L' + Pt(R, 1.32));
+    splus.setAttribute('x', X(1.4 * c - 1.32 * sn).toFixed(1));
+    splus.setAttribute('y', (Y(1.4 * sn + 1.32 * c) + 4).toFixed(1));
+    for (k = 0; k < NS; k++) ps.push(proj(t, S0 + (k + 0.5) * DS));
+    for (k = 0; k <= 320; k++) {                 // 투영 곡선
+      s = -1.6 + k * 3.2 / 320;
+      d.push((k ? 'L' : 'M') + (222 + k * 200 / 320).toFixed(1) + ' ' + (214 - proj(t, s) / pmax * 170).toFixed(1));
+    }
+    prof.setAttribute('d', d.join(' '));
+    function FX(wx) { return 535 + wx / WM * 95; }
+    function FY(wy) { return 129 - wy / WM * 95; }
+    var L = WM / Math.max(Math.abs(c), Math.abs(sn));   // 직선을 패널 안으로 자름
+    line.setAttribute('d', 'M' + FX(-L * c).toFixed(1) + ' ' + FY(-L * sn).toFixed(1) + ' L' + FX(L * c).toFixed(1) + ' ' + FY(L * sn).toFixed(1));
+    pos.setAttribute('x', FX(2.45 * c - 0.32 * sn).toFixed(1)); pos.setAttribute('y', (FY(2.45 * sn + 0.32 * c) + 4).toFixed(1));
+    function GX(w) { return 50 + (w + 3) / 6 * 580; }
+    function GY(v) { return 392 - v / fmax * 128; }
+    d = [];
+    for (k = 0; k <= 600; k++) { w = -3 + k * 0.01; d.push((k ? 'L' : 'M') + GX(w).toFixed(1) + ' ' + GY(Math.abs(F(w * c, w * sn))).toFixed(1)); }
+    Fl.setAttribute('d', d.join(' '));
+    for (k = 0; k <= 60; k++) {                  // 투영을 수치 적분으로 1차원 푸리에 변환
+      w = -3 + k * 0.1; re = 0; im = 0;
+      for (var j = 0; j < NS; j++) { s = S0 + (j + 0.5) * DS; re += ps[j] * Math.cos(2 * Math.PI * w * s); im -= ps[j] * Math.sin(2 * Math.PI * w * s); }
+      P = Math.sqrt(re * re + im * im) * DS; Fv = Math.abs(F(w * c, w * sn));
+      err = Math.max(err, Math.abs(P - Fv));
+      dots += '<circle cx="' + GX(w).toFixed(1) + '" cy="' + GY(P).toFixed(1) + '" r="2.3"/>';
+    }
+    Pd.innerHTML = dots;
+    thv.textContent = th.value + '°';
+    note.textContent = 'θ = ' + th.value + '° · 점과 선의 가장 큰 차이 ' + err.toFixed(3);
+  }
+  th.addEventListener('input', draw);
+  sel.addEventListener('change', function () { setShape(); draw(); });
+  setShape();
+  draw();
+})();
+</script>
+
+  <h3>180° 측정과 주파수 평면</h3>
+
+  <p>3장 페이지 9의 대칭 \(p(\theta + \pi, -s) = p(\theta, s)\)를 \(s\)에 대해 푸리에 변환하면 \(P_{\theta+\pi}(\omega) = P_\theta(-\omega)\)입니다. \(\theta + \pi\) 방향의 직선은 \(\theta\) 방향의 직선을 반대쪽(\(\omega &lt; 0\))에서 읽은 같은 직선이므로, 두 투영은 같은 정보를 줍니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 310" role="img" aria-label="주파수 평면의 원판에 θ가 0도부터 180도 미만까지인 직선들이 원점을 지나 부채살처럼 놓여 있음. 한 직선은 θ 방향의 ω가 양수인 쪽과 θ+π 방향의 ω가 음수인 쪽을 모두 지나므로, 0도부터 180도까지의 직선이 평면 전체를 한 번씩 덮음">
+    <defs><marker id="s2b-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker><marker id="s2b-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+    <circle cx="200" cy="160" r="120" stroke-width="1.2" stroke-dasharray="4 3" fill-opacity=".07" style="fill:var(--accent);stroke:var(--muted)"/>
+    <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M66 160 H336" marker-end="url(#s2b-mu)"/><path d="M200 294 V24" marker-end="url(#s2b-mu)"/></g>
+    <path d="M320.0 160.0 L80.0 160.0 M318.2 139.2 L81.8 180.8 M312.8 119.0 L87.2 201.0 M303.9 100.0 L96.1 220.0 M277.1 68.1 L122.9 251.9 M260.0 56.1 L140.0 263.9 M241.0 47.2 L159.0 272.8 M220.8 41.8 L179.2 278.2 M200.0 40.0 L200.0 280.0 M179.2 41.8 L220.8 278.2 M159.0 47.2 L241.0 272.8 M140.0 56.1 L260.0 263.9 M122.9 68.1 L277.1 251.9 M108.1 82.9 L291.9 237.1 M96.1 100.0 L303.9 220.0 M87.2 119.0 L312.8 201.0 M81.8 139.2 L318.2 180.8" fill="none" stroke-width="1.3" opacity=".75" style="stroke:var(--accent)"/>
+    <path d="M291.9 82.9 L108.1 237.1" fill="none" stroke-width="2.4" style="stroke:var(--warn)"/>
+    <path d="M200 160 L282.7 90.6" fill="none" stroke-width="2.4" style="stroke:var(--warn)" marker-end="url(#s2b-wa)"/>
+    <path d="M200 160 L117.3 229.4" fill="none" stroke-width="2.4" style="stroke:var(--warn)" marker-end="url(#s2b-wa)"/>
+    <path d="M230 160 A30 30 0 0 0 223.0 140.7" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+    <g font-size="11" class="svg-muted"><text x="328" y="178">ω<tspan font-size="8" dy="3">x</tspan></text><text x="206" y="32">ω<tspan font-size="8" dy="3">y</tspan></text></g>
+    <g font-size="12"><text x="296.5" y="77.0" style="fill:var(--warn)">θ 쪽 (ω &gt; 0)</text><text x="103.5" y="253.0" text-anchor="end" style="fill:var(--warn)">θ+π 쪽 (ω &lt; 0)</text><text x="234" y="153" class="svg-muted" font-size="11">θ</text></g>
+    <g font-size="12" class="svg-fg"><text x="372" y="108" font-weight="700">θ = 0°~180°의 직선</text><text x="372" y="130">직선 하나 = ω &gt; 0 쪽 + ω &lt; 0 쪽</text><text x="372" y="152">(그림은 10° 간격, 주황은 θ = 40°)</text><text x="372" y="190" font-weight="700" style="fill:var(--accent)">평면 전체를 한 번씩 덮는다</text></g>
+    </svg>
+    <figcaption>주파수 평면의 원판에 \(0 \le \theta &lt; 180^{\circ}\)인 직선을 \(10^{\circ}\) 간격으로 그렸습니다. 직선 하나는 원점에서 \(\theta\) 쪽(\(\omega &gt; 0\))과 \(\theta + \pi\) 쪽(\(\omega &lt; 0\))으로 뻗은 두 반직선입니다. 실제 측정에서는 각도가 더 촘촘합니다.</figcaption>
+  </figure>
+
+  <p>그러므로 \(0 \le \theta &lt; \pi\)의 직선들은 \(\omega\)를 음수까지 포함하면 원점을 뺀 주파수 평면의 모든 점을 한 번씩 지납니다. 3장에서 평행빔은 \(180^{\circ}\)로 충분하다고 한 결론을 주파수 평면에서 다시 확인한 것입니다.</p>
+
+  <h3>각도가 모자랄 때의 빈 부채꼴</h3>
+
+  <p>측정 각도가 모자라면 생기는 문제는 특정한 재구성 방법이 아니라 모든 재구성에 공통인 한계입니다. 이 한계는 주파수 평면에서 가장 분명하게 보입니다. 위에서 본 것처럼 \(0 \le \theta &lt; \pi\)의 직선은 주파수 평면 전체를 덮습니다. 그런데 \(0 \le \theta &lt; \Theta\)만 측정하고 \(\Theta &lt; 180^{\circ}\)이면, 방향이 \(\Theta\)부터 \(180^{\circ}\) 사이인 직선은 한 번도 측정되지 않습니다(반대 방향은 같은 직선입니다). 직선이 하나도 지나지 않는 이 영역을 빈 부채꼴이라고 부르겠습니다.</p>
+
+  <p>3장 페이지 9에서 이 빈자리가 재구성에 무엇을 남기는지는 푸리에 슬라이스 정리로 보면 분명해진다고 했습니다. 슬라이스 정리에 따라 각도 하나의 투영은 주파수 평면의 직선 하나를 채우므로, 빈 부채꼴은 채우지 못한 영역입니다.
+  빈 부채꼴 안의 \(F\)는 투영 데이터 어디에도 들어 있지 않습니다. 그래서 필터나 보간 같은 일반적인 방법으로는 안정적으로 되살릴 수 없습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 310" role="img" aria-label="주파수 평면의 원판에서 θ가 0도부터 120도까지의 부채꼴과 그 반대쪽 부채꼴은 측정된 방향으로 칠해져 있고, 120도부터 180도까지의 빈 부채꼴과 그 반대쪽 부채꼴은 빗금으로 표시되어 있음. 빗금 부분의 F는 투영 데이터에 없음">
+    <defs><marker id="s4c-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker><pattern id="s4c-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke-width="1.6" style="stroke:var(--warn)"/></pattern></defs>
+    <circle cx="200" cy="160" r="120" stroke-width="1.2" stroke-dasharray="4 3" fill="none" style="stroke:var(--muted)"/>
+    <path d="M200 160 L320.0 160.0 A120 120 0 0 0 140.0 56.1 Z" stroke-width="1" fill-opacity=".25" style="fill:var(--accent);stroke:var(--accent)"/>
+    <path d="M200 160 L80.0 160.0 A120 120 0 0 0 260.0 263.9 Z" stroke-width="1" fill-opacity=".25" style="fill:var(--accent);stroke:var(--accent)"/>
+    <path d="M200 160 L140.0 56.1 A120 120 0 0 0 80.0 160.0 Z" fill-opacity=".08" style="fill:var(--warn)"/>
+    <path d="M200 160 L140.0 56.1 A120 120 0 0 0 80.0 160.0 Z" stroke-width="1" stroke-dasharray="4 3" style="fill:url(#s4c-hatch);stroke:var(--warn)"/>
+    <path d="M200 160 L260.0 263.9 A120 120 0 0 0 320.0 160.0 Z" fill-opacity=".08" style="fill:var(--warn)"/>
+    <path d="M200 160 L260.0 263.9 A120 120 0 0 0 320.0 160.0 Z" stroke-width="1" stroke-dasharray="4 3" style="fill:url(#s4c-hatch);stroke:var(--warn)"/>
+    <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M66 160 H336" marker-end="url(#s4c-mu)"/><path d="M200 294 V24" marker-end="url(#s4c-mu)"/></g>
+    <path d="M312.8 119.0 L87.2 201.0 M291.9 82.9 L108.1 237.1 M260.0 56.1 L140.0 263.9 M220.8 41.8 L179.2 278.2 M179.2 41.8 L220.8 278.2" fill="none" stroke-width="1.3" opacity=".8" style="stroke:var(--accent)"/>
+    <path d="M140.0 56.1 L260.0 263.9" fill="none" stroke-width="2.4" style="stroke:var(--accent)"/>
+    <g font-size="11" class="svg-muted"><text x="328" y="178">ω<tspan font-size="8" dy="3">x</tspan></text><text x="206" y="32">ω<tspan font-size="8" dy="3">y</tspan></text></g>
+    <g font-size="12" text-anchor="middle"><text x="237.2" y="95.6" style="fill:var(--accent);paint-order:stroke;stroke:var(--bg);stroke-width:4;stroke-linejoin:round">측정</text><text x="162.8" y="224.4" style="fill:var(--accent);paint-order:stroke;stroke:var(--bg);stroke-width:4;stroke-linejoin:round">측정</text><text x="131.4" y="120.4" style="fill:var(--warn);paint-order:stroke;stroke:var(--bg);stroke-width:4;stroke-linejoin:round">빈 부채꼴</text><text x="268.6" y="199.6" style="fill:var(--warn);paint-order:stroke;stroke:var(--bg);stroke-width:4;stroke-linejoin:round">빈 부채꼴</text></g>
+    <text x="135.0" y="48.9" font-size="12" text-anchor="end" style="fill:var(--accent)">θ = 120°</text>
+    <rect x="372" y="96" width="20" height="14" stroke-width="1" fill-opacity=".25" style="fill:var(--accent);stroke:var(--accent)"/>
+    <rect x="372" y="156" width="20" height="14" stroke-width="1" style="fill:url(#s4c-hatch);stroke:var(--warn)"/>
+    <g font-size="12" class="svg-fg"><text x="400" y="108">측정한 방향</text><text x="400" y="124" class="svg-muted" font-size="11">0°~120°와 그 반대쪽</text><text x="400" y="168">측정하지 않은 방향</text><text x="400" y="184" class="svg-muted" font-size="11">120°~180°와 그 반대쪽</text><text x="372" y="222" style="fill:var(--warn)">빗금 안의 F는 데이터에 없다</text></g>
+    </svg>
+    <figcaption>투영마다 직선을 하나씩 늘어놓은 주파수 평면이고, \(\Theta = 120^{\circ}\)로 잡은 예입니다. \(0^{\circ}\)~\(120^{\circ}\) 방향의 직선(파랑)이 지나는 부채꼴과 그 반대쪽은 측정된 영역이고, \(120^{\circ}\)~\(180^{\circ}\) 방향과 그 반대쪽의 빈 부채꼴(빗금)에는 직선이 하나도 지나지 않습니다.</figcaption>
+  </figure>
+
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="푸리에 슬라이스 정리의 증명">
+  <p class="kicker">4장 · 페이지 3 · 심화</p>
+  <h2>푸리에 슬라이스 정리의 증명</h2>
+
+  <p>페이지 1에서 \(\theta = 0\)인 경우를 이미 계산했습니다. 영상을 돌려 다른 각도를 \(\theta = 0\)인 경우로 바꾸면 증명이 끝납니다. 앞장에서 본 회전 성질 두 가지를 씁니다.</p>
+  <ol>
+    <li>영상 \(\mu\)를 시계 방향으로 \(\theta\)만큼 돌린 영상을 \(g\)라고 하겠습니다. 3장 페이지 8의 회전 성질에 따라, \(g\)를 각도 0에서 본 투영은 \(\mu\)를 각도 \(\theta\)에서 본 투영과 같습니다. 그러므로 페이지 1의 결과에서 \(P_\theta(\omega) = G(\omega, 0)\)입니다. \(G\)는 \(g\)의 2차원 푸리에 변환입니다.</li>
+    <li>2장 페이지 6의 회전 성질에 따라 \(G\)는 \(F\)를 같은 방향(시계 방향)으로 \(\theta\)만큼 돌린 것입니다. 따라서 \(G\)의 \(\omega_x\) 축 위의 점 \((\omega, 0)\)에는, \(F\)에서 그 점을 반시계 방향으로 \(\theta\) 돌린 자리 \((\omega\cos\theta,\ \omega\sin\theta)\)의 값이 옵니다.</li>
+  </ol>
+
+  <p>아래 그림은 이 두 성질이 하는 일을 직사각형 영상으로 보인 것입니다. 영상과 주파수 평면을 함께 시계 방향으로 \(\theta\) 돌리면 광선은 세로가 되고, 원래의 \(\theta\) 방향 직선은 \(\omega_x\) 축에 놓입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 312" role="img" aria-label="위 줄은 영상, 아래 줄은 주파수 평면. 왼쪽은 각도 30도의 광선과 30도 방향 직선, 오른쪽은 영상과 2차원 푸리에 변환을 함께 시계 방향으로 30도 돌린 모습으로 광선은 세로가 되고 직선은 ω_x 축에 놓임">
+<defs><marker id="s3r-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker><marker id="s3r-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker><marker id="s3r-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+<g font-size="12" font-weight="700" class="svg-fg"><text x="10" y="96">영상</text><text x="10" y="242">주파수 평면</text></g>
+<g font-size="11" class="svg-muted" text-anchor="middle"><text x="190" y="20">각도 θ = 30° 의 투영</text><text x="470" y="20">시계 방향으로 30° 돌린 뒤 각도 0 의 투영</text></g>
+<g fill="none" stroke-width="1" style="stroke:var(--muted)" opacity=".7"><path d="M105 92 H275"/><path d="M190 150 V34"/></g>
+<g fill="none" stroke-width="1" style="stroke:var(--muted)" opacity=".7"><path d="M105 238 H275"/><path d="M190 296 V180"/></g>
+<g fill="none" stroke-width="1" style="stroke:var(--muted)" opacity=".7"><path d="M385 92 H555"/><path d="M470 150 V34"/></g>
+<g fill="none" stroke-width="1" style="stroke:var(--muted)" opacity=".7"><path d="M385 238 H555"/><path d="M470 296 V180"/></g>
+<rect x="160" y="77.0" width="60" height="30" style="fill:var(--muted)" fill-opacity=".45" stroke-width="1.4" class="svg-line"/>
+<g fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--warn)"><path d="M184.8 155.0 L132.8 65.0"/><path d="M195.2 149.0 L143.2 59.0"/><path d="M205.6 143.0 L153.6 53.0"/><path d="M216.0 137.0 L164.0 47.0"/><path d="M226.4 131.0 L174.4 41.0"/><path d="M236.8 125.0 L184.8 35.0"/><path d="M247.2 119.0 L195.2 29.0"/></g>
+<path d="M190 92 L250.6 57.0" fill="none" stroke-width="2" style="stroke:var(--accent)" marker-end="url(#s3r-ac)"/>
+<rect x="440" y="77.0" width="60" height="30" transform="rotate(30 470 92)" style="fill:var(--muted)" fill-opacity=".45" stroke-width="1.4" class="svg-line"/>
+<g fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--warn)"><path d="M434.0 144.0 L434.0 40.0"/><path d="M446.0 144.0 L446.0 40.0"/><path d="M458.0 144.0 L458.0 40.0"/><path d="M470.0 144.0 L470.0 40.0"/><path d="M482.0 144.0 L482.0 40.0"/><path d="M494.0 144.0 L494.0 40.0"/><path d="M506.0 144.0 L506.0 40.0"/></g>
+<path d="M470 92 L540.0 92.0" fill="none" stroke-width="2" style="stroke:var(--accent)" marker-end="url(#s3r-ac)"/>
+<text x="254.1" y="51.0" font-size="11" style="fill:var(--accent)">θ 방향</text>
+<ellipse cx="190" cy="238" rx="20.0" ry="40" style="fill:var(--muted)" fill-opacity=".45" stroke-width="1.2" class="svg-line"/>
+<path d="M120.7 278.0 L259.3 198.0" fill="none" stroke-width="2.6" style="stroke:var(--good)"/>
+<ellipse cx="470" cy="238" rx="20.0" ry="40" transform="rotate(30 470 238)" style="fill:var(--muted)" fill-opacity=".45" stroke-width="1.2" class="svg-line"/>
+<path d="M390.0 238.0 L550.0 238.0" fill="none" stroke-width="2.6" style="stroke:var(--good)"/>
+<text x="114" y="286" font-size="11" text-anchor="end" style="fill:var(--good)">θ 방향 직선</text>
+<text x="555" y="230" font-size="11" class="svg-fg">ω<tspan font-size="8" dy="3">x</tspan><tspan dy="-3"> 축</tspan></text>
+<text x="190" y="304" font-size="10.5" class="svg-muted" text-anchor="middle">회색: |F| 가 큰 중심 부분</text>
+<path d="M290 66 Q330 52 370 66" fill="none" stroke-width="1.4" style="stroke:var(--muted)" marker-end="url(#s3r-mu)"/>
+<text x="330" y="48" font-size="10.5" text-anchor="middle" class="svg-muted">시계 방향 30°</text>
+<path d="M290 212 Q330 198 370 212" fill="none" stroke-width="1.4" style="stroke:var(--muted)" marker-end="url(#s3r-mu)"/>
+<text x="330" y="194" font-size="10.5" text-anchor="middle" class="svg-muted">시계 방향 30°</text>
+</svg>
+    <figcaption>왼쪽 열은 원래 영상(직사각형)과 각도 \(\theta = 30^{\circ}\)의 광선(주황 점선), 그리고 주파수 평면의 \(30^{\circ}\) 방향 직선(초록)입니다. 오른쪽 열은 영상 \(\mu\)를 시계 방향으로 \(30^{\circ}\) 돌린 영상 \(g\)와, 그 푸리에 변환 \(G\)(\(F\)를 같은 방향으로 돌린 것)입니다.
+    돌린 뒤에는 광선이 세로가 되고, 원래의 \(30^{\circ}\) 방향 직선이 \(\omega_x\) 축에 놓입니다. 파란 화살표는 검출기 방향입니다. 2장 페이지 6의 회전 성질은 반시계 방향 \(\phi\)로 쓰여 있으므로, 여기의 시계 방향 \(\theta\) 회전은 그 성질에 \(\phi = -\theta\)를 넣은 경우입니다.</figcaption>
+  </figure>
+
+  <p>두 사실을 합치면 \(P_\theta(\omega) = F(\omega\cos\theta,\ \omega\sin\theta)\)입니다.
+  회전 성질을 거치지 않고 정의에서 바로 전개할 수도 있습니다. 1장의 회전 좌표로 변수를 한 번 바꾸면 되고, 3장의 델타 함수 표기로는 더 짧습니다. 두 전개는 아래 접기에 있으며, 건너뛰어도 뒤의 내용은 이어집니다.</p>
+
+  <details class="fold">
+    <summary>정의에서 바로 하는 전개</summary>
+    <div class="fold-body">
+      <p><b>1단계. 정의 넣기.</b> 3장 페이지 3의 Radon 변환(직선마다 선적분을 모은 변환)을 페이지 1의 정의에 넣습니다.</p>
+      <p style="text-align:center">\[P_\theta(\omega) = \int\!\left[\int \mu\bigl(s\cos\theta - \ell\sin\theta,\ \ s\sin\theta + \ell\cos\theta\bigr)\,d\ell\right] e^{-i2\pi\omega s}\,ds\]</p>
+      <p><b>2단계. 회전 좌표로 변수 바꾸기.</b> \((s, \ell)\)은 1장 페이지 1의 회전 좌표 \((x', y')\)이고, \(\mu\) 안의 두 식은 회전 좌표의 역변환 \(x = x'\cos\theta - y'\sin\theta,\ y = x'\sin\theta + y'\cos\theta\)입니다. 그래서 적분 변수를 \((s, \ell)\)에서 \((x, y)\)로 바꿉니다.
+      이 변환의 행렬식은 \(\cos^{2}\theta + \sin^{2}\theta = 1\)이므로 \(ds\,d\ell = dx\,dy\)이고(1장 페이지 2), 지수 안의 \(s\)는 \(x' = x\cos\theta + y\sin\theta\)입니다.</p>
+      <p style="text-align:center">\[P_\theta(\omega) = \iint \mu(x, y)\,e^{-i2\pi\omega(x\cos\theta + y\sin\theta)}\,dx\,dy\]</p>
+      <p><b>3단계. 정의와 비교.</b> 2차원 푸리에 변환 \(F(\omega_x, \omega_y) = \iint \mu(x, y)\,e^{-i2\pi(\omega_x x + \omega_y y)}\,dx\,dy\)에 \(\omega_x = \omega\cos\theta,\ \omega_y = \omega\sin\theta\)를 넣으면 지수가 2단계의 식과 같습니다. 따라서 \(P_\theta(\omega) = F(\omega\cos\theta,\ \omega\sin\theta)\)입니다.</p>
+      <p><b>4단계. 쓴 가정.</b> 적분 순서를 바꾸려면 \(\mu\)의 절댓값을 적분한 값이 유한해야 합니다. CT 영상은 장치의 측정 영역 밖에서 0이고 값이 유한하므로 이 조건을 만족합니다. \(\omega\)에는 아무 가정도 하지 않았으므로 음수에서도 성립합니다.</p>
+      <p><b>델타 함수 표기로 쓴 전개.</b> 3장 페이지 3의 이중적분 표기를 넣고 \(s\)에 대한 적분을 안쪽으로 옮깁니다.</p>
+      <p style="text-align:center">\[\begin{aligned}P_\theta(\omega) &amp;= \int\!\left[\iint \mu(x, y)\,\delta(x\cos\theta + y\sin\theta - s)\,dx\,dy\right] e^{-i2\pi\omega s}\,ds\\ &amp;= \iint \mu(x, y)\left[\int \delta(x\cos\theta + y\sin\theta - s)\,e^{-i2\pi\omega s}\,ds\right] dx\,dy\\ &amp;= \iint \mu(x, y)\,e^{-i2\pi\omega(x\cos\theta + y\sin\theta)}\,dx\,dy\end{aligned}\]</p>
+      <p>가운데 줄의 괄호는 Sifting 성질에 따라 \(s = x\cos\theta + y\sin\theta\)에서의 지수 값만 남깁니다. 3장 페이지 3에서 영상 전체에 대한 적분과 순서를 바꿔 계산할 때 델타 함수 표기가 편하다고 한 것이 이런 계산입니다.</p>
+    </div>
+  </details>
+
+  <h3>중심에서 벗어난 물체</h3>
+
+  <p>정리는 물체가 회전 중심에 있지 않아도 그대로 성립합니다. 중심이 \((x_0, y_0)\)인 가우시안 함수 \(\mu(x, y) = e^{-\pi((x - x_0)^{2} + (y - y_0)^{2})}\)로 확인해 봅니다.</p>
+  <ul>
+    <li><b>영상 쪽.</b> 2장의 변환 쌍 \(e^{-\pi x^{2}} \longleftrightarrow e^{-\pi\omega^{2}}\)를 두 방향에 쓰고 이동 성질(2장 페이지 3)을 쓰면 \(F(\omega_x, \omega_y) = e^{-\pi(\omega_x^{2} + \omega_y^{2})}\,e^{-i2\pi(\omega_x x_0 + \omega_y y_0)}\)입니다.</li>
+    <li><b>투영 쪽.</b> 중심까지의 거리는 회전 좌표에서도 같으므로, 광선을 따라 적분하면 \(\int e^{-\pi\ell^{2}}\,d\ell = 1\)이 곱해집니다. 그래서 \(p(\theta, s) = e^{-\pi(s - s_0)^{2}}\)이고, \(s_0 = x_0\cos\theta + y_0\sin\theta\)는 3장 페이지 6의 사인 곡선입니다. 1차원 변환은 \(P_\theta(\omega) = e^{-\pi\omega^{2}}\,e^{-i2\pi\omega s_0}\)입니다.</li>
+  </ul>
+  <p>\(F\)에 \(\omega_x = \omega\cos\theta,\ \omega_y = \omega\sin\theta\)를 넣으면 \(\omega_x x_0 + \omega_y y_0 = \omega s_0\)이므로 두 식이 같습니다.
+  물체를 옮기면 양쪽 모두 크기는 그대로이고 위상만 바뀝니다. 회전 중심에서 먼 물체일수록 \(F\)의 위상이 주파수 평면에서 빠르게 돕니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">다른 책의 표기</p>
+    <p>주 참고서(Kak &amp; Slaney)는 투영 자체를 \(P_\theta(t)\)로 씁니다(3장 페이지 3). 그 책의 \(P_\theta\)는 이 책의 \(p(\theta, s)\)에 해당하고, 투영의 푸리에 변환에는 다른 글자를 씁니다. 두 책을 함께 볼 때는 \(P_\theta\)가 투영인지 그 변환인지 먼저 확인하세요.
+    각주파수를 쓰는 책에서도, 변환의 정의 앞에 상수를 붙이지 않는다면 위 전개가 그대로여서 정리에 상수가 붙지 않습니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="직접 푸리에 재구성">
+  <p class="kicker">4장 · 페이지 4 · 심화</p>
+  <h2>직접 푸리에 재구성</h2>
+
+  <p>푸리에 슬라이스 정리를 그대로 이어 가면 재구성 방법 하나가 만들어집니다.</p>
+  <ol>
+    <li>모든 각도의 투영을 1차원 푸리에 변환합니다. 각도 하나의 결과는 주파수 평면에서 원점을 지나는 직선 하나를 채웁니다(페이지 2).</li>
+    <li>\(0 \le \theta &lt; \pi\)의 직선을 모두 모으면 주파수 평면 전체의 \(F\)를 알게 됩니다.</li>
+    <li>\(F\)를 2차원 역변환하면 영상 \(\mu\)가 나옵니다(2장 페이지 6).</li>
+  </ol>
+  <p>연속 함수로 생각하면 이 과정에는 근사가 없어 수학적으로 영상이 정확히 재구성됩니다. 이처럼 투영의 푸리에 변환으로 주파수 평면을 채운 뒤 2차원 역변환으로 영상을 얻는 방법을 직접 푸리에 재구성(<span class="term" data-term="dfr">Direct Fourier Reconstruction</span>)이라고 합니다.</p>
+  <p>그러나 컴퓨터로 구현하면 한계가 생깁니다. 투영의 각도와 검출기 샘플이 이산적이어서, 측정한 값은 극좌표 격자(원점을 지나는 직선들) 위에만 있습니다. 반면 빠른 2차원 역변환(2차원 역 FFT)은 가로·세로로 일정한 간격의 직교 격자 위의 값을 요구합니다. 두 격자가 어긋나므로 극좌표 점의 값으로 직교 격자점의 값을 만드는 보간이 필요합니다.
+  이산이라는 것만으로 보간이 필요한 것은 아닙니다. 측정점이 처음부터 직교 격자 위에 있다면 보간은 필요 없습니다. 아래 그림은 구현의 계산 순서이고, 이 순서에서 어려움이 세 군데 나옵니다(어려움 1~3).</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 96" role="img" aria-label="직접 푸리에 재구성의 순서. sinogram의 행마다 1차원 FFT, 극좌표 격자에 값 놓기, 직교 격자로 보간, 2차원 역 FFT로 영상">
+    <defs>
+    <marker id="s4f-ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--accent)"/></marker>
+    <marker id="s4f-mu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker>
+    <marker id="s4f-wa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+    </defs>
+    <g fill="none" stroke-width="1.4" class="svg-line"><rect x="8" y="22" width="104" height="54" rx="6"/><path d="M114 49 H134" marker-end="url(#s4f-mu)"/><rect x="138" y="22" width="104" height="54" rx="6"/><path d="M244 49 H264" marker-end="url(#s4f-mu)"/><rect x="268" y="22" width="104" height="54" rx="6"/><path d="M374 49 H394" marker-end="url(#s4f-mu)"/><rect x="398" y="22" width="104" height="54" rx="6"/><path d="M504 49 H524" marker-end="url(#s4f-mu)"/><rect x="528" y="22" width="104" height="54" rx="6"/></g>
+    <g font-size="11.5" text-anchor="middle" class="svg-fg"><text x="60" y="45">sinogram</text><text x="60" y="63" class="svg-muted">p[k, n]</text><text x="190" y="45">행마다</text><text x="190" y="63" class="svg-muted">1차원 FFT</text><text x="320" y="45">극좌표 격자에</text><text x="320" y="63" class="svg-muted">값 놓기</text><text x="450" y="45">직교 격자로</text><text x="450" y="63" class="svg-muted">보간</text><text x="580" y="45">2차원 역 FFT</text><text x="580" y="63" class="svg-muted">→ 영상</text></g>
+    <text x="385" y="92" font-size="10.5" text-anchor="middle" class="svg-muted">아래에서 설명하는 두 단계</text>
+    <path d="M268 80 H502" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+    </svg>
+    <figcaption>이산 sinogram의 행(각도 하나)마다 1차원 FFT를 하고, 결과를 주파수 평면에서 그 각도의 직선 위에 놓습니다. 이 값들로 직교 격자의 값을 보간한 뒤 2차원 역 FFT로 영상을 얻습니다. 주황 밑줄의 두 단계가 아래에서 설명하는 보간 문제입니다.</figcaption>
+  </figure>
+
+  <h3>어려움 1. 극좌표에서 직교 격자로의 보간</h3>
+
+  <p>그림에서 주황 밑줄을 친 두 단계가 가장 까다롭습니다. 검출기 칸 \(N_s\)개의 투영을 DFT하면 주파수 간격 \(1/(N_s\Delta s)\)마다 값을 얻습니다(2장 페이지 5). 이 점들은 각도마다 원점을 지나는 직선 위에 놓이므로, 전체는 원점에서 방사형으로 퍼진 극좌표 격자가 됩니다.
+  이 극좌표 격자를 2차원 역 FFT가 요구하는 직교 격자(2장 페이지 6)로 옮기는 것이 보간입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="주파수 평면에서 각도 12개의 직선 위에 놓인 DFT 값의 위치와 직교 격자. 오른쪽은 가장자리 확대로, 이웃한 두 직선 사이에 직교 격자점이 두 칸 넘게 들어감">
+    <g fill="none" stroke-width=".6" style="stroke:var(--muted)" opacity=".55"><path d="M30.0 30 V270"/><path d="M30 30.0 H270"/><path d="M45.0 30 V270"/><path d="M30 45.0 H270"/><path d="M60.0 30 V270"/><path d="M30 60.0 H270"/><path d="M75.0 30 V270"/><path d="M30 75.0 H270"/><path d="M90.0 30 V270"/><path d="M30 90.0 H270"/><path d="M105.0 30 V270"/><path d="M30 105.0 H270"/><path d="M120.0 30 V270"/><path d="M30 120.0 H270"/><path d="M135.0 30 V270"/><path d="M30 135.0 H270"/><path d="M150.0 30 V270"/><path d="M30 150.0 H270"/><path d="M165.0 30 V270"/><path d="M30 165.0 H270"/><path d="M180.0 30 V270"/><path d="M30 180.0 H270"/><path d="M195.0 30 V270"/><path d="M30 195.0 H270"/><path d="M210.0 30 V270"/><path d="M30 210.0 H270"/><path d="M225.0 30 V270"/><path d="M30 225.0 H270"/><path d="M240.0 30 V270"/><path d="M30 240.0 H270"/><path d="M255.0 30 V270"/><path d="M30 255.0 H270"/><path d="M270.0 30 V270"/><path d="M30 270.0 H270"/></g>
+    <circle cx="150" cy="150" r="120" fill="none" stroke-width="1.2" stroke-dasharray="5 3" style="stroke:var(--warn)"/>
+    <g style="fill:var(--accent)"><circle cx="30.0" cy="150.0" r="2.2"/><circle cx="45.0" cy="150.0" r="2.2"/><circle cx="60.0" cy="150.0" r="2.2"/><circle cx="75.0" cy="150.0" r="2.2"/><circle cx="90.0" cy="150.0" r="2.2"/><circle cx="105.0" cy="150.0" r="2.2"/><circle cx="120.0" cy="150.0" r="2.2"/><circle cx="135.0" cy="150.0" r="2.2"/><circle cx="150.0" cy="150.0" r="2.2"/><circle cx="165.0" cy="150.0" r="2.2"/><circle cx="180.0" cy="150.0" r="2.2"/><circle cx="195.0" cy="150.0" r="2.2"/><circle cx="210.0" cy="150.0" r="2.2"/><circle cx="225.0" cy="150.0" r="2.2"/><circle cx="240.0" cy="150.0" r="2.2"/><circle cx="255.0" cy="150.0" r="2.2"/><circle cx="270.0" cy="150.0" r="2.2"/><circle cx="34.1" cy="181.1" r="2.2"/><circle cx="48.6" cy="177.2" r="2.2"/><circle cx="63.1" cy="173.3" r="2.2"/><circle cx="77.6" cy="169.4" r="2.2"/><circle cx="92.0" cy="165.5" r="2.2"/><circle cx="106.5" cy="161.6" r="2.2"/><circle cx="121.0" cy="157.8" r="2.2"/><circle cx="135.5" cy="153.9" r="2.2"/><circle cx="164.5" cy="146.1" r="2.2"/><circle cx="179.0" cy="142.2" r="2.2"/><circle cx="193.5" cy="138.4" r="2.2"/><circle cx="208.0" cy="134.5" r="2.2"/><circle cx="222.4" cy="130.6" r="2.2"/><circle cx="236.9" cy="126.7" r="2.2"/><circle cx="251.4" cy="122.8" r="2.2"/><circle cx="265.9" cy="118.9" r="2.2"/><circle cx="46.1" cy="210.0" r="2.2"/><circle cx="59.1" cy="202.5" r="2.2"/><circle cx="72.1" cy="195.0" r="2.2"/><circle cx="85.0" cy="187.5" r="2.2"/><circle cx="98.0" cy="180.0" r="2.2"/><circle cx="111.0" cy="172.5" r="2.2"/><circle cx="124.0" cy="165.0" r="2.2"/><circle cx="137.0" cy="157.5" r="2.2"/><circle cx="163.0" cy="142.5" r="2.2"/><circle cx="176.0" cy="135.0" r="2.2"/><circle cx="189.0" cy="127.5" r="2.2"/><circle cx="202.0" cy="120.0" r="2.2"/><circle cx="215.0" cy="112.5" r="2.2"/><circle cx="227.9" cy="105.0" r="2.2"/><circle cx="240.9" cy="97.5" r="2.2"/><circle cx="253.9" cy="90.0" r="2.2"/><circle cx="65.1" cy="234.9" r="2.2"/><circle cx="75.8" cy="224.2" r="2.2"/><circle cx="86.4" cy="213.6" r="2.2"/><circle cx="97.0" cy="203.0" r="2.2"/><circle cx="107.6" cy="192.4" r="2.2"/><circle cx="118.2" cy="181.8" r="2.2"/><circle cx="128.8" cy="171.2" r="2.2"/><circle cx="139.4" cy="160.6" r="2.2"/><circle cx="160.6" cy="139.4" r="2.2"/><circle cx="171.2" cy="128.8" r="2.2"/><circle cx="181.8" cy="118.2" r="2.2"/><circle cx="192.4" cy="107.6" r="2.2"/><circle cx="203.0" cy="97.0" r="2.2"/><circle cx="213.6" cy="86.4" r="2.2"/><circle cx="224.2" cy="75.8" r="2.2"/><circle cx="234.9" cy="65.1" r="2.2"/><circle cx="90.0" cy="253.9" r="2.2"/><circle cx="97.5" cy="240.9" r="2.2"/><circle cx="105.0" cy="227.9" r="2.2"/><circle cx="112.5" cy="215.0" r="2.2"/><circle cx="120.0" cy="202.0" r="2.2"/><circle cx="127.5" cy="189.0" r="2.2"/><circle cx="135.0" cy="176.0" r="2.2"/><circle cx="142.5" cy="163.0" r="2.2"/><circle cx="157.5" cy="137.0" r="2.2"/><circle cx="165.0" cy="124.0" r="2.2"/><circle cx="172.5" cy="111.0" r="2.2"/><circle cx="180.0" cy="98.0" r="2.2"/><circle cx="187.5" cy="85.0" r="2.2"/><circle cx="195.0" cy="72.1" r="2.2"/><circle cx="202.5" cy="59.1" r="2.2"/><circle cx="210.0" cy="46.1" r="2.2"/><circle cx="118.9" cy="265.9" r="2.2"/><circle cx="122.8" cy="251.4" r="2.2"/><circle cx="126.7" cy="236.9" r="2.2"/><circle cx="130.6" cy="222.4" r="2.2"/><circle cx="134.5" cy="208.0" r="2.2"/><circle cx="138.4" cy="193.5" r="2.2"/><circle cx="142.2" cy="179.0" r="2.2"/><circle cx="146.1" cy="164.5" r="2.2"/><circle cx="153.9" cy="135.5" r="2.2"/><circle cx="157.8" cy="121.0" r="2.2"/><circle cx="161.6" cy="106.5" r="2.2"/><circle cx="165.5" cy="92.0" r="2.2"/><circle cx="169.4" cy="77.6" r="2.2"/><circle cx="173.3" cy="63.1" r="2.2"/><circle cx="177.2" cy="48.6" r="2.2"/><circle cx="181.1" cy="34.1" r="2.2"/><circle cx="150.0" cy="270.0" r="2.2"/><circle cx="150.0" cy="255.0" r="2.2"/><circle cx="150.0" cy="240.0" r="2.2"/><circle cx="150.0" cy="225.0" r="2.2"/><circle cx="150.0" cy="210.0" r="2.2"/><circle cx="150.0" cy="195.0" r="2.2"/><circle cx="150.0" cy="180.0" r="2.2"/><circle cx="150.0" cy="165.0" r="2.2"/><circle cx="150.0" cy="135.0" r="2.2"/><circle cx="150.0" cy="120.0" r="2.2"/><circle cx="150.0" cy="105.0" r="2.2"/><circle cx="150.0" cy="90.0" r="2.2"/><circle cx="150.0" cy="75.0" r="2.2"/><circle cx="150.0" cy="60.0" r="2.2"/><circle cx="150.0" cy="45.0" r="2.2"/><circle cx="150.0" cy="30.0" r="2.2"/><circle cx="181.1" cy="265.9" r="2.2"/><circle cx="177.2" cy="251.4" r="2.2"/><circle cx="173.3" cy="236.9" r="2.2"/><circle cx="169.4" cy="222.4" r="2.2"/><circle cx="165.5" cy="208.0" r="2.2"/><circle cx="161.6" cy="193.5" r="2.2"/><circle cx="157.8" cy="179.0" r="2.2"/><circle cx="153.9" cy="164.5" r="2.2"/><circle cx="146.1" cy="135.5" r="2.2"/><circle cx="142.2" cy="121.0" r="2.2"/><circle cx="138.4" cy="106.5" r="2.2"/><circle cx="134.5" cy="92.0" r="2.2"/><circle cx="130.6" cy="77.6" r="2.2"/><circle cx="126.7" cy="63.1" r="2.2"/><circle cx="122.8" cy="48.6" r="2.2"/><circle cx="118.9" cy="34.1" r="2.2"/><circle cx="210.0" cy="253.9" r="2.2"/><circle cx="202.5" cy="240.9" r="2.2"/><circle cx="195.0" cy="227.9" r="2.2"/><circle cx="187.5" cy="215.0" r="2.2"/><circle cx="180.0" cy="202.0" r="2.2"/><circle cx="172.5" cy="189.0" r="2.2"/><circle cx="165.0" cy="176.0" r="2.2"/><circle cx="157.5" cy="163.0" r="2.2"/><circle cx="142.5" cy="137.0" r="2.2"/><circle cx="135.0" cy="124.0" r="2.2"/><circle cx="127.5" cy="111.0" r="2.2"/><circle cx="120.0" cy="98.0" r="2.2"/><circle cx="112.5" cy="85.0" r="2.2"/><circle cx="105.0" cy="72.1" r="2.2"/><circle cx="97.5" cy="59.1" r="2.2"/><circle cx="90.0" cy="46.1" r="2.2"/><circle cx="234.9" cy="234.9" r="2.2"/><circle cx="224.2" cy="224.2" r="2.2"/><circle cx="213.6" cy="213.6" r="2.2"/><circle cx="203.0" cy="203.0" r="2.2"/><circle cx="192.4" cy="192.4" r="2.2"/><circle cx="181.8" cy="181.8" r="2.2"/><circle cx="171.2" cy="171.2" r="2.2"/><circle cx="160.6" cy="160.6" r="2.2"/><circle cx="139.4" cy="139.4" r="2.2"/><circle cx="128.8" cy="128.8" r="2.2"/><circle cx="118.2" cy="118.2" r="2.2"/><circle cx="107.6" cy="107.6" r="2.2"/><circle cx="97.0" cy="97.0" r="2.2"/><circle cx="86.4" cy="86.4" r="2.2"/><circle cx="75.8" cy="75.8" r="2.2"/><circle cx="65.1" cy="65.1" r="2.2"/><circle cx="253.9" cy="210.0" r="2.2"/><circle cx="240.9" cy="202.5" r="2.2"/><circle cx="227.9" cy="195.0" r="2.2"/><circle cx="215.0" cy="187.5" r="2.2"/><circle cx="202.0" cy="180.0" r="2.2"/><circle cx="189.0" cy="172.5" r="2.2"/><circle cx="176.0" cy="165.0" r="2.2"/><circle cx="163.0" cy="157.5" r="2.2"/><circle cx="137.0" cy="142.5" r="2.2"/><circle cx="124.0" cy="135.0" r="2.2"/><circle cx="111.0" cy="127.5" r="2.2"/><circle cx="98.0" cy="120.0" r="2.2"/><circle cx="85.0" cy="112.5" r="2.2"/><circle cx="72.1" cy="105.0" r="2.2"/><circle cx="59.1" cy="97.5" r="2.2"/><circle cx="46.1" cy="90.0" r="2.2"/><circle cx="265.9" cy="181.1" r="2.2"/><circle cx="251.4" cy="177.2" r="2.2"/><circle cx="236.9" cy="173.3" r="2.2"/><circle cx="222.4" cy="169.4" r="2.2"/><circle cx="208.0" cy="165.5" r="2.2"/><circle cx="193.5" cy="161.6" r="2.2"/><circle cx="179.0" cy="157.8" r="2.2"/><circle cx="164.5" cy="153.9" r="2.2"/><circle cx="135.5" cy="146.1" r="2.2"/><circle cx="121.0" cy="142.2" r="2.2"/><circle cx="106.5" cy="138.4" r="2.2"/><circle cx="92.0" cy="134.5" r="2.2"/><circle cx="77.6" cy="130.6" r="2.2"/><circle cx="63.1" cy="126.7" r="2.2"/><circle cx="48.6" cy="122.8" r="2.2"/><circle cx="34.1" cy="118.9" r="2.2"/></g>
+    <rect x="204.0" y="114.0" width="72.0" height="72.0" fill="none" stroke-width="1.4" style="stroke:var(--fg)"/>
+    <rect x="360" y="32" width="236" height="236" fill="none" stroke-width="1" style="stroke:var(--fg)"/>
+    <g fill="none" stroke-width=".8" style="stroke:var(--muted)" opacity=".7"><path d="M360.0 248.3 H596.0"/><path d="M360.0 199.2 H596.0"/><path d="M360.0 150.0 H596.0"/><path d="M360.0 100.8 H596.0"/><path d="M360.0 51.7 H596.0"/><path d="M379.7 268.0 V32.0"/><path d="M428.8 268.0 V32.0"/><path d="M478.0 268.0 V32.0"/><path d="M527.2 268.0 V32.0"/><path d="M576.3 268.0 V32.0"/></g>
+    <g fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--accent)"><path d="M360.0 197.4 L596.0 260.7"/><path d="M360.0 150.0 L596.0 150.0"/><path d="M360.0 102.6 L596.0 39.3"/></g>
+    <g class="svg-muted" style="fill:var(--muted)"><rect x="376.7" y="245.3" width="6" height="6"/><rect x="376.7" y="196.2" width="6" height="6"/><rect x="376.7" y="147.0" width="6" height="6"/><rect x="376.7" y="97.8" width="6" height="6"/><rect x="376.7" y="48.7" width="6" height="6"/><rect x="425.8" y="245.3" width="6" height="6"/><rect x="425.8" y="196.2" width="6" height="6"/><rect x="425.8" y="147.0" width="6" height="6"/><rect x="425.8" y="97.8" width="6" height="6"/><rect x="425.8" y="48.7" width="6" height="6"/><rect x="475.0" y="245.3" width="6" height="6"/><rect x="475.0" y="196.2" width="6" height="6"/><rect x="475.0" y="147.0" width="6" height="6"/><rect x="475.0" y="97.8" width="6" height="6"/><rect x="475.0" y="48.7" width="6" height="6"/><rect x="524.2" y="245.3" width="6" height="6"/><rect x="524.2" y="196.2" width="6" height="6"/><rect x="524.2" y="147.0" width="6" height="6"/><rect x="524.2" y="97.8" width="6" height="6"/><rect x="524.2" y="48.7" width="6" height="6"/><rect x="573.3" y="245.3" width="6" height="6"/><rect x="573.3" y="196.2" width="6" height="6"/><rect x="573.3" y="147.0" width="6" height="6"/><rect x="573.3" y="97.8" width="6" height="6"/><rect x="573.3" y="48.7" width="6" height="6"/></g>
+    <g style="fill:var(--accent)"><circle cx="373.0" cy="200.9" r="4"/><circle cx="420.5" cy="213.6" r="4"/><circle cx="467.9" cy="226.4" r="4"/><circle cx="515.4" cy="239.1" r="4"/><circle cx="562.9" cy="251.8" r="4"/><circle cx="379.7" cy="150.0" r="4"/><circle cx="428.8" cy="150.0" r="4"/><circle cx="478.0" cy="150.0" r="4"/><circle cx="527.2" cy="150.0" r="4"/><circle cx="576.3" cy="150.0" r="4"/><circle cx="373.0" cy="99.1" r="4"/><circle cx="420.5" cy="86.4" r="4"/><circle cx="467.9" cy="73.6" r="4"/><circle cx="515.4" cy="60.9" r="4"/><circle cx="562.9" cy="48.2" r="4"/></g>
+    <path d="M576.3 150.0 L562.9 48.2" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+    <g font-size="11.5" class="svg-fg">
+    <text x="30" y="18" font-weight="700">주파수 평면 전체</text>
+    <text x="360" y="18" font-weight="700">가장자리 확대</text>
+    </g>
+    <g font-size="10.5" class="svg-muted">
+    <text x="364" y="283">■ 직교 격자점  ● 직선 위의 DFT 값</text><text x="364" y="297" style="fill:var(--warn)">— 이웃한 두 직선의 간격</text>
+    </g>
+    </svg>
+    <figcaption>왼쪽은 각도 12개(\(15^{\circ}\) 간격)의 직선 위에 놓인 DFT 값(파란 점)과 직교 격자(회색 선의 교차점)이고, 주황 점선 원은 나이퀴스트 주파수 \(1/(2\Delta s)\)입니다. 오른쪽은 왼쪽의 검은 사각형 부분을 확대한 것입니다.
+    가장자리에서는 이웃한 두 직선의 간격(주황 선분)이 직교 격자 간격의 약 2배여서, 그 사이의 격자점들은 멀리 있는 측정값으로 보간됩니다.</figcaption>
+  </figure>
+
+  <p>어려움 1의 보간이 까다로운 이유는 다시 세 가지로 나뉩니다.</p>
+  <ul>
+    <li><b>밀도가 고르지 않습니다.</b> 직선이 모두 원점을 지나므로 중심 근처에는 값이 빽빽하고 바깥으로 갈수록 성깁니다. 가장자리의 격자점은 두 칸 넘게 떨어진 측정값으로 보간됩니다(계산은 목록 아래).</li>
+    <li><b>위상이 빠르게 돕니다.</b> 페이지 3에서 본 것처럼 회전 중심에서 거리 \(d\)만큼 떨어진 물체의 \(F\)는 위상이 주파수 \(1/d\)마다 한 바퀴 돕니다. 이웃한 측정값 사이의 간격이 이보다 넓으면, 두 값을 잇는 보간은 위상의 회전을 따라가지 못합니다. 그래서 같은 간격이라도 중심에서 먼 물체일수록 보간 오차가 큽니다.</li>
+    <li><b>오차가 영상 전체로 퍼집니다.</b> 주파수 평면의 값 하나는 영상 전체에 걸친 파동 하나의 크기입니다. 보간이 한 주파수에서 틀리면 그 오차는 영상의 한 곳이 아니라 전체에 걸친 줄무늬로 나타납니다. 보간 간격이 넓은 높은 주파수에서 오차가 크므로, 가는 줄무늬가 영상 전체에 겹칩니다.</li>
+  </ul>
+  <p>밀도의 계산은 다음과 같습니다. 반지름 \(\omega\)에서 이웃한 두 직선 사이의 거리는 호의 길이 \(\omega\,\Delta\theta\)입니다. \(180^{\circ}\)를 각도 \(N_\theta\)개로 나누면 \(\Delta\theta = \pi/N_\theta\)이므로, 나이퀴스트 주파수에서 이 거리는 \(\pi/(2\Delta s N_\theta)\)입니다.</p>
+  <p>직교 격자의 간격 \(1/(N_s\Delta s)\)에 대한 비는 \(\pi N_s/(2N_\theta)\)이고, \(N_\theta = 180,\ N_s = 256\)이면 약 2.2입니다.</p>
+  <p>또 측정한 직선들은 나이퀴스트 반지름의 원 안만 덮으므로, 직교 격자의 네 구석에는 값이 없어 0으로 채웁니다.</p>
+
+  <h3>어려움 2. 별도의 큰 2차원 역변환</h3>
+
+  <p>보간의 정확도를 높이려면 투영의 양 끝에 0을 채워(2장 페이지 5의 제로 패딩) 주파수 간격을 촘촘하게 하는 방법이 흔히 쓰입니다. 그러면 직교 격자도 촘촘해지고, 2차원 역 FFT의 크기가 영상보다 커집니다.
+  이 변환은 주파수 평면 전체의 값을 한꺼번에 받으므로, 큰 2차원 배열 하나를 통째로 메모리에 두어야 합니다.</p>
+
+  <h3>어려움 3. 모든 각도가 모여야 시작</h3>
+
+  <p>2차원 역변환은 주파수 평면 전체가 채워진 뒤에야 할 수 있습니다. 모든 각도의 투영을 측정하고 변환하고 보간을 마칠 때까지 영상은 한 장도 나오지 않습니다.
+  뒤에서 볼 필터 역투영(<span class="term" data-term="fbp">FBP</span>)은 각도 하나의 투영이 들어올 때마다 처리해서 영상에 더해 가면 되므로, 측정과 계산을 겹쳐 진행할 수 있고 메모리에는 영상 하나와 투영 한 장만 있으면 됩니다.</p>
+
+  <p>보간 방법을 개선한 연구가 많고, MRI에서는 방사형이나 나선형으로 측정하는 경우에 이처럼 주파수 평면에서 보간하는 기법이 널리 쓰입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">직접 푸리에 재구성의 연산량</p>
+    <p>계산이 오래 걸려서 쓰이지 않는다고 생각하기 쉽지만, 연산량 자체는 불리하지 않습니다. 영상이 \(N\times N\), 각도가 \(N\)개 정도라고 하겠습니다.</p>
+    <ul>
+      <li>투영마다 하는 1차원 FFT는 모두 합쳐 \(N^{2}\log N\)에 비례합니다.</li>
+      <li>보간은 격자점마다 정해진 개수의 이웃만 쓰므로 \(N^{2}\)에 비례합니다.</li>
+      <li>2차원 FFT도 \(N^{2}\log N\)에 비례합니다.</li>
+    </ul>
+    <p>전체가 \(N^{2}\log N\) 정도입니다. 필터 역투영은 각도 \(N\)개마다 화소 \(N^{2}\)개에 값을 더하므로 \(N^{3}\)에 비례합니다. 그래서 직접 푸리에 재구성이 외면받는 이유는 계산량이 아니라 보간 오차와 위의 어려움 2·3입니다.</p>
+  </div>
+
+  <h3>영상 공간에서 처리하는 방법</h3>
+
+  <p>CT의 해석적 재구성에서는 주파수 평면을 채우지 않고 영상 공간에서 계산하는 방법이 표준으로 쓰입니다. 그렇다면 보간 없이, 각도를 하나씩 처리하는 더 효율적인 방법은 없을까요? 있습니다. 푸리에 공간에서 하려던 일을 영상 공간에서 각도마다 해 나가는 방법이고, 그 재료가 다음 페이지의 역투영입니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 -->
+<section class="screen" data-title="되돌려 칠해 보기: 역투영의 직관">
+  <p class="kicker">4장 · 페이지 5</p>
+  <h2>측정값을 되돌려 칠해 보기: 역투영의 직관</h2>
+
+  <p>측정값 하나가 알려 주는 것은 광선 하나를 따라 \(\mu\)를 더한 값뿐입니다. 그 광선 위의 어디에 무엇이 있는지는 알려 주지 않습니다. 그렇다면 가장 단순한 추측은 그 값을 광선이 지나는 모든 점에 똑같이 칠하는 것입니다. 검출기 쪽에서 광원 쪽으로 붓을 한 번 쭉 그어 칠하는 것과 같습니다.</p>
+  <p>각도 하나의 투영을 이렇게 칠하면 광선 방향으로 뻗은 줄무늬가 생깁니다. 줄의 밝기는 그 광선의 측정값입니다. 이 칠하기를 모든 각도에 대해 하고 결과를 더하면, 물체가 있는 점은 여러 각도의 광선이 공통으로 지나므로 값이 쌓입니다. 물체가 없는 점은 일부 광선의 값만 받습니다.
+  이처럼 측정값을 광선을 따라 영상으로 되돌려 놓고 더하는 연산을 역투영(<span class="term" data-term="backproj">Back Projection</span>)이라고 합니다. 투영이 영상에서 측정값으로 가는 계산이라면, 역투영은 측정값에서 영상으로 가는 계산입니다.</p>
+
+  <h3>각도가 늘며 쌓이는 과정</h3>
+
+  <p>아래 위젯은 각도 36개(\(5^{\circ}\) 간격)의 투영을 차례로 칠하며 더합니다. 왼쪽은 현재 각도의 투영 곡선이고, 오른쪽은 지금까지 칠한 결과입니다. 주황색은 방금 칠하는 줄이고, 점선은 붓이 지나가는 앞쪽 끝입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="왼쪽은 현재 각도의 투영 곡선. 오른쪽은 각도마다 투영값을 광선 방향으로 칠해 더한 영상으로, 방금 칠한 줄이 주황색으로 보임">
+      <defs>
+        <clipPath id="r7a-clip"><rect x="350" y="36" width="240" height="240"/></clipPath>
+        <marker id="r7a-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker>
+      </defs>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <rect x="30" y="36" width="240" height="240"/>
+        <path d="M30 256 H270"/>
+        <rect x="350" y="36" width="240" height="240"/>
+      </g>
+      <path id="r7a-prof" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <image id="r7a-img" x="350" y="36" width="240" height="240" preserveAspectRatio="none"/>
+      <g clip-path="url(#r7a-clip)" id="r7a-ov" fill="none"></g>
+      <rect x="350" y="36" width="240" height="240" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="30" y="24" font-weight="700">투영 곡선 p(θ, s)</text>
+        <text x="350" y="24" font-weight="700">칠해서 더한 영상</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="middle">
+        <text x="30" y="292">s = −1.1</text><text x="150" y="292">0</text><text x="270" y="292">1.1</text>
+        <text x="350" y="292">x = −1.1</text><text x="470" y="292">0</text><text x="590" y="292">1.1</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽의 가로축은 검출기 좌표 \(s\)이고, 곡선의 높이는 그 각도의 투영값입니다. 오른쪽은 지금까지 칠한 줄을 더한 영상이며 밝을수록 값이 큽니다. 밝기는 모든 각도를 칠한 뒤의 값을 기준으로 정했으므로, 각도가 적을 때는 전체가 어둡습니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <button type="button" id="r7a-play" style="font-size:.86rem;padding:.25rem .9rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer">재생</button>
+    <label for="r7a-sel">영상</label>
+    <select id="r7a-sel" style="font-size:.86rem">
+      <option value="full">Shepp-Logan 팬텀</option>
+      <option value="sq">정사각형 두 개</option>
+      <option value="dot">작은 점 하나</option>
+    </select>
+    <label for="r7a-k">칠한 각도 수</label>
+    <input id="r7a-k" type="range" min="0" max="36" step="1" value="6" style="width:9rem">
+    <b id="r7a-k-val">6</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r7a-note"></p>
+  <p style="text-align:center;font-size:.86rem;color:var(--muted)">재생 버튼을 누르면 각도가 하나씩 칠해지고, 슬라이더를 움직이면 칠한 각도 수를 직접 정할 수 있습니다.</p>
+
+  <ul>
+    <li><b>작은 점 하나.</b> 각도마다 점을 지나는 줄이 하나씩 더해져 별 모양이 됩니다. 줄이 모두 점에서 만나므로 점의 자리가 가장 밝지만, 줄은 점 바깥으로도 끝없이 이어집니다.</li>
+    <li><b>정사각형 두 개.</b> 각도가 적을 때는 실제 위치뿐 아니라 <a href="../../part0/ch02.html#s7">0편 2장 페이지 7</a>의 다른 배치 쪽에도 줄이 겹쳐 밝습니다. 각도가 늘면 실제 위치의 값이 다른 배치 쪽의 값보다 커집니다.</li>
+    <li><b>Shepp-Logan 팬텀.</b> 각도가 늘수록 윤곽이 드러납니다. 그러나 물체 바깥에도 줄이 남아 있고, 모든 곳이 흐릿합니다.</li>
+  </ul>
+
+  <p>각도를 늘려도 물체 밖에 남는 값은 사라지지 않습니다. 이 장에서는 투영값에 아무 처리도 하지 않고 역투영만 한 결과를 단순 역투영(Simple Back Projection)이라고 부르겠습니다.</p>
+
+<script>
+window.r7 = (function () {
+  var D = Math.PI / 180;
+  // Shepp-Logan 타원: [x0, y0, A, B, α(도), ρ] (3장 페이지 4의 표)
+  var SL = [
+    [0, 0, 0.92, 0.69, 90, 2.0], [0, -0.0184, 0.874, 0.6624, 90, -0.98],
+    [0.22, 0, 0.31, 0.11, 72, -0.02], [-0.22, 0, 0.41, 0.16, 108, -0.02],
+    [0, 0.35, 0.25, 0.21, 90, 0.01], [0, 0.1, 0.046, 0.046, 0, 0.01],
+    [0, -0.1, 0.046, 0.046, 0, 0.01], [-0.08, -0.605, 0.046, 0.023, 0, 0.01],
+    [0, -0.605, 0.023, 0.023, 0, 0.01], [0.06, -0.605, 0.046, 0.023, 90, 0.01]
+  ];
+  function ellMu(x, y) {
+    var v = 0, i, e, c, s, u, w;
+    for (i = 0; i < SL.length; i++) {
+      e = SL[i]; c = Math.cos(e[4] * D); s = Math.sin(e[4] * D);
+      u = (x - e[0]) * c + (y - e[1]) * s; w = -(x - e[0]) * s + (y - e[1]) * c;
+      if (u * u / (e[2] * e[2]) + w * w / (e[3] * e[3]) <= 1) v += e[5];
+    }
+    return v;
+  }
+  function ellP(th, s) {                  // 3장 페이지 5의 닫힌 식을 타원마다 더한다
+    var v = 0, i, e, t, ph, a2;
+    for (i = 0; i < SL.length; i++) {
+      e = SL[i];
+      t = s - e[0] * Math.cos(th) - e[1] * Math.sin(th);
+      ph = th - e[4] * D;
+      a2 = e[2] * e[2] * Math.pow(Math.cos(ph), 2) + e[3] * e[3] * Math.pow(Math.sin(ph), 2);
+      if (t * t < a2) v += 2 * e[5] * e[2] * e[3] / a2 * Math.sqrt(a2 - t * t);
+    }
+    return v;
+  }
+  var SQ = [[-2, 2], [2, -2]], SQMU = 0.45;
+  function range(p0, d, lo, hi) {         // lo <= p0 + ℓ d <= hi 인 ℓ 의 구간
+    if (Math.abs(d) < 1e-12) return (p0 >= lo && p0 <= hi) ? [-1e9, 1e9] : null;
+    var a = (lo - p0) / d, b = (hi - p0) / d;
+    return a < b ? [a, b] : [b, a];
+  }
+  function sqP(th, s) {                   // 광선이 정사각형 안에서 지나는 길이 × μ
+    var c = Math.cos(th), sn = Math.sin(th), v = 0, i, rx, ry, lo, hi;
+    for (i = 0; i < SQ.length; i++) {
+      rx = range(s * c, -sn, SQ[i][0] - 0.5, SQ[i][0] + 0.5);
+      ry = range(s * sn, c, SQ[i][1] - 0.5, SQ[i][1] + 0.5);
+      if (!rx || !ry) continue;
+      lo = Math.max(rx[0], ry[0]); hi = Math.min(rx[1], ry[1]);
+      if (hi > lo) v += SQMU * (hi - lo);
+    }
+    return v;
+  }
+  var DOT = [0.35, 0.25, 0.03];           // 작은 원판: 중심 (0.35, 0.25), 반지름 0.03, 값 1
+  function dotP(th, s) {
+    var t = s - DOT[0] * Math.cos(th) - DOT[1] * Math.sin(th), a = DOT[2];
+    return t * t < a * a ? 2 * Math.sqrt(a * a - t * t) : 0;
+  }
+  var models = {
+    full: { key: 'full', half: 1.1, p: ellP },
+    sq:   { key: 'sq', half: 3.5, p: sqP },
+    dot:  { key: 'dot', half: 1.1, p: dotP }
+  };
+  function image(w, h, val) {             // val(i, j) 는 0~1 의 회색 값, 또는 [r, g, b](0~255). PNG 주소를 돌려준다
+    var cv = document.createElement('canvas'), ctx, im, i, j, g, k;
+    cv.width = w; cv.height = h; ctx = cv.getContext('2d'); im = ctx.createImageData(w, h);
+    for (j = 0; j < h; j++) for (i = 0; i < w; i++) {
+      g = val(i, j); k = 4 * (j * w + i);
+      if (typeof g === 'number') {
+        g = Math.round(255 * Math.max(0, Math.min(1, g)));
+        im.data[k] = im.data[k + 1] = im.data[k + 2] = g;
+      } else { im.data[k] = g[0]; im.data[k + 1] = g[1]; im.data[k + 2] = g[2]; }
+      im.data[k + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+  function bp(m, n, thetas) {             // 각도 목록으로 단순 역투영. n×n 배열(위쪽 행이 y 가 큰 쪽)
+    var half = m.half, M = 1201, smax = half * Math.SQRT2, ds = 2 * smax / (M - 1),
+        tab = new Float64Array(M), out = new Float64Array(n * n), px = 2 * half / n,
+        k, i, j, c, sn, x, y, t, q, f;
+    for (k = 0; k < thetas.length; k++) {
+      c = Math.cos(thetas[k]); sn = Math.sin(thetas[k]);
+      for (i = 0; i < M; i++) tab[i] = m.p(thetas[k], -smax + i * ds);   // 투영 한 장을 표로 만든다
+      for (j = 0; j < n; j++) {
+        y = half - (j + 0.5) * px;
+        for (i = 0; i < n; i++) {
+          x = -half + (i + 0.5) * px;
+          t = (x * c + y * sn + smax) / ds; q = Math.floor(t); f = t - q;   // 그 점을 지나는 광선의 s
+          out[j * n + i] += tab[q] * (1 - f) + tab[q + 1] * f;
+        }
+      }
+    }
+    return out;
+  }
+  function show(arr, n, top) {            // 가장 작은 값을 검정, 상위 top 비율 지점을 흰색으로
+    var srt = Array.prototype.slice.call(arr).sort(function (a, b) { return a - b; }),
+        lo = srt[0], hi = srt[Math.min(srt.length - 1, Math.floor((1 - (top || 0)) * (srt.length - 1)))];
+    if (hi <= lo) hi = lo + 1;
+    return image(n, n, function (i, j) { return (arr[j * n + i] - lo) / (hi - lo); });
+  }
+  function showWin(arr, n, lo, hi) {      // 값 lo 를 검정, hi 를 흰색으로
+    return image(n, n, function (i, j) { return (arr[j * n + i] - lo) / (hi - lo); });
+  }
+  function phantom(n, half, lo, hi) {
+    return image(n, n, function (i, j) {
+      var x = -half + (i + 0.5) * 2 * half / n, y = half - (j + 0.5) * 2 * half / n;
+      return (ellMu(x, y) - lo) / (hi - lo);
+    });
+  }
+  // ── 푸리에 변환을 쓰는 부분: 투영의 크기 스펙트럼, 램프 필터를 거친 역투영, 푸리에 평면의 누적
+  var FM = 2048;                          // 투영 표의 길이. 표의 폭은 물체 지름의 약 4배(제로 패딩)
+  function fds(m) { return 2 * m.half * Math.SQRT2 / 512; }
+  function fft(re, im, inv) {             // 제자리 radix-2 FFT. inv 이면 1/N 을 곱한 역변환
+    var n = re.length, i, j, k, m, t, wr, wi, ur, ui, vr, vi, a, bit;
+    for (i = 1, j = 0; i < n; i++) {
+      bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+    }
+    for (m = 2; m <= n; m <<= 1) {
+      a = 2 * Math.PI / m * (inv ? 1 : -1); wr = Math.cos(a); wi = Math.sin(a);
+      for (i = 0; i < n; i += m) {
+        ur = 1; ui = 0;
+        for (k = 0; k < m / 2; k++) {
+          vr = re[i + k + m / 2] * ur - im[i + k + m / 2] * ui;
+          vi = re[i + k + m / 2] * ui + im[i + k + m / 2] * ur;
+          re[i + k + m / 2] = re[i + k] - vr; im[i + k + m / 2] = im[i + k] - vi;
+          re[i + k] += vr; im[i + k] += vi;
+          t = ur * wr - ui * wi; ui = ur * wi + ui * wr; ur = t;
+        }
+      }
+    }
+    if (inv) for (i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+  }
+  function table(m, th) {                 // 투영 p(th, s) 를 s = -L/2 + n·ds 에서 표로 만든다
+    var ds = fds(m), L = FM * ds, re = new Float64Array(FM), im = new Float64Array(FM), n, s;
+    for (n = 0; n < FM; n++) { s = -L / 2 + n * ds; if (Math.abs(s) <= m.half) re[n] = m.p(th, s); }
+    return { re: re, im: im, ds: ds, L: L };
+  }
+  var cache = {};
+  function mag(m, th) {                   // 크기 |P_θ(ω_k)|, k = 0..FM/2, 주파수 간격 1/L
+    var key = m.key + ':' + Math.round(th * 1e6), t, k, out;
+    if (cache[key]) return cache[key];
+    t = table(m, th); fft(t.re, t.im, false);
+    out = new Float32Array(FM / 2 + 1);
+    for (k = 0; k <= FM / 2; k++) out[k] = t.ds * Math.sqrt(t.re[k] * t.re[k] + t.im[k] * t.im[k]);
+    cache[key] = out;
+    return out;
+  }
+  function bpf(m, n, thetas) {            // 램프 필터를 거친 역투영. 각도는 [0, π) 를 같은 간격으로 나눈 것
+    var half = m.half, ds = fds(m), L = FM * ds, out = new Float64Array(n * n), px = 2 * half / n,
+        dth = Math.PI / thetas.length, k, i, j, c, sn, x, y, t, q0, f, tb, w;
+    for (k = 0; k < thetas.length; k++) {
+      tb = table(m, thetas[k]); fft(tb.re, tb.im, false);
+      for (i = 0; i < FM; i++) { w = Math.abs(i <= FM / 2 ? i : i - FM) / L; tb.re[i] *= w; tb.im[i] *= w; }   // |ω| 를 곱한다
+      fft(tb.re, tb.im, true);
+      c = Math.cos(thetas[k]); sn = Math.sin(thetas[k]);
+      for (j = 0; j < n; j++) {
+        y = half - (j + 0.5) * px;
+        for (i = 0; i < n; i++) {
+          x = -half + (i + 0.5) * px;
+          t = (x * c + y * sn + L / 2) / ds; q0 = Math.floor(t); f = t - q0;
+          out[j * n + i] += (tb.re[q0] * (1 - f) + tb.re[q0 + 1] * f) * dth;
+        }
+      }
+    }
+    return out;
+  }
+  var NP = 160, RP = 80, WMAX = 6, WREF = 1.5;   // 푸리에 평면: 160×160 칸, 반지름 80 칸 = 6 cm⁻¹
+  function fplane(m, thetas, filt) {      // 각 각도의 |P_θ(ω)| 를 원점을 지나는 직선 위에 놓아 더한다
+    var A = new Float32Array(NP * NP), df = 1 / (FM * fds(m)), mass = mag(m, 0)[0] || 1,
+        k, t, th, mg, c, sn, w, kk, i0, kf, val, u, v, ix, iy, fx, fy, dt = 0.5;
+    for (k = 0; k < thetas.length; k++) {
+      th = thetas[k]; mg = mag(m, th); c = Math.cos(th); sn = Math.sin(th);
+      for (t = -RP; t <= RP; t += dt) {
+        w = Math.abs(t) / RP * WMAX; kk = w / df; i0 = Math.floor(kk); kf = kk - i0;
+        val = (mg[i0] * (1 - kf) + mg[i0 + 1] * kf) / mass;
+        if (filt) val *= w / WREF;
+        u = NP / 2 + t * c - 0.5; v = NP / 2 - t * sn - 0.5;
+        ix = Math.floor(u); iy = Math.floor(v); fx = u - ix; fy = v - iy; val *= dt;
+        if (ix >= 0 && iy >= 0 && ix + 1 < NP && iy + 1 < NP) {
+          A[iy * NP + ix] += val * (1 - fx) * (1 - fy); A[iy * NP + ix + 1] += val * fx * (1 - fy);
+          A[(iy + 1) * NP + ix] += val * (1 - fx) * fy; A[(iy + 1) * NP + ix + 1] += val * fx * fy;
+        }
+      }
+    }
+    return A;
+  }
+  function radial(A) {                    // 원점으로부터 2칸 간격의 고리마다 평균 높이
+    var nb = RP / 2, sum = new Float64Array(nb), cnt = new Float64Array(nb), i, j, r, b, out = new Float32Array(nb);
+    for (j = 0; j < NP; j++) for (i = 0; i < NP; i++) {
+      r = Math.sqrt((i + 0.5 - NP / 2) * (i + 0.5 - NP / 2) + (j + 0.5 - NP / 2) * (j + 0.5 - NP / 2));
+      b = Math.floor(r / 2);
+      if (b < nb) { sum[b] += A[j * NP + i]; cnt[b]++; }
+    }
+    for (b = 0; b < nb; b++) out[b] = cnt[b] ? sum[b] / cnt[b] : 0;
+    return out;
+  }
+  function fview(A, scale) {              // 누적 높이를 회색 영상으로. 반지름 밖은 어둡게
+    return image(NP, NP, function (i, j) {
+      var r = Math.sqrt((i + 0.5 - NP / 2) * (i + 0.5 - NP / 2) + (j + 0.5 - NP / 2) * (j + 0.5 - NP / 2));
+      return r > RP ? 0.06 : Math.pow(Math.min(1, A[j * NP + i] * scale), 0.55);
+    });
+  }
+  return { D: D, models: models, image: image, bp: bp, bpf: bpf, show: show, showWin: showWin, phantom: phantom,
+           mag: mag, fplane: fplane, radial: radial, fview: fview, fds: fds, FM: FM, NP: NP, RP: RP, WMAX: WMAX, WREF: WREF };
+})();
+</script>
+<script>
+(function () {
+  var r7 = window.r7, J = 36, N = 150, STEP = 0.1;
+  var sel = document.getElementById('r7a-sel'), kIn = document.getElementById('r7a-k'), kv = document.getElementById('r7a-k-val'),
+      playBtn = document.getElementById('r7a-play'), note = document.getElementById('r7a-note'),
+      img = document.getElementById('r7a-img'), prof = document.getElementById('r7a-prof'), ov = document.getElementById('r7a-ov');
+  var X0 = 350, Y0 = 36, S = 240;          // 오른쪽 영상 칸의 위치(그림 좌표)
+  var cur = null, pos = +kIn.value, timer = null;
+  function build() {                       // 각도마다 칠한 줄(con)과 지금까지의 합(cum)을 미리 계산한다
+    var m = r7.models[sel.value], con = [], cum = [new Float32Array(N * N)], profs = [], pmax = 0, k, i, c, nx, arr, v, srt, hi;
+    for (k = 0; k < J; k++) {
+      c = r7.bp(m, N, [k * Math.PI / J]);
+      con.push(Float32Array.from(c));
+      nx = new Float32Array(N * N);
+      for (i = 0; i < N * N; i++) nx[i] = cum[k][i] + c[i];
+      cum.push(nx);
+      arr = [];
+      for (i = 0; i <= 120; i++) {
+        v = m.p(k * Math.PI / J, -m.half + i * 2 * m.half / 120); arr.push(v);
+        if (v > pmax) pmax = v;
+      }
+      profs.push(arr);
+    }
+    srt = Array.prototype.slice.call(cum[J]).sort(function (a, b) { return a - b; });
+    hi = 0.8 * srt[Math.floor(0.995 * (srt.length - 1))]; if (!(hi > 0)) hi = 1;
+    cur = { m: m, con: con, cum: cum, profs: profs, pmax: pmax || 1, hi: hi };
+  }
+  function X(m, x) { return X0 + (x + m.half) / (2 * m.half) * S; }
+  function Y(m, y) { return Y0 + (m.half - y) / (2 * m.half) * S; }
+  function seg(m, p, q, attrs) {
+    return '<path d="M' + X(m, p[0]).toFixed(1) + ' ' + Y(m, p[1]).toFixed(1) + ' L' + X(m, q[0]).toFixed(1) + ' ' + Y(m, q[1]).toFixed(1) + '" ' + attrs + '/>';
+  }
+  function render() {
+    var m = cur.m, half = m.half, k = Math.min(J, Math.floor(pos + 1e-9)), f = pos - k, partial = (k < J && f > 1e-6),
+        a = partial ? k : Math.max(0, Math.min(J - 1, k - 1)), th = a * Math.PI / J, c = Math.cos(th), sn = Math.sin(th),
+        E = half * (Math.abs(c) + Math.abs(sn)), lf = E - f * 2 * E, base = cur.cum[k], hi = cur.hi, con = cur.con[Math.min(a, J - 1)],
+        px = 2 * half / N, tint = hi / J * 2.5, h = '', i, s, d, L = 2 * half * 1.5;
+    img.setAttribute('href', r7.image(N, N, function (i2, j2) {
+      var idx = j2 * N + i2, v = base[idx] / hi, t = 0, x, y, g, al;
+      if (partial) {
+        x = -half + (i2 + 0.5) * px; y = half - (j2 + 0.5) * px;
+        if (-x * sn + y * c >= lf) { v += con[idx] / hi; t = Math.min(1, con[idx] / tint); }
+      }
+      g = Math.pow(Math.max(0, Math.min(1, v)), 0.7) * 255; al = 0.85 * t;
+      return [g * (1 - al) + 255 * al, g * (1 - al) + 140 * al, g * (1 - al) + 40 * al];
+    }));
+    for (i = -4; i <= 4; i++) {            // 광선 방향을 보이는 가는 점선
+      s = i * 0.2 * half; d = [-sn, c];
+      h += seg(m, [s * c - L * d[0], s * sn - L * d[1]], [s * c + L * d[0], s * sn + L * d[1]],
+               'stroke-width="1" stroke-dasharray="3 4" style="stroke:var(--warn)" opacity=".35"');
+    }
+    if (partial) {                         // 붓이 지나가는 앞쪽 끝과 진행 방향
+      h += seg(m, [lf * -sn - L * c, lf * c - L * sn], [lf * -sn + L * c, lf * c + L * sn], 'stroke-width="2" stroke-dasharray="6 3" style="stroke:var(--warn)"');
+      h += seg(m, [(lf) * -sn, (lf) * c], [(lf - 0.35 * half) * -sn, (lf - 0.35 * half) * c], 'stroke-width="2" style="stroke:var(--warn)" marker-end="url(#r7a-ar)"');
+    }
+    ov.innerHTML = h;
+    d = '';
+    for (i = 0; i <= 120; i++) d += (i ? 'L' : 'M') + (30 + i * 2).toFixed(0) + ' ' + (256 - cur.profs[a][i] / cur.pmax * 190).toFixed(1);
+    prof.setAttribute('d', d);
+    kv.textContent = String(k);
+    kIn.value = String(k);
+    note.textContent = partial
+      ? 'θ = ' + +(a * 180 / J).toFixed(1) + '°를 칠하는 중 · ' + (a + 1) + '번째 / ' + J + '개'
+      : (k === 0 ? '아직 칠한 각도가 없습니다 · 현재 곡선은 θ = 0°' : '칠한 각도 ' + k + '개 · 마지막은 θ = ' + +(a * 180 / J).toFixed(1) + '°');
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = pos >= J ? '다시 재생' : '재생'; }
+  function tick() {
+    pos = Math.min(J, pos + STEP);
+    if (pos >= J) stop();
+    render();
+  }
+  playBtn.addEventListener('click', function () {
+    if (timer) { stop(); return; }
+    if (pos >= J) pos = 0;
+    playBtn.textContent = '일시정지';
+    timer = setInterval(tick, 40);
+    render();
+  });
+  kIn.addEventListener('input', function () { stop(); pos = +kIn.value; playBtn.textContent = pos >= J ? '다시 재생' : '재생'; render(); });
+  sel.addEventListener('change', function () { build(); render(); });
+  build(); render();
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 6 -->
+<section class="screen" data-title="역투영의 정의">
+  <p class="kicker">4장 · 페이지 6</p>
+  <h2>역투영의 정의</h2>
+
+  <p>페이지 5의 칠하기를 식으로 씁니다. 점 \((x, y)\)를 지나는 광선은 각도 \(\theta\)마다 하나씩 있고, 그 광선의 검출기 좌표는 \(s = x\cos\theta + y\sin\theta\)입니다. 3장 페이지 6에서 작은 물체가 sinogram에 그리던 사인 곡선이 이 식입니다.
+  역투영은 점마다 각도별 광선의 값을 읽어 모든 각도에 대해 더합니다. 측정 데이터 \(p(\theta, s)\)로 영상을 만드는 역투영은 다음과 같습니다.</p>
+  <p style="text-align:center">\[(\mathcal{B}p)(x, y) = \int_{0}^{\pi} p(\theta,\ x\cos\theta + y\sin\theta)\,d\theta\]</p>
+  <ul>
+    <li>\(\mathcal{B}\)는 역투영 연산의 기호입니다. 0편 2장의 투영 \(\mathcal{P}\)가 영상을 sinogram으로 보내듯이 \(\mathcal{B}\)는 sinogram을 영상으로 보냅니다. 3장의 타원 반축 \(B\)나 0편 3장의 측정 벡터 \(\mathbf{b}\)와는 다른 기호입니다.</li>
+    <li>\(p(\theta, s)\)는 각도 \(\theta\), 검출기 좌표 \(s\)에서 읽는 측정값입니다. 이 식은 측정 데이터가 아닌 다른 sinogram에도 같은 모양으로 쓰입니다.</li>
+    <li>3장 페이지 9에 따라 평행빔은 \(0 \le \theta &lt; \pi\)의 측정으로 모든 직선을 한 번씩 얻으므로 적분 구간을 \([0, \pi)\)로 잡습니다.</li>
+    <li>sinogram 위에서 보면, 역투영은 점 \((x, y)\)가 그리는 사인 곡선을 따라 sinogram의 값을 적분한 것입니다.</li>
+  </ul>
+  <p>측정 데이터 \(p = \mathcal{P}\mu\)에 역투영을 적용한 \(\mathcal{B}p\), 곧 \(\mathcal{B}\mathcal{P}\mu\)가 페이지 5의 단순 역투영입니다.</p>
+
+  <h3>격자 영상의 역투영</h3>
+
+  <p>화소로 나뉜 영상에서는 광선 \(i\)의 투영값 \(p_i\)를 그 광선이 지나는 화소에 칠합니다. 화소 \(j\)에는 그 화소를 지나는 광선들의 값을 모두 더하는데, 광선이 화소 안에서 지난 길이 \(w_{ij}\)(<a href="../../part0/ch02.html#s5">0편 2장 페이지 5</a>)를 곱해 더합니다.</p>
+  <p style="text-align:center">\[(\text{화소 } j\text{의 역투영 값}) = \sum_{i} w_{ij}\,p_i\]</p>
+
+  <h3>역연산이 아닌 이유</h3>
+
+  <p>이름 때문에 역투영을 투영의 역연산으로 오해하기 쉽습니다. 역연산이라면 \(\mathcal{B}\mathcal{P}\mu = \mu\)여야 합니다. <a href="../../part0/ch03.html#s1">0편 3장 페이지 1</a>의 \(2\times2\) 화소(\(\mu_1 = 0.2,\ \mu_2 = 0.5,\ \mu_3 = 0.1,\ \mu_4 = 0.3\), 광선 ①~⑤)로 확인해 봅니다.</p>
+  <p>투영값 \((0.7,\ 0.4,\ 0.3,\ 0.8,\ 0.707)\)을 위의 식에 넣으면 화소 1은 ①·③·⑤에서 \(0.7 + 0.3 + \sqrt2\times0.707 \approx 2.0\)을 받습니다. 같은 방식으로 화소 2는 ①·④에서 1.5, 화소 3은 ②·③에서 0.7, 화소 4는 ②·④·⑤에서 2.2를 받습니다.
+  결과 \((2.0,\ 1.5,\ 0.7,\ 2.2)\)는 원래 값과 다르고 비례하지도 않습니다. 화소 1은 원래 값이 화소 2보다 작은데도, 대각선 광선 ⑤를 하나 더 받아 역투영 값은 더 큽니다. 역투영은 각 화소를 지나는 광선의 값을 모을 뿐, 그 값이 어느 화소에서 왔는지를 풀어 주지는 않습니다.</p>
+
+  <h3>수반 연산</h3>
+
+  <div class="box note">
+    <p class="box-t">알고 가면 되는 것</p>
+    <p>역투영은 투영의 역연산이 아니라 수반(<span class="term" data-term="adjoint">Adjoint</span>) 연산입니다. 이 장에서는 이 정도만 알고 가면 됩니다.</p>
+    <ul>
+      <li>투영을 행렬 \(\mathbf{A}\)로 쓰면 역투영은 전치행렬(Transpose) \(\mathbf{A}^{\mathsf T}\)에 해당합니다. 엄밀한 표현은 아니지만, 이렇게 비유해서 이해해도 이 장을 따라가는 데 충분합니다. 위의 \((2.0,\ 1.5,\ 0.7,\ 2.2)\)가 \(\mathbf{A}^{\mathsf T}\mathbf{b}\)입니다.</li>
+      <li>수반이 무슨 뜻인지 지금 이해하지 못해도 필터 역투영(FBP)을 이해하는 데는 큰 문제가 없습니다.</li>
+      <li>수반이 정말 필요한 곳은 2편(대수적 재구성)입니다. 거기서는 \(\mathbf{A}\)와 \(\mathbf{A}^{\mathsf T}\)를 짝으로 되풀이해 쓰며, 이 짝은 <span class="later">2편 1장에서 다시 정리합니다</span>.</li>
+    </ul>
+  </div>
+
+  <p>수반의 뜻과 확인 방법은 아래 접기에 있습니다. 건너뛰어도 뒤의 내용은 이어집니다.</p>
+
+  <details class="fold">
+    <summary>내적과 수반의 전개</summary>
+    <div class="fold-body">
+      <p><b>내적.</b> 성분이 실수인 두 벡터 \(\mathbf{a}, \mathbf{c}\)의 내적은 같은 자리의 성분을 곱해 더한 값입니다.</p>
+      <p style="text-align:center">\[\langle\mathbf{a}, \mathbf{c}\rangle = \sum_{j} a_j c_j\]</p>
+      <p>2장 페이지 2에서는 이 합을 적분으로 바꾼 함수의 <span class="term" data-term="innerfn">내적</span> \(\langle f, g\rangle = \int f(x)\,\overline{g(x)}\,dx\)를 보았습니다. 영상과 sinogram은 실수 값이므로 켤레는 필요 없습니다. 두 영상 \(\mu, \nu\)의 내적과 두 sinogram \(q_1, q_2\)의 내적은 다음과 같습니다. 여기서 sinogram은 측정 데이터와 상관없이 고른 임의의 것이므로, 측정 데이터 \(p\)와 구분해 \(q_1, q_2\)와 아래의 \(q\)로 씁니다. 두 내적에 같은 기호를 쓰고, 어느 쪽인지는 안에 든 함수로 구분합니다.</p>
+      <p style="text-align:center">\[\langle\mu, \nu\rangle = \iint \mu(x, y)\,\nu(x, y)\,dx\,dy,\qquad \langle q_1, q_2\rangle = \int_{0}^{\pi}\!\!\int_{-\infty}^{\infty} q_1(\theta, s)\,q_2(\theta, s)\,ds\,d\theta\]</p>
+      <p><b>수반.</b> 모든 영상 \(\mu\)와 임의의 sinogram \(q\)에 대해 다음이 성립하면, \(\mathcal{B}\)를 \(\mathcal{P}\)의 수반 연산이라고 합니다. 왼쪽은 sinogram끼리의 내적이고 오른쪽은 영상끼리의 내적입니다.</p>
+      <p style="text-align:center">\[\langle\mathcal{P}\mu,\ q\rangle = \langle\mu,\ \mathcal{B}q\rangle\]</p>
+      <p>\(q\)가 광선 하나 근처의 아주 좁은 범위에서만 1이고 나머지는 0인 sinogram이라고 생각해 봅시다. 왼쪽은 그 광선의 측정값이고, \(\mathcal{B}q\)는 그 광선이 지나는 점들에서만 값이 있는 영상이므로 오른쪽은 \(\mu\)를 그 광선을 따라 더한 값입니다.
+      수반 관계는 측정값 하나를 영상 쪽에서 계산하는 방법을 알려 주며, 역투영 영상은 각 측정값이 영상의 어느 점들을 지나는 광선에서 얻어졌는지를 나타냅니다.</p>
+      <p><b>1단계. 델타 함수 표기 넣기.</b> 왼쪽의 \(\mathcal{P}\mu\)에 3장 페이지 3의 이중적분 표기를 넣습니다.</p>
+      <p style="text-align:center">\[\langle\mathcal{P}\mu,\ q\rangle = \int_{0}^{\pi}\!\!\int \left[\iint \mu(x, y)\,\delta(x\cos\theta + y\sin\theta - s)\,dx\,dy\right] q(\theta, s)\,ds\,d\theta\]</p>
+      <p><b>2단계. 적분 순서 바꾸기.</b> 영상에 대한 적분을 바깥으로 꺼냅니다.</p>
+      <p style="text-align:center">\[= \iint \mu(x, y)\left[\int_{0}^{\pi}\!\!\int \delta(x\cos\theta + y\sin\theta - s)\,q(\theta, s)\,ds\,d\theta\right] dx\,dy\]</p>
+      <p><b>3단계. Sifting 성질.</b> 괄호 안의 \(s\)에 대한 적분은 \(s = x\cos\theta + y\sin\theta\)의 값만 남기므로, 괄호는 \(\int_0^\pi q(\theta,\ x\cos\theta + y\sin\theta)\,d\theta = (\mathcal{B}q)(x, y)\)입니다.</p>
+      <p><b>4단계. 정리.</b> 남은 식 \(\iint \mu(x, y)\,(\mathcal{B}q)(x, y)\,dx\,dy\)가 \(\langle\mu,\ \mathcal{B}q\rangle\)입니다.</p>
+      <p><b>행렬의 경우.</b> 격자 영상에서는 투영이 \(\mathbf{A}\mathbf{x}\)이고, 역투영이 \(\mathbf{A}\)의 행과 열을 맞바꾼 전치 행렬 \(\mathbf{A}^{\mathsf T}\)를 곱하는 계산입니다. 수반 관계는 다음과 같습니다.</p>
+      <p style="text-align:center">\[\langle\mathbf{A}\mathbf{x},\ \mathbf{d}\rangle = \langle\mathbf{x},\ \mathbf{A}^{\mathsf T}\mathbf{d}\rangle\]</p>
+      <p>예를 들어 \(\mathbf{d} = (1, 0, 0, 0, 1)\)이면 왼쪽은 \(0.7 + 0.707 = 1.407\)입니다. \(\mathbf{A}^{\mathsf T}\mathbf{d}\)는 \(\mathbf{A}\)의 1행과 5행을 더한 \((1 + \sqrt2,\ 1,\ 0,\ \sqrt2)\)이므로 오른쪽은 \(0.2\times2.414 + 0.5 + 0.3\times1.414 \approx 1.407\)로 같습니다.
+      증명도 영상 쪽 전개와 같습니다. \(\langle\mathbf{A}\mathbf{x}, \mathbf{d}\rangle = \sum_i\bigl(\sum_j A_{ij}x_j\bigr)d_i = \sum_j x_j\bigl(\sum_i A_{ij}d_i\bigr) = \langle\mathbf{x}, \mathbf{A}^{\mathsf T}\mathbf{d}\rangle\)이고, 두 합의 순서를 바꾼 것이 2단계에서 적분의 순서를 바꾼 것에 해당합니다.</p>
+    </div>
+  </details>
+
+  <div class="box warn">
+    <p class="box-t">다른 책의 표기</p>
+    <p>역투영 연산을 투영 연산자에 위첨자를 붙여 \(\mathcal{R}^{\#}\)나 \(\mathcal{R}^{*}\)처럼 쓰는 책이 많습니다. 위첨자 별표는 수반을 나타내는 흔한 기호이지만, 이 책은 별표 \(*\)를 컨볼루션에만 쓰므로(2장) 역투영을 \(\mathcal{B}\)로 씁니다. 행렬로 쓸 때는 대부분의 책이 \(\mathbf{A}^{\mathsf T}\)를 씁니다.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 7 -->
+<section class="screen" data-title="푸리에 공간에서 본 역투영">
+  <p class="kicker">4장 · 페이지 7</p>
+  <h2>푸리에 공간에서 본 역투영</h2>
+
+  <p>이 페이지의 결론은 하나입니다. 한 각도를 역투영하는 일은 푸리에 평면에서 원점을 지나는 직선 하나에 그 각도 투영의 푸리에 변환 값을 놓는 일입니다. 그래서 역투영은 푸리에 공간에서 직선을 하나씩 <b>더해 나가는</b> 연산입니다.</p>
+
+  <h3>한 각도의 역투영과 푸리에 평면의 직선</h3>
+
+  <p>한 각도 \(\theta\)만 역투영한 영상은 \(g_\theta(x, y) = p(\theta,\ x\cos\theta + y\sin\theta)\)입니다. 페이지 5에서 칠한 줄무늬 한 장이며, \(\theta\) 방향으로만 값이 변하고 그에 수직인 방향으로는 같은 값이 계속됩니다.
+  어떤 방향으로 변하지 않는 영상에는 그 방향으로 진동하는 성분이 없습니다. 그래서 \(g_\theta\)의 푸리에 변환은 \(\theta\)에 수직인 방향의 주파수가 0인 곳, 즉 원점을 지나 \(\theta\) 방향으로 놓인 직선 위에만 값을 가집니다.
+  그 직선 위의 값은 \(p(\theta, \cdot)\)의 1차원 푸리에 변환 \(P_\theta(\omega)\)입니다. 페이지 2에서 슬라이스 정리가 가리킨 직선과 같은 직선입니다.</p>
+
+  <details class="fold">
+    <summary>줄무늬 영상의 푸리에 변환</summary>
+    <div class="fold-body">
+      <p><b>1단계. 회전 좌표.</b> 1장 페이지 1의 회전 좌표 \(x' = x\cos\theta + y\sin\theta,\ y' = -x\sin\theta + y\cos\theta\)로 쓰면 \(g_\theta = p(\theta, x')\)이고 \(y'\)에는 의존하지 않습니다. 주파수도 같은 방향으로 나눕니다. \(\omega_{\parallel} = \omega_x\cos\theta + \omega_y\sin\theta\)와 \(\omega_{\perp} = -\omega_x\sin\theta + \omega_y\cos\theta\)로 놓으면 \(\omega_x x + \omega_y y = \omega_{\parallel}x' + \omega_{\perp}y'\)입니다.</p>
+      <p><b>2단계. 변환.</b> 이 변환의 행렬식은 1이므로 \(dx\,dy = dx'\,dy'\)입니다(1장 페이지 2).</p>
+      <p style="text-align:center">\[G_\theta(\omega_x, \omega_y) = \int p(\theta, x')\,e^{-i2\pi\omega_{\parallel}x'}\,dx' \int e^{-i2\pi\omega_{\perp}y'}\,dy' = P_\theta(\omega_{\parallel})\;\delta(\omega_{\perp})\]</p>
+      <p>\(P_\theta\)는 페이지 1에서 정의한 \(p(\theta, \cdot)\)의 1차원 푸리에 변환입니다. \(y'\)에 대한 적분은 2장의 변환 쌍 \(1 \longleftrightarrow \delta\)입니다.</p>
+      <p><b>3단계. 읽기.</b> \(\delta(\omega_{\perp})\)는 \(\omega_{\perp} = 0\)인 점들, 즉 \(\theta\) 방향 직선에서만 값을 가집니다. 그 직선 위의 위치는 \(\omega_{\parallel} = \omega\)이므로 값은 \(P_\theta(\omega)\)입니다.</p>
+    </div>
+  </details>
+
+  <h3>직선이 하나씩 더해지는 모습</h3>
+
+  <p>아래 위젯은 각도 36개(\(5^{\circ}\) 간격)를 하나씩 더합니다. 왼쪽 평면에서 주황 직선이 방금 더한 각도이고, 밝기는 직선 위에 놓인 값의 크기입니다. 오른쪽 곡선은 그 각도의 투영을 푸리에 변환한 값입니다. 푸리에 변환 값은 복소수이므로 그림에는 크기만 그렸습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 290" role="img" aria-label="왼쪽은 푸리에 평면에서 원점을 지나는 직선이 각도마다 하나씩 더해지며 쌓이는 모습. 오른쪽은 방금 더한 각도의 투영의 푸리에 변환 크기를 주파수에 따라 그린 곡선">
+      <rect x="30" y="34" width="240" height="240" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <image id="r7f-img" x="30" y="34" width="240" height="240" preserveAspectRatio="none"/>
+      <circle cx="150" cy="154" r="120" fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)" opacity=".7"><path d="M30 154 H270"/><path d="M150 274 V34"/></g>
+      <g id="r7f-ov" fill="none" stroke-width="2.2" style="stroke:var(--warn)"></g>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M340 214 H610"/><path d="M475 214 V60"/></g>
+      <path id="r7f-prof" fill="none" stroke-width="2.2" style="stroke:var(--warn)"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="30" y="24" font-weight="700">푸리에 평면에 더해진 직선</text>
+        <text x="340" y="48" font-weight="700">이 각도의 푸리에 변환 값(크기)</text>
+      </g>
+      <g font-size="10.5" class="svg-muted">
+        <text x="258" y="170">ω<tspan font-size="8" dy="3">x</tspan></text><text x="156" y="46">ω<tspan font-size="8" dy="3">y</tspan></text>
+        <text x="340" y="230">−6</text><text x="472" y="230">0</text><text x="596" y="230">6</text><text x="560" y="246">ω (cm⁻¹)</text>
+        <text x="340" y="268">값은 ω = 0 에서의 크기를 1로 맞춤</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽 점선 원의 반지름은 \(6\ \mathrm{cm}^{-1}\)이고, 밝을수록 쌓인 값이 큽니다. 오른쪽 곡선의 가로축은 그 직선 위의 위치 \(\omega\)입니다. 작은 점 하나의 푸리에 변환은 이 범위에서 거의 평평하고, Shepp-Logan 팬텀은 \(\omega\)가 커질수록 빠르게 줄어듭니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <button type="button" id="r7f-play" style="font-size:.86rem;padding:.25rem .9rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer">재생</button>
+    <label for="r7f-sel">영상</label>
+    <select id="r7f-sel" style="font-size:.86rem">
+      <option value="dot">작은 점 하나</option>
+      <option value="full">Shepp-Logan 팬텀</option>
+    </select>
+    <label for="r7f-k">더한 각도 수</label>
+    <input id="r7f-k" type="range" min="0" max="36" step="1" value="6" style="width:9rem">
+    <b id="r7f-k-val">6</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r7f-note"></p>
+
+  <ul>
+    <li>직선이 모두 원점을 지나므로, 각도를 몇 개만 더해도 원점 근처에서는 여러 직선이 겹쳐 밝아집니다.</li>
+    <li>원점에서 멀어질수록 이웃한 직선 사이가 벌어져 빈틈이 생깁니다.</li>
+    <li>각도를 모두 더해도 중심이 가장 밝은 채로 남습니다. 역투영은 중심에 값을 많이 쌓는 연산이고, 이 쏠림이 다음 페이지의 주제입니다.</li>
+  </ul>
+
+  <h3>띠와 부채꼴</h3>
+
+  <p>주 참고서(Kak &amp; Slaney)에도 비슷한 구도의 그림이 있습니다. 각도 \(K\)개가 \(0^{\circ}\)부터 \(180^{\circ}\)까지를 고르게 나누면, 각도 하나가 평면에서 맡아야 할 영역은 폭 \(\Delta\theta = \pi/K\)의 부채꼴입니다. 그런데 투영 하나가 실제로 놓는 것은 원점을 지나는 폭이 일정한 띠 하나뿐입니다. 이 그림에서는 직선을 띠로 그립니다. 띠의 폭은 이상적으로는 0이지만, 실제로는 주파수 샘플 간격 \(\Delta\omega\)만큼의 폭을 갖는 얇은 띠로 생각하며, 직선은 그 띠의 중심선입니다.</p>
+  <p>아래 그림에서 띠와 판의 높이는 \(P_\theta(\omega)\)에 곱해지는 값, 곧 가중치를 나타냅니다. 실제 \(P_\theta(\omega)\)의 크기는 영상마다 다르지만, 그림에서는 그 차이를 그리지 않고 균일하다고 두어 가중치만 높이로 그렸습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 212" role="img" aria-label="푸리에 평면을 비스듬히 본 원판 세 개. 높이는 P_θ(ω)에 곱해지는 가중치. 왼쪽은 각도 하나가 맡아야 할 부채꼴과 그 반대쪽 부채꼴로 가중치가 일정하고 폭이 중심에서 멀수록 넓음. 가운데는 원점을 지나는 폭이 일정한 얇은 띠로 가중치가 1로 일정하여 부채꼴을 채우지 못함. 오른쪽은 폭이 같은 띠의 가중치를 중심에서 멀수록 크게 한 것으로 어느 반경에서나 부채꼴과 양이 같음">
+    <ellipse cx="110" cy="122" rx="92" ry="41.4" fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--muted)"/><path d="M12 122 H208 M110 169.4 V74.6" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+    <polygon points="110.0,122.0 199.3,112.0 199.3,98.0 110.0,108.0" fill-opacity=".5" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="20.7,132.0 21.9,133.9 21.9,119.9 20.7,118.0" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="21.9,133.9 23.2,135.7 23.2,121.7 21.9,119.9" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="23.2,135.7 24.7,137.5 24.7,123.5 23.2,121.7" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="24.7,137.5 26.4,139.3 26.4,125.3 24.7,123.5" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="26.4,139.3 28.3,141.0 28.3,127.0 26.4,125.3" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="28.3,141.0 30.3,142.7 30.3,128.7 28.3,127.0" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="30.3,142.7 32.6,144.3 32.6,130.3 30.3,128.7" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="32.6,144.3 34.9,145.9 34.9,131.9 32.6,130.3" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="34.9,145.9 37.5,147.5 37.5,133.5 34.9,131.9" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="37.5,147.5 40.2,149.0 40.2,135.0 37.5,133.5" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="40.2,149.0 43.1,150.4 43.1,136.4 40.2,135.0" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="43.1,150.4 46.1,151.8 46.1,137.8 43.1,136.4" fill-opacity=".35" stroke-width="0" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="110.0,122.0 46.1,151.8 46.1,137.8 110.0,108.0" fill-opacity=".5" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="110.0,108.0 199.3,98.0 198.1,96.1 196.8,94.3 195.3,92.5 193.6,90.7 191.7,89.0 189.7,87.3 187.4,85.7 185.1,84.1 182.5,82.5 179.8,81.0 176.9,79.6 173.9,78.2" fill-opacity=".7" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="110.0,108.0 20.7,118.0 21.9,119.9 23.2,121.7 24.7,123.5 26.4,125.3 28.3,127.0 30.3,128.7 32.6,130.3 34.9,131.9 37.5,133.5 40.2,135.0 43.1,136.4 46.1,137.8" fill-opacity=".7" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <ellipse cx="320" cy="122" rx="92" ry="41.4" fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--muted)"/><path d="M222 122 H418 M320 169.4 V74.6" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+    <polygon points="243.8,145.4 403.2,104.0 403.2,90.0 243.8,131.4" fill-opacity=".35" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="236.8,140.0 243.8,145.4 243.8,131.4 236.8,126.0" fill-opacity=".5" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="236.8,126.0 396.2,84.6 403.2,90.0 243.8,131.4" fill-opacity=".7" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <ellipse cx="530" cy="122" rx="92" ry="41.4" fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--muted)"/><path d="M432 122 H628 M530 169.4 V74.6" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+    <polygon points="453.8,145.4 613.2,104.0 613.2,58.0 533.5,124.7 453.8,99.4" fill-opacity=".35" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="446.8,140.0 453.8,145.4 453.8,99.4 446.8,94.0" fill-opacity=".5" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="446.8,94.0 526.5,119.3 533.5,124.7 453.8,99.4" fill-opacity=".7" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <polygon points="526.5,119.3 606.2,52.6 613.2,58.0 533.5,124.7" fill-opacity=".7" stroke-width="1" style="fill:var(--accent);stroke:var(--accent)"/>
+    <g font-size="11.5" text-anchor="middle" class="svg-fg"><text x="110" y="18" font-weight="700">(a) 이상적인 부채꼴</text><text x="320" y="18" font-weight="700">(b) 실제로 놓이는 띠</text><text x="530" y="18" font-weight="700">(c) |ω|를 곱한 뒤의 띠</text></g>
+    <g font-size="10.5" text-anchor="middle" class="svg-muted"><text x="110" y="190">부채꼴, 가중치(높이) 일정</text><text x="110" y="204">폭은 |ω|에 비례(반대쪽에도 있음)</text><text x="320" y="190">폭 일정, 가중치(높이) 1</text><text x="320" y="204">부채꼴을 채우지 못함</text><text x="530" y="190">폭 일정, 가중치(높이) |ω|</text><text x="530" y="204">부채꼴과 같은 양</text></g>
+    </svg>
+    <figcaption>세 그림은 푸리에 평면(원판)을 비스듬히 본 모습이고, 판과 띠의 높이는 \(P_\theta(\omega)\)에 곱해지는 가중치를 나타내며, \(P_\theta\)의 크기 차이는 그리지 않았습니다. (a)는 각도 하나가 맡아야 할 부채꼴 모양의 판으로, 가중치가 일정하고 반대쪽에도 같은 판이 있습니다. (b)는 \(P_\theta(\omega)\)를 그대로 더하는 투영 하나의 띠입니다. 모든 \(\omega\)에서 가중치가 1이라 높이가 일정하고, 바깥쪽의 부채꼴을 채우지 못합니다. (c)는 같은 폭의 띠에서 가중치를 \(|\omega|\)에 비례해 키운 것입니다. 부채꼴의 폭이 \(|\omega|\)에 비례해 넓어지므로, 어느 반경에서나 (c)의 띠의 양(폭 × 가중치)이 (a)의 부채꼴의 양(폭 × 일정한 가중치)과 같아집니다. 띠는 그림에서만의 표현이고, 직선은 띠의 중심선입니다.
+  </figure>
+
+  <p>(b)는 \(P_\theta(\omega)\)를 그대로 더하는 경우입니다. 모든 \(\omega\)에서 가중치가 1이므로 띠의 높이가 어디서나 같고, 바깥쪽으로 넓어지는 (a)의 부채꼴을 채우지 못합니다. 부채꼴을 채우려면 바깥으로 갈수록 가중치(높이)를 키운 (c)와 같아야 합니다.</p>
+  <p>그림으로 떠올려 보면 다음과 같습니다. 모든 각도의 (b)를 겹쳐 더해 나가면 중심부에는 많은 띠가 겹쳐 많이 쌓이고 바깥쪽은 낮게 남습니다. (a)의 부채꼴이나 (c)를 모든 각도로 더하면 평면이 고르게 채워집니다. 엄밀한 설명은 아니고 직관으로 상상해 보기 위한 그림입니다. 얼마나 키워야 하는지는 이웃한 띠 사이 간격을 정확히 계산하는 다음 페이지에서 정합니다.</p>
+
+<script>
+(function () {
+  var r7 = window.r7, J = 36, SC = 30 / 36, CX = 150, CY = 154, RR = 120;
+  var sel = document.getElementById('r7f-sel'), kIn = document.getElementById('r7f-k'), kv = document.getElementById('r7f-k-val'),
+      playBtn = document.getElementById('r7f-play'), note = document.getElementById('r7f-note'),
+      img = document.getElementById('r7f-img'), prof = document.getElementById('r7f-prof'), ov = document.getElementById('r7f-ov');
+  var k = +kIn.value, timer = null;
+  function render() {
+    var m = r7.models[sel.value], th = [], i, a, d, mg, mass, w, kk, i0, kf, v, t;
+    for (i = 0; i < k; i++) th.push(i * Math.PI / J);
+    img.setAttribute('href', r7.fview(r7.fplane(m, th, false), SC));
+    a = Math.max(0, k - 1) * Math.PI / J;                       // 방금 더한 각도
+    ov.innerHTML = k === 0 ? '' : '<path d="M' + (CX - RR * Math.cos(a)).toFixed(1) + ' ' + (CY + RR * Math.sin(a)).toFixed(1) +
+      ' L' + (CX + RR * Math.cos(a)).toFixed(1) + ' ' + (CY - RR * Math.sin(a)).toFixed(1) + '"/>';
+    mg = r7.mag(m, a); mass = r7.mag(m, 0)[0]; d = '';
+    for (t = -60; t <= 60; t++) {                               // ω = −6 ~ 6, 오른쪽 곡선의 가로 270 칸을 120 구간으로
+      w = Math.abs(t) / 60 * r7.WMAX; kk = w * r7.FM * r7.fds(m); i0 = Math.floor(kk); kf = kk - i0;
+      v = (mg[i0] * (1 - kf) + mg[i0 + 1] * kf) / mass;
+      d += (t === -60 ? 'M' : 'L') + (475 + t * 2.25).toFixed(1) + ' ' + (214 - Math.min(1.1, v) * 140).toFixed(1);
+    }
+    prof.setAttribute('d', d);
+    kv.textContent = String(k); kIn.value = String(k);
+    note.textContent = k === 0 ? '더한 직선이 아직 없습니다' : '직선 ' + k + '개 · 방금 더한 각도 θ = ' + +(a * 180 / Math.PI).toFixed(1) + '°';
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = k >= J ? '다시 재생' : '재생'; }
+  playBtn.addEventListener('click', function () {
+    if (timer) { stop(); return; }
+    if (k >= J) k = 0;
+    playBtn.textContent = '일시정지';
+    timer = setInterval(function () { k = Math.min(J, k + 1); if (k >= J) stop(); render(); }, 350);
+    render();
+  });
+  kIn.addEventListener('input', function () { stop(); k = +kIn.value; playBtn.textContent = k >= J ? '다시 재생' : '재생'; render(); });
+  sel.addEventListener('change', render);
+  render();
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 8 -->
+<section class="screen" data-title="중심에 값이 쌓이는 이유: 주파수 가중">
+  <p class="kicker">4장 · 페이지 8</p>
+  <h2>중심에 값이 쌓이는 이유와 고치는 방법: 주파수 가중</h2>
+
+  <p>페이지 7에서 직선을 겹치면 중심에는 많이 쌓이고 바깥에는 적게 쌓이는 것을 보았습니다. 이 페이지에서는 쏠림의 크기를 계산하고, 고르게 쌓이도록 고치는 방법을 찾습니다. 그 방법이 필터 역투영(<span class="term" data-term="fbp">Filtered Back Projection, FBP</span>)입니다.</p>
+
+  <h3>쌓이는 양의 계산</h3>
+
+  <p>각도 \(K\)개가 \(0\)부터 \(\pi\)까지를 고르게 나누면 이웃한 두 직선 사이의 각은 \(\Delta\theta = \pi/K\)입니다. 원점에서 거리 \(|\omega|\)인 곳에서 이웃한 두 직선 사이의 간격은 호의 길이입니다.</p>
+  <p style="text-align:center">\[(\text{이웃한 직선 사이의 간격}) = |\omega|\,\Delta\theta = \frac{\pi|\omega|}{K}\]</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 250" role="img" aria-label="15도 간격 12개 각도의 직선을 원점을 지나게 겹친 주파수 평면. 같은 두 직선 사이라도 원점 가까이의 호는 짧고 원점에서 먼 곳의 호는 김. 간격은 파이 곱하기 ω의 절댓값을 K로 나눈 값">
+    <g fill="none" stroke-width="1.3" style="stroke:var(--good)" opacity=".8"><path d="M80.0 125.0 L280.0 125.0"/><path d="M83.4 150.9 L276.6 99.1"/><path d="M93.4 175.0 L266.6 75.0"/><path d="M109.3 195.7 L250.7 54.3"/><path d="M130.0 211.6 L230.0 38.4"/><path d="M154.1 221.6 L205.9 28.4"/><path d="M180.0 225.0 L180.0 25.0"/><path d="M205.9 221.6 L154.1 28.4"/><path d="M230.0 211.6 L130.0 38.4"/><path d="M250.7 195.7 L109.3 54.3"/><path d="M266.6 175.0 L93.4 75.0"/><path d="M276.6 150.9 L83.4 99.1"/></g>
+    <circle cx="180" cy="125" r="30" fill="none" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--muted)"/>
+    <circle cx="180" cy="125" r="85" fill="none" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--muted)"/>
+    <path d="M206.0 110.0 A30 30 0 0 0 201.2 103.8" fill="none" stroke-width="4" style="stroke:var(--accent)"/>
+    <path d="M253.6 82.5 A85 85 0 0 0 240.1 64.9" fill="none" stroke-width="4" style="stroke:var(--warn)"/>
+    <g font-size="12" class="svg-fg"><text x="330" y="52" font-weight="700">K = 12개 직선, 15° 간격</text></g>
+    <g font-size="13" class="svg-fg"><text x="330" y="84">간격 = |ω|Δθ = π|ω| / K</text></g>
+    <g font-size="11.5" class="svg-muted"><text x="330" y="106">이웃한 두 직선 사이의 각 Δθ = π/12 = 15°</text></g>
+    <g font-size="11.5"><text x="330" y="146" style="fill:var(--accent)">파랑 호: 원점 가까이, |ω|가 작아 간격이 좁음</text><text x="330" y="168" style="fill:var(--warn)">주황 호: 원점에서 멀리, |ω|가 커 간격이 넓음</text></g>
+    <g font-size="11.5" class="svg-muted"><text x="330" y="196">두 호의 각은 같고 반지름 |ω|만 다릅니다.</text><text x="330" y="214">호의 길이, 곧 간격은 반지름에 비례합니다.</text></g>
+    </svg>
+    <figcaption>15° 간격 12개 각도의 직선(초록)을 주파수 평면에 겹쳤습니다. 점선 원은 원점에서 거리 \(|\omega|\)가 일정한 곳이고, 파랑과 주황 호는 같은 두 직선(30°와 45°) 사이의 간격을 각각 원점 가까이와 먼 곳에서 잰 것입니다. 직선은 모두 원점을 지나므로 원점 근처에서 촘촘하고 멀어질수록 벌어집니다.</figcaption>
+  </figure>
+
+  <p>예를 들어 \(K = 180\)이면 \(|\omega| = 0.5\ \mathrm{cm}^{-1}\)에서 간격이 약 0.0087, \(|\omega| = 2\ \mathrm{cm}^{-1}\)에서 약 0.035입니다. 원점에서 4배 멀어지면 간격도 4배 벌어집니다.</p>
+  <p>띠의 폭은 어디서나 같으므로, 간격이 4배 벌어진 곳에서는 띠가 그 호를 덮는 비율이 4분의 1로 줄어듭니다. 한 점에 겹치는 직선의 수는 \(1/|\omega|\)에 비례해 줄어듭니다. 이것이 중심에 값이 쏠리는 이유입니다.</p>
+  <p>각도가 연속으로 모두 있을 때 이 쏠림을 정확히 쓰면, 단순 역투영 영상의 2차원 푸리에 변환은 원래 영상의 \(F\)를 원점에서의 거리 \(\sqrt{\omega_x^{2} + \omega_y^{2}}\)로 나눈 것이 됩니다. 아래에서 고치는 \(|\omega|\)의 곱셈은 이 나눗셈을 되돌리는 일입니다.</p>
+
+  <h3>주파수 가중을 곱해 더하기</h3>
+
+  <p>같은 사실을 부채꼴로 보면 무엇을 고쳐야 하는지 알 수 있습니다. 직선 하나가 맡을 부채꼴의 폭은 \(|\omega|\Delta\theta\)로 \(|\omega|\)에 비례합니다(페이지 7의 그림 (a)). 폭이 일정한 띠가 이런 부채꼴을 대신하려면, 띠의 가중치(높이)가 \(|\omega|\)에 비례해 커야 합니다(그림 (c)). 그러니 더하기 전에 각 투영의 푸리에 변환 \(P_\theta(\omega)\)에 \(|\omega|\)를 곱하면 됩니다.</p>
+  <p>이렇게 주파수에 따라 값을 곱하는 일을 필터링이라고 하고, 곱하는 함수 \(|\omega|\)가 주파수 응답인 필터를 램프 필터(<span class="term" data-term="ramp">Ramp Filter</span>)라고 합니다. 투영마다 필터링한 뒤 역투영하는 순서는 다음과 같습니다.</p>
+  <ol>
+    <li>각도 \(\theta\)의 투영 \(p(\theta, s)\)를 1차원 푸리에 변환해 \(P_\theta(\omega)\)를 얻습니다.</li>
+    <li>\(P_\theta(\omega)\)에 \(|\omega|\)를 곱합니다.</li>
+    <li>1차원 역변환으로 \(p\)를 필터링한 투영 \(q(\theta, s)\)를 얻습니다.</li>
+    <li>\(q\)를 역투영해 모든 각도에 대해 더합니다.</li>
+  </ol>
+  <p>식으로 쓰면 다음과 같고, 이것이 필터 역투영 공식입니다.</p>
+  <p style="text-align:center">\[\begin{aligned}q(\theta, s) &= \int_{-\infty}^{\infty} P_\theta(\omega)\,|\omega|\,e^{i2\pi\omega s}\,d\omega,\\ \mu(x, y) &= (\mathcal{B}q)(x, y)\\ &= \int_{0}^{\pi} q(\theta,\ x\cos\theta + y\sin\theta)\,d\theta\end{aligned}\]</p>
+  <ul>
+    <li>\(q(\theta, s)\)는 \(p\)에 \(|\omega|\)를 곱해 필터링한 투영입니다. 페이지 6의 수반 관계에서 임의의 sinogram에 \(q\)를 쓴 것만 예외입니다.</li>
+    <li>페이지 6의 역투영 \(\mathcal{B}\)는 측정 데이터가 아닌 sinogram에도 같은 식으로 쓰므로, \(q\)에도 그대로 적용합니다.</li>
+    <li>\(|\omega|\)를 곱하는 부분만 단순 역투영과 다릅니다. 곱하지 않으면 \(q = p\)이고 \(\mu\) 대신 단순 역투영 \(\mathcal{B}p\)가 나옵니다.</li>
+  </ul>
+  <p>이 페이지의 논증은 간격이 \(|\omega|\)에 비례한다는 직관입니다. 각도 수가 한없이 많고 \(0\)부터 \(\pi\)까지 모두 측정했을 때 이 식이 정확히 \(\mu\)가 되는지, 곱하는 상수가 왜 1인지는 <span class="later">5장에서 유도합니다</span>.</p>
+
+  <h3>필터가 없을 때와 있을 때</h3>
+
+  <p>아래 위젯은 작은 점 하나를 각도 \(K\)개로 측정해 두 방식으로 계산합니다. 왼쪽은 푸리에 평면에 쌓인 값, 가운데는 원점에서 거리별로 평균한 높이, 오른쪽은 영상 공간의 결과입니다. 필터 없음과 있음을 번갈아 눌러 비교해 보세요.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 290" role="img" aria-label="왼쪽은 푸리에 평면에 쌓인 값, 가운데는 원점에서의 거리별 평균 높이 곡선, 오른쪽은 같은 각도들로 만든 영상. 필터가 없으면 중심이 높고 영상이 흐리며, 필터가 있으면 높이가 고르고 점이 선명함">
+      <rect x="14" y="40" width="180" height="180" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <image id="r8-img" x="14" y="40" width="180" height="180" preserveAspectRatio="none"/>
+      <circle cx="104" cy="130" r="90" fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M240 220 H420"/><path d="M240 220 V40"/></g>
+      <path d="M240 175 H420" fill="none" stroke-width="1" stroke-dasharray="2 3" style="stroke:var(--muted)"/>
+      <path id="r8-prof" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <rect x="450" y="40" width="180" height="180" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <image id="r8-res" x="450" y="40" width="180" height="180" preserveAspectRatio="none"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="14" y="30" font-weight="700">푸리에 평면에 쌓인 값</text>
+        <text x="240" y="30" font-weight="700">거리별 평균 높이</text>
+        <text x="450" y="30" font-weight="700" id="r8-res-t">영상 공간의 결과</text>
+      </g>
+      <g font-size="10.5" class="svg-muted">
+        <text x="240" y="236">0</text><text x="324" y="236">3</text><text x="408" y="236">6 cm⁻¹</text>
+        <text x="226" y="224">0</text><text x="226" y="179">1</text><text x="226" y="89">3</text>
+        <text x="14" y="236">점선 원의 반지름 = 6 cm⁻¹</text>
+      </g>
+    </svg>
+    <figcaption>가운데 그래프의 세로축은 직선 위의 값을 \(|\omega| = 1.5\ \mathrm{cm}^{-1}\)에서 1이 되도록 맞춘 상대 높이입니다. 점선은 높이 1입니다. 푸리에 변환 값은 크기만 그렸고, 오른쪽 영상은 필터가 없을 때는 가장 작은 값을 검정, 값이 큰 쪽 0.5%를 흰색으로, 있을 때는 음수 쪽 일부를 포함해 점의 값을 흰색으로 그렸습니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <button type="button" id="r8-off" style="font-size:.86rem;padding:.25rem .9rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer">필터 없음</button>
+    <button type="button" id="r8-on" style="font-size:.86rem;padding:.25rem .9rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer">필터 있음</button>
+    <label for="r8-k">각도 수</label>
+    <input id="r8-k" type="range" min="0" max="7" step="1" value="5" style="width:9rem">
+    <b id="r8-k-val">60</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r8-note"></p>
+
+  <ul>
+    <li><b>필터 없음.</b> 평균 높이가 \(1/|\omega|\)로 줄어드는 곡선이 되고, 영상 공간에서는 점 주변이 넓게 번집니다.</li>
+    <li><b>필터 있음.</b> 평균 높이가 거의 일정해지고, 영상에서 점이 선명해집니다. 필터링한 투영에는 음수 값이 생깁니다.</li>
+    <li><b>각도가 적을 때.</b> 3~6개에서는 직선 사이의 틈이 보이고, 영상에는 점에서 뻗는 줄이 남습니다. 두 방식 모두 같습니다.</li>
+  </ul>
+
+  <div class="box warn">
+    <p class="box-t">높은 주파수의 증폭</p>
+    <p>\(|\omega|\)는 높은 주파수일수록 크게 곱하므로, 측정 잡음의 높은 주파수 성분도 함께 커집니다.</p>
+  </div>
+
+<script>
+(function () {
+  var r7 = window.r7, KS = [3, 6, 10, 15, 30, 60, 90, 180], C = 25, N = 150, REF = r7.WREF / r7.WMAX * r7.RP;   // REF: 높이 1 의 기준 거리(칸)
+  var m = r7.models.dot, filt = false;
+  var kIn = document.getElementById('r8-k'), kv = document.getElementById('r8-k-val'), note = document.getElementById('r8-note'),
+      offB = document.getElementById('r8-off'), onB = document.getElementById('r8-on'),
+      img = document.getElementById('r8-img'), res = document.getElementById('r8-res'), prof = document.getElementById('r8-prof'),
+      resT = document.getElementById('r8-res-t');
+  function paintButtons() {
+    [[offB, !filt], [onB, filt]].forEach(function (p) {
+      p[0].style.background = p[1] ? 'var(--accent-bg)' : 'var(--card)';
+      p[0].style.borderColor = p[1] ? 'var(--accent)' : 'var(--rule)';
+      p[0].style.fontWeight = p[1] ? '700' : '400';
+    });
+  }
+  function render() {
+    var K = KS[+kIn.value], th = [], i, A, rp, d = '', y, arr, mx, dth;
+    for (i = 0; i < K; i++) th.push(i * Math.PI / K);
+    A = r7.fplane(m, th, filt);
+    img.setAttribute('href', r7.fview(A, C / K));
+    rp = r7.radial(A);
+    for (i = 1; i < rp.length; i++) {      // 2칸 간격 고리의 평균을 높이 1 의 기준 단위로
+      y = rp[i] / K * Math.PI * REF;
+      d += (d ? 'L' : 'M') + (240 + (2 * i + 1) * 2.25).toFixed(1) + ' ' + (220 - Math.min(4, y) * 45).toFixed(1);
+    }
+    prof.setAttribute('d', d);
+    if (filt) {
+      arr = r7.bpf(m, N, th); mx = 0;
+      for (i = 0; i < arr.length; i++) if (arr[i] > mx) mx = arr[i];
+      res.setAttribute('href', r7.showWin(arr, N, -0.25 * mx, mx));
+      resT.textContent = '필터 역투영';
+    } else {
+      arr = r7.bp(m, N, th);
+      res.setAttribute('href', r7.show(arr, N, 0.005));
+      resT.textContent = '단순 역투영';
+    }
+    kv.textContent = String(K);
+    dth = 180 / K;
+    note.textContent = (filt ? '필터 있음' : '필터 없음') + ' · 각도 ' + K + '개 · Δθ = ' + +dth.toFixed(2) + '° · 이웃한 직선 사이의 간격은 ω = 0.5 에서 ' +
+      (Math.PI * 0.5 / K).toFixed(4) + ', ω = 2 에서 ' + (Math.PI * 2 / K).toFixed(4) + ' cm⁻¹';
+    paintButtons();
+  }
+  offB.addEventListener('click', function () { filt = false; render(); });
+  onB.addEventListener('click', function () { filt = true; render(); });
+  kIn.addEventListener('input', render);
+  render();
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 9 -->
+<section class="screen" data-title="단순 역투영과 필터 역투영 비교해 보기">
+  <p class="kicker">4장 · 페이지 9</p>
+  <h2>단순 역투영과 필터 역투영, 직접 비교해 보기</h2>
+
+  <p>3장의 기준 팬텀에 두 방식을 적용해 비교합니다. 3장 페이지 5의 닫힌 식으로 정확한 투영을 만들고, 각도 \(K\)개(\(0\)부터 \(180^{\circ}\) 앞까지 같은 간격)로 다음 두 가지를 계산합니다.</p>
+  <ul>
+    <li><b>단순 역투영.</b> 투영에 아무 처리도 하지 않고 역투영합니다(페이지 6의 \(\mathcal{B}p\)).</li>
+    <li><b>필터 역투영.</b> 투영마다 \(|\omega|\)를 곱해 필터링한 뒤 역투영합니다(페이지 8의 \(\mathcal{B}q\)). 각도 간격 \(\Delta\theta = \pi/K\)를 곱해 더하므로 값의 크기가 팬텀의 값과 같습니다.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 262" role="img" aria-label="왼쪽부터 Shepp-Logan 팬텀 원본, 단순 역투영, 필터 역투영. 단순 역투영은 흐리고 물체 바깥에도 값이 있으며 필터 역투영은 윤곽이 선명하고 바깥이 어두움">
+      <image id="r9-org" x="20" y="34" width="176" height="176" preserveAspectRatio="none"/>
+      <image id="r9-bp" x="232" y="34" width="176" height="176" preserveAspectRatio="none"/>
+      <image id="r9-fbp" x="444" y="34" width="176" height="176" preserveAspectRatio="none"/>
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <rect x="20" y="34" width="176" height="176"/><rect x="232" y="34" width="176" height="176"/><rect x="444" y="34" width="176" height="176"/>
+      </g>
+      <g font-size="11.5" class="svg-fg">
+        <text x="20" y="24" font-weight="700">원본 팬텀</text>
+        <text x="232" y="24" font-weight="700">단순 역투영</text>
+        <text x="444" y="24" font-weight="700">필터 역투영</text>
+      </g>
+      <g font-size="10.5" class="svg-muted" text-anchor="middle">
+        <text x="20" y="226">−1.1</text><text x="108" y="226">0</text><text x="196" y="226">1.1</text>
+        <text x="232" y="226">−1.1</text><text x="320" y="226">0</text><text x="408" y="226">1.1</text>
+        <text x="444" y="226">−1.1</text><text x="532" y="226">0</text><text x="620" y="226">1.1</text>
+        <text x="108" y="248" id="r9-t1"></text><text x="320" y="248" id="r9-t2"></text><text x="532" y="248" id="r9-t3"></text>
+      </g>
+    </svg>
+    <figcaption>세 그림 모두 \(-1.1 \le x, y \le 1.1\)을 보여 줍니다. 단순 역투영은 가장 작은 값을 검정, 값이 큰 쪽 0.5%를 흰색으로 그렸습니다. 원본과 필터 역투영은 같은 밝기 범위로 그렸으며 범위는 아래 선택 상자에서 바꿉니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <span>각도 수</span>
+    <button type="button" data-k="10" style="font-size:.86rem;padding:.25rem .8rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer">10</button>
+    <button type="button" data-k="30" style="font-size:.86rem;padding:.25rem .8rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer">30</button>
+    <button type="button" data-k="90" style="font-size:.86rem;padding:.25rem .8rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer">90</button>
+    <button type="button" data-k="180" style="font-size:.86rem;padding:.25rem .8rem;border:1px solid var(--rule);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer">180</button>
+    <label for="r9-win">밝기 범위</label>
+    <select id="r9-win" style="font-size:.86rem">
+      <option value="full">전체 (0 ~ 2)</option>
+      <option value="brain">뇌 조직 (0.98 ~ 1.05)</option>
+    </select>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="r9-note"></p>
+
+  <h3>관찰</h3>
+  <ul>
+    <li><b>단순 역투영은 흐립니다.</b> 두개골의 얇은 테두리가 번져 안쪽과 이어지고, 값의 차이가 2% 안팎인 뇌실과 작은 구조는 묻힙니다. 물체 바깥에도 값이 남아 그림 끝까지 이어집니다. 각도를 180개로 늘리면 줄무늬만 사라질 뿐 흐림은 그대로입니다.</li>
+    <li><b>필터 역투영은 선명합니다.</b> 각도가 충분하면 윤곽이 또렷하고 바깥은 거의 0이 됩니다. 값도 팬텀의 값과 같은 크기로 돌아옵니다. 밝기 범위를 뇌 조직으로 좁히면 뇌실과 작은 구조가 보입니다.</li>
+    <li><b>각도가 적으면 두 방식 모두 줄무늬가 생깁니다.</b> 10개와 30개에서는 물체에서 뻗는 가는 줄이 보입니다. 필터 역투영은 흐림이 없는 만큼 이 줄이 더 뚜렷합니다.</li>
+  </ul>
+  <p>필터 역투영의 필터링은 이 위젯에서 연속 식 \(|\omega|\)를 샘플에 그대로 옮긴 것입니다.</p>
+
+<script>
+(function () {
+  var r7 = window.r7, N = 176, m = r7.models.full, cache = {}, K = 90, px = 2.2 / N;
+  var win = document.getElementById('r9-win'),
+      note = document.getElementById('r9-note'), org = document.getElementById('r9-org'), bpI = document.getElementById('r9-bp'),
+      fbpI = document.getElementById('r9-fbp'), t1 = document.getElementById('r9-t1'), t2 = document.getElementById('r9-t2'), t3 = document.getElementById('r9-t3');
+  var kb = document.querySelectorAll('button[data-k]');
+  function calc(k) {                       // 각도 수마다 한 번만 계산한다
+    var th = [], i;
+    if (cache[k]) return cache[k];
+    for (i = 0; i < k; i++) th.push(i * Math.PI / k);
+    cache[k] = { bp: r7.bp(m, N, th), f: r7.bpf(m, N, th) };
+    cache[k].bpImg = r7.show(cache[k].bp, N, 0.005);
+    return cache[k];
+  }
+  function at(arr, x, y) { return arr[Math.floor((1.1 - y) / px) * N + Math.floor((x + 1.1) / px)]; }
+  function render() {
+    var c = calc(K), w = win.value === 'full' ? [0, 2] : [0.98, 1.05], i, fi, fo, bi, bo;
+    for (i = 0; i < kb.length; i++) {
+      kb[i].style.background = +kb[i].getAttribute('data-k') === K ? 'var(--accent-bg)' : 'var(--card)';
+      kb[i].style.borderColor = +kb[i].getAttribute('data-k') === K ? 'var(--accent)' : 'var(--rule)';
+      kb[i].style.fontWeight = +kb[i].getAttribute('data-k') === K ? '700' : '400';
+    }
+    org.setAttribute('href', r7.phantom(N, 1.1, w[0], w[1]));
+    bpI.setAttribute('href', c.bpImg);
+    fbpI.setAttribute('href', r7.showWin(c.f, N, w[0], w[1]));
+    t1.textContent = '밝기 ' + w[0] + ' ~ ' + w[1]; t3.textContent = '밝기 ' + w[0] + ' ~ ' + w[1]; t2.textContent = '최솟값 ~ 상위 0.5%';
+    fi = at(c.f, 0, -0.3); fo = at(c.f, 0, 1.0); bi = at(c.bp, 0, -0.3); bo = at(c.bp, 0, 1.0);
+    note.textContent = '각도 ' + K + '개 · 뇌 조직의 점 (0, −0.3): 원본 1.02, 필터 역투영 ' + fi.toFixed(2) +
+      ' · 두개골 바깥의 점 (0, 1.0): 원본 0, 필터 역투영 ' + fo.toFixed(2) +
+      ' · 단순 역투영에서는 바깥 점의 값이 안쪽 점의 ' + Math.round(100 * bo / bi) + '%';
+  }
+  for (var i = 0; i < kb.length; i++) kb[i].addEventListener('click', function (e) { K = +e.currentTarget.getAttribute('data-k'); render(); });
+  win.addEventListener('change', render);
+  render();
+})();
+</script>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 10 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">4장 · 페이지 10</p>
+  <h2>4장 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>각도 \(\theta\)의 투영을 1차원 푸리에 변환한 \(P_\theta(\omega)\)는 영상의 2차원 푸리에 변환을 원점을 지나는 \(\theta\) 방향 직선에서 읽은 값 \(F(\omega\cos\theta,\ \omega\sin\theta)\)입니다(푸리에 슬라이스 정리).</li>
+      <li>(심화) 이 직선들을 모두 모아 2차원 역변환하면 영상이 됩니다(직접 푸리에 재구성). 그러나 이산 데이터에서는 극좌표 격자를 직교 격자로 보간한 오차가 영상 전체로 퍼지고, 모든 각도가 모여야 시작할 수 있습니다. 연산량은 약점이 아닙니다.</li>
+      <li>역투영 \((\mathcal{B}p)(x, y) = \int_0^\pi p(\theta,\ x\cos\theta + y\sin\theta)\,d\theta\)는 광선의 값을 광선 위의 모든 점에 칠해 더하는 연산입니다. 역투영은 투영의 역연산이 아니라 수반 연산입니다. 투영을 행렬 \(\mathbf{A}\)로 나타내면 역투영은 그 전치 \(\mathbf{A}^{\mathsf T}\)에 해당합니다.</li>
+      <li>푸리에 공간에서 각도 하나의 역투영은 원점을 지나는 직선 하나에 \(P_\theta(\omega)\)를 더하는 일입니다. 각도 \(K\)개이면 원점에서 거리 \(|\omega|\)인 곳의 이웃한 직선 사이 간격이 \(\pi|\omega|/K\)여서, 값이 중심에 쏠려 쌓입니다.</li>
+      <li>각 투영의 푸리에 변환 \(P_\theta(\omega)\)에 \(|\omega|\)를 곱한 뒤 역투영하면 값이 주파수 평면에 고르게 쌓입니다. 이 방법이 필터 역투영(FBP)입니다. 단순 역투영은 각도를 늘려도 흐리고, 필터 역투영은 윤곽이 선명하며 값의 크기가 되살아납니다. 정확한 유도는 5장에서 합니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="qn">마무리 퀴즈 1</p>
+    <p class="q">\(\theta = 90^{\circ}\)에서 측정한 투영의 1차원 푸리에 변환 \(P_{90^{\circ}}(\omega)\)는 영상의 2차원 푸리에 변환 \(F\)의 어느 값과 같을까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. ω_x 축 위의 값은 θ = 0, 즉 세로 광선의 투영이 주는 슬라이스입니다.">\(F(\omega,\ 0)\)</li>
+      <li data-why="맞습니다. F(ω cos90°, ω sin90°) = F(0, ω) 이고, ω_y 축 위의 값입니다. θ = 90° 의 광선은 가로 방향이라 x 방향의 변화가 적분으로 사라지고 y 방향의 변화만 남습니다.">\(F(0,\ \omega)\)</li>
+      <li data-why="틀립니다. 대각선 방향의 슬라이스이며 θ = 45° 의 투영이 주는 값입니다.">\(F(\omega/\sqrt2,\ \omega/\sqrt2)\)</li>
+      <li data-why="틀립니다. 같은 직선을 반대쪽에서 읽은 값으로, θ = 270° 의 투영 또는 P_90°(−ω) 에 해당합니다.">\(F(0,\ -\omega)\)</li>
+    </ol>
+    <div class="explain">
+      <p>같은 정리는 3차원에서도 성립합니다. 전자현미경으로 단백질 입자의 구조를 구하는 분야에서는 2차원 투영 영상의 푸리에 변환이 3차원 주파수 공간에서 원점을 지나는 평면이 된다는 성질을 쓰고, 여러 방향의 투영으로 그 공간을 채워 3차원 구조를 얻습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="qn">마무리 퀴즈 2</p>
+    <p class="q">(심화) 직접 푸리에 재구성이 CT의 해석적 재구성에서 표준으로 쓰이지 않는 이유로 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. 직교 격자점은 멀리 있는 측정값으로 채워지고(가장자리의 간격은 격자의 약 2배), 보간이 한 주파수에서 틀리면 그 오차는 영상 전체의 줄무늬로 나타납니다.">극좌표 격자의 값으로 직교 격자의 값을 보간해야 하고, 그 오차가 영상 전체로 퍼진다</li>
+      <li data-why="틀립니다. 연산량은 N² log N 정도로, 필터 역투영의 역투영 단계 N³ 보다 크지 않습니다. 어려운 곳은 계산량이 아니라 보간 오차와 모든 각도가 모여야 시작할 수 있다는 점입니다.">2차원 FFT의 연산량이 필터 역투영의 역투영 단계보다 훨씬 많아서 계산이 오래 걸린다</li>
+      <li data-why="틀립니다. 슬라이스 정리는 연속 함수에서 증명된 관계이고, 샘플링한 데이터에서도 DFT 값이 그 직선 위의 값을 근사합니다. 문제는 그 값이 극좌표 격자에 놓여 직교 격자와 맞지 않는 것입니다.">푸리에 슬라이스 정리가 샘플링한 이산 데이터에서는 성립하지 않아서 값을 얻을 수 없다</li>
+      <li data-why="틀립니다. 투영 한 장은 점 하나가 아니라 원점을 지나는 직선 하나 전체를 채웁니다. 각도를 모으면 평면이 채워지지만, 그 직선들이 직교 격자와 어긋나는 것이 문제입니다.">투영 한 장이 주파수 평면에서 점 하나의 값만 주기 때문에 많은 투영이 필요하다</li>
+    </ol>
+    <div class="explain">
+      <p>방사형으로 측정하는 MRI에서는 이 보간을 그리딩(Gridding)이라고 부르며 널리 씁니다. 그리딩에서는 측정점마다 원점에서의 거리에 비례하는 밀도 보정 가중을 곱합니다. 방사형 샘플의 밀도가 원점에서 멀수록 거리에 반비례해 성기기 때문이며, 필터 역투영에서 \(|\omega|\)를 곱하는 것도 같은 이유에서 나옵니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="qn">마무리 퀴즈 3</p>
+    <p class="q">투영 \(\mathcal{P}\)와 역투영 \(\mathcal{B}\)의 관계로 옳은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 역투영은 역연산이 아닙니다. 2×2 예에서 μ = (0.2, 0.5, 0.1, 0.3) 의 투영을 역투영하면 (2.0, 1.5, 0.7, 2.2) 가 나옵니다.">어떤 영상 \(\mu\)에 대해서도 \(\mathcal{B}\mathcal{P}\mu = \mu\)가 되어 원래 영상이 그대로 복원된다</li>
+      <li data-why="틀립니다. 투영의 역행렬이 되는 연산이 아닙니다. 행렬로 쓰면 역투영은 A 의 역행렬이 아니라 행과 열을 맞바꾼 전치 Aᵀ 에 해당합니다.">\(\mathcal{B}\)는 \(\mathcal{P}\)의 역행렬에 해당하는 연산이어서 \(\mathcal{P}\)의 효과를 정확히 되돌린다</li>
+      <li data-why="틀립니다. 각도를 180개로 늘려도 단순 역투영은 흐렸습니다(페이지 9). 줄무늬는 사라지지만 번짐은 역투영 자체에서 생깁니다.">각도와 검출기 칸을 충분히 많이 쓰면 \(\mathcal{B}\mathcal{P}\mu = \mu\)가 되어 원래 영상이 완전히 복원된다</li>
+      <li data-why="맞습니다. 역투영은 이 관계를 만족하는 수반 연산입니다. 델타 함수 표기로 적분 순서를 바꾸면 보일 수 있고, 행렬에서는 ⟨Ax, d⟩ = ⟨x, Aᵀd⟩ 입니다.">임의의 \(\mu\)와 sinogram \(q\)에 대해 \(\langle\mathcal{P}\mu,q\rangle=\langle\mu,\mathcal{B}q\rangle\)이다</li>
+    </ol>
+    <div class="explain">
+      <p>수반 관계는 프로그램 점검에도 쓰입니다. 투영과 역투영을 따로 구현했다면 무작위 영상 \(\mathbf{x}\)와 무작위 sinogram \(\mathbf{d}\)를 넣어 \(\langle\mathbf{A}\mathbf{x}, \mathbf{d}\rangle\)와 \(\langle\mathbf{x}, \mathbf{A}^{\mathsf T}\mathbf{d}\rangle\)가 계산 오차 안에서 같은지 봅니다. 두 값이 다르면 두 프로그램의 광선 가중이 서로 맞지 않는다는 뜻입니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="qn">마무리 퀴즈 4</p>
+    <p class="q">필터 역투영에서 투영의 푸리에 변환에 \(|\omega|\)를 곱하는 이유로 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. |ω| 는 높은 주파수일수록 크게 곱하므로 잡음은 오히려 커집니다. 부드럽게 하는 쪽은 필터에 윈도우 함수를 더 곱하는 방법입니다.">높은 주파수의 잡음을 줄여 영상을 더 부드럽게 만들기 위해서이다</li>
+      <li data-why="틀립니다. 이 책의 푸리에 규약에서는 변환과 역변환에 상수가 붙지 않습니다. 곱하는 이유는 상수 맞춤이 아니라 직선이 쌓이는 정도를 고르게 하는 것입니다.">푸리에 변환의 정의에서 나오는 상수를 맞춰 크기를 보정하기 위해서이다</li>
+      <li data-why="맞습니다. 주파수 평면에서 원점으로부터 멀수록 이웃한 직선 사이의 간격이 |ω| 에 비례해 넓어지므로, 곱하지 않으면 값이 원점 근처에만 쏠립니다. |ω| 를 곱하면 직선 하나가 맡는 부채꼴의 넓이에 맞는 값이 놓입니다.">주파수 평면에서 직선이 중심에 몰려 쌓이는 쏠림을 바로잡기 위해서이다</li>
+      <li data-why="틀립니다. ω = 0 에서 0 이 되어 직류 성분이 없어지는 효과는 있지만 모든 주파수에 곱해지는 가중이고, 곱하는 목적은 직선이 쌓이는 정도를 고르게 하는 것입니다.">투영의 직류 성분(\(\omega = 0\))을 없애 영상의 평균값을 맞추기 위해서이다</li>
+    </ol>
+    <div class="explain">
+      <p>실제 장비에서는 \(|\omega|\)를 그대로 쓰지 않고, 높은 주파수 쪽에서 서서히 줄어드는 윈도우 함수를 곱한 필터를 씁니다. 해상도와 잡음 사이의 절충입니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>(심화) 중심이 \((1, 0)\)인 가우시안 함수 \(\mu(x, y) = e^{-\pi((x - 1)^{2} + y^{2})}\)가 있습니다. 투영 \(p(\theta, s)\)와 그 1차원 푸리에 변환 \(P_\theta(\omega)\)를 쓰세요. \(\theta = 60^{\circ},\ \omega = 0.5\)에서 \(P_\theta(\omega)\)를 계산하고, \(F(\omega\cos\theta,\ \omega\sin\theta)\)와 같은지 확인하세요. \(|P_\theta(\omega)|\)는 \(\theta\)에 따라 달라질까요?</li>
+      <li>페이지 6의 \(2\times2\) 화소에서 대각선 광선 ⑤를 빼고 광선 ①~④만 역투영하면 화소별 값은 얼마일까요? 결과를 원래 값 \((0.2,\ 0.5,\ 0.1,\ 0.3)\)과 비교하세요. 또 \(\mathbf{d} = (0, 1, 1, 0, 0)\)으로 수반 관계 \(\langle\mathbf{A}\mathbf{x}, \mathbf{d}\rangle = \langle\mathbf{x}, \mathbf{A}^{\mathsf T}\mathbf{d}\rangle\)를 확인하세요.</li>
+      <li>각도 \(K = 60\)개를 \(0\)부터 \(\pi\)까지 고르게 측정했습니다. 푸리에 평면에서 원점으로부터 \(1\ \mathrm{cm}^{-1}\)와 \(3\ \mathrm{cm}^{-1}\) 떨어진 곳에서 이웃한 직선 사이의 간격을 각각 구하세요. 단순 역투영에서 한 점에 겹치는 직선의 수는 두 곳에서 어떤 비가 되고, 고르게 쌓으려면 두 주파수 성분에 곱하는 값의 비는 얼마일까요?</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> 페이지 3의 예에서 \(x_0 = 1,\ y_0 = 0\)이므로 \(s_0 = \cos\theta\)이고, \(p(\theta, s) = e^{-\pi(s - \cos\theta)^{2}}\), \(P_\theta(\omega) = e^{-\pi\omega^{2}}\,e^{-i2\pi\omega\cos\theta}\)입니다.
+      \(\theta = 60^{\circ},\ \omega = 0.5\)이면 \(e^{-\pi/4} \approx 0.456\)이고, 위상은 \(-2\pi\times0.5\times0.5 = -\pi/2\)이므로 \(P = 0.456\,e^{-i\pi/2} = -0.456i\)입니다.
+      오른쪽은 \(\omega_x = 0.25,\ \omega_y \approx 0.433\)이고 \(F = e^{-\pi(0.0625 + 0.1875)}\,e^{-i2\pi\times0.25} = e^{-\pi/4}\,e^{-i\pi/2}\)로 같습니다.
+      \(|P_\theta(\omega)| = e^{-\pi\omega^{2}}\)이므로 \(\theta\)와 무관합니다. 원점이 중심인 가우시안 함수와 크기가 같고 위상만 다릅니다.</p>
+      <p><b>2번.</b> 화소 1은 ①·③에서 \(0.7 + 0.3 = 1.0\), 화소 2는 ①·④에서 \(0.7 + 0.8 = 1.5\), 화소 3은 ②·③에서 \(0.4 + 0.3 = 0.7\), 화소 4는 ②·④에서 \(0.4 + 0.8 = 1.2\)입니다.
+      크기의 순서(화소 2, 4, 1, 3)는 원래 값과 같지만 원래 값에 대한 비가 화소 1~4에서 5, 3, 7, 4로 제각각이어서 원래 영상의 상수배가 아닙니다.
+      수반 관계는 왼쪽이 \(\langle\mathbf{b}, \mathbf{d}\rangle = 0.4 + 0.3 = 0.7\)이고, \(\mathbf{A}^{\mathsf T}\mathbf{d}\)는 2행과 3행을 더한 \((1, 0, 2, 1)\)이므로 오른쪽은 \(0.2 + 2\times0.1 + 0.3 = 0.7\)로 같습니다.</p>
+      <p><b>3번.</b> 이웃한 직선 사이의 간격은 \(\pi|\omega|/K = \pi|\omega|/60\)입니다. \(|\omega| = 1\)에서 약 0.052, \(|\omega| = 3\)에서 약 0.157이고 비는 1 : 3입니다.
+      직선의 폭은 같으므로 한 점에 겹치는 직선의 수는 간격에 반비례합니다. 원점에서 1 떨어진 곳은 3 떨어진 곳의 3배입니다.
+      고르게 쌓으려면 이 쏠림을 상쇄해야 하므로 두 주파수 성분에 \(|\omega|\), 즉 1과 3을 곱합니다. 곱하는 값의 비는 1 : 3이고, 곱한 뒤에는 두 곳에 겹치는 양이 같아집니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 위상의 부호를 \(e^{+i2\pi\omega s_0}\)로 쓰는 것입니다. 2장의 규약은 정변환의 지수가 음수이므로 이동 성질의 위상도 \(e^{-i2\pi\omega s_0}\)입니다.</li>
+        <li>1번에서 \(s_0\)를 \(\sin\theta\)로 쓰는 것입니다. \(s_0 = x_0\cos\theta + y_0\sin\theta\)이고 \(x_0 = 1\)이므로 \(\cos\theta\)입니다.</li>
+        <li>2번에서 비가 같지 않은 이유를 계산 실수로 보는 것입니다. 역투영은 화소마다 지나는 광선의 값을 더할 뿐이므로 원래 값과 비례할 이유가 없습니다.</li>
+        <li>3번에서 각도 간격을 \(2\pi/K\)로 쓰는 것입니다. 평행빔은 \(0\)부터 \(\pi\)까지만 측정하면 충분하고(3장 페이지 9), 반대 방향의 직선은 같은 직선이므로 \(\Delta\theta = \pi/K\)입니다.</li>
+        <li>3번에서 간격을 \(\Delta\theta\)로만 쓰고 거리 \(|\omega|\)를 곱하지 않는 것입니다. 각 간격은 어디서나 같지만, 같은 각 간격이 원점에서 멀수록 더 긴 호가 됩니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="ch05.html"><span>다음 장</span>5장 — 필터 역투영(FBP) 공식 유도해 보기 (연속)</a>
+  </div>
+</section>
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

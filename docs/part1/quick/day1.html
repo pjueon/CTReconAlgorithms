@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="day1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1일차 · 0편 핵심 복습하기 — CT 재구성 1편 빠르게 보기</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="코스 전체의 흐름">
+  <p class="kicker">1일차 · 페이지 1</p>
+  <h1>0편 핵심 복습하기</h1>
+
+  <p class="lead">CT 영상의 화소 값은 무엇을 뜻하고, 그 영상은 측정값에서 어떻게 계산될까요?
+  이 코스는 7일 동안 이 질문에 답합니다. 1일차에는 코스 전체의 흐름을 먼저 보고, 이어서 세 가지를 봅니다.
+  CT 장치가 실제로 재는 양(페이지 2), 재구성에 여러 방향의 측정이 필요한 이유(페이지 3), 재구성 방법의 두 갈래(페이지 4)입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">0편을 읽었다면</p>
+    <p>1일차는 <a href="../../part0/index.html">0편 — 기초편</a>의 핵심을 한 번에 다시 훑는 날입니다. 0편을 읽었다면 페이지 2~4는 가볍게 넘기고 페이지 5의 퀴즈로 이해를 확인한 뒤 2일차로 가도 됩니다.
+    0편을 읽지 않았다면 이 날이 1편에 필요한 최소한을 채워 줍니다. 자세한 내용은 각 페이지의 링크로 0편에서 볼 수 있습니다.</p>
+  </div>
+
+  <p>CT(Computed Tomography)는 여러 방향에서 X선을 쏘아 잰 값으로 몸의 단면 영상을 계산하는 기술입니다.
+  단면 영상은 작은 칸으로 나뉘어 있고, 이 칸을 화소(<span class="term" data-term="pixel">Pixel</span>)라고 합니다.
+  화소마다 그 자리의 물질이 X선을 얼마나 약하게 만드는지를 나타내는 숫자가 하나씩 들어 있습니다.
+  이 값, 곧 물질이 X선을 약하게 만드는 정도를 감쇠계수(<span class="term" data-term="mu">Attenuation Coefficient</span>) \(\mu\)라고 하며, 페이지 2에서 자세히 봅니다.
+  이 코스에서 영상은 위치마다 \(\mu\) 값을 주는 함수 \(\mu(x, y)\)입니다.
+  측정값에서 이 \(\mu(x, y)\)를 계산하는 일을 재구성(<span class="term" data-term="recon">Reconstruction</span>)이라고 합니다.</p>
+
+  <h3>재구성의 흐름</h3>
+
+  <p>이 코스가 다루는 재구성 방법은 필터 역투영(Filtered Back Projection, FBP)입니다. 아래 그림이 그 전체 흐름입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 160" role="img" aria-label="측정, sinogram, 필터, 역투영, 영상으로 이어지는 필터 역투영의 흐름과 각 단계를 다루는 날">
+      <defs><marker id="d1-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-line" fill="none" stroke-width="1.4">
+        <rect x="16" y="24" width="104" height="58" rx="6"/>
+        <rect x="142" y="24" width="104" height="58" rx="6"/>
+        <rect x="268" y="24" width="104" height="58" rx="6"/>
+        <rect x="394" y="24" width="104" height="58" rx="6"/>
+        <rect x="520" y="24" width="104" height="58" rx="6"/>
+      </g>
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.4">
+        <path d="M121 53 H140" marker-end="url(#d1-flow)"/>
+        <path d="M247 53 H266" marker-end="url(#d1-flow)"/>
+        <path d="M373 53 H392" marker-end="url(#d1-flow)"/>
+        <path d="M499 53 H518" marker-end="url(#d1-flow)"/>
+      </g>
+      <g text-anchor="middle" font-size="12.5" font-weight="700" class="svg-fg">
+        <text x="68" y="49">측정</text><text x="194" y="49">sinogram</text><text x="320" y="49">필터</text>
+        <text x="446" y="49">역투영</text><text x="572" y="49">영상</text>
+      </g>
+      <g text-anchor="middle" font-size="10.5" class="svg-muted">
+        <text x="68" y="68">광선마다 p</text><text x="194" y="68">각도 × 위치의 표</text><text x="320" y="68">램프 필터</text>
+        <text x="446" y="68">되돌려 더하기</text><text x="572" y="68">μ(x, y)</text>
+      </g>
+      <g text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--accent)">
+        <text x="68" y="102">1일차</text><text x="194" y="102">2일차</text><text x="320" y="102">4일차</text>
+        <text x="446" y="102">4일차</text><text x="572" y="102">4일차</text>
+      </g>
+      <text x="320" y="120" text-anchor="middle" font-size="10.5" class="svg-muted">필터의 근거: 푸리에 슬라이스 정리(3일차)·극좌표 변환(4일차)</text>
+      <text x="320" y="148" text-anchor="middle" font-size="11" class="svg-fg">5일차: 이 흐름을 컴퓨터로 계산 · 6~7일차: 팬빔에 같은 흐름 적용</text>
+    </svg>
+    <figcaption>필터 역투영의 흐름입니다. 상자 아래의 날짜는 그 단계를 자세히 다루는 날입니다.</figcaption>
+  </figure>
+
+  <p>각 이름의 뜻을 한 줄씩 적어 둡니다. 지금은 이름과 순서만 기억하면 충분합니다.</p>
+  <ul>
+    <li><b>측정.</b> 검출기가 읽은 X선 세기를 로그로 바꾼 값 \(p\)입니다. 광선 하나가 지나간 길을 따라 \(\mu\)를 더한 값이며, 오늘 페이지 2에서 다룹니다.</li>
+    <li><b>sinogram.</b> 여러 방향에서 잰 \(p\)를 (방향의 각도, 검출기 위치)를 두 축으로 늘어놓은 2차원 표입니다. 2일차에서 다룹니다.</li>
+    <li><b>필터.</b> 역투영하기 전에 각 방향의 투영 데이터에 적용하는 램프 필터(Ramp Filter)입니다. 필터 없이 역투영하면 영상이 흐려지는데, 이를 바로잡습니다. 4일차에서 다루고, 필터가 왜 이런 모양인지는 3일차에서 배우는 푸리에 슬라이스 정리(Fourier Slice Theorem)를 4일차에서 극좌표로 바꿔 쓸 때 나옵니다.</li>
+    <li><b>역투영(Back Projection).</b> 각 측정값을 그 광선이 지나간 자리 전체에 되돌려 칠하고, 모든 방향의 결과를 더하는 연산입니다. 4일차에서 다룹니다.</li>
+  </ul>
+
+  <p>1~5일차는 광선이 모두 나란한 평행빔(Parallel Beam)을 다루고, 6~7일차는 점 하나에서 부채꼴로 퍼지는 팬빔(Fan Beam)을 다룹니다.
+  팬빔도 같은 흐름을 따르며, 그 공식은 평행빔 공식에서 변수를 바꿔서 얻습니다.</p>
+
+  <h3>7일 일정</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:4.5rem">일차</th><th>주제</th><th>그날 답하는 질문</th></tr>
+      <tr><td>1일차</td><td>0편 핵심 복습하기</td><td>측정값은 \(\mu\)와 어떤 관계인가?</td></tr>
+      <tr><td>2일차</td><td>찍은 데이터는 어떤 모양일까요? Radon 변환과 sinogram</td><td>모든 방향의 측정을 어떻게 한 함수로 모으는가?</td></tr>
+      <tr><td>3일차</td><td>투영 하나는 주파수 평면의 어디일까요? 푸리에 슬라이스 정리</td><td>측정값으로 영상을 되찾을 수 있다는 근거는 무엇인가?</td></tr>
+      <tr><td>4일차</td><td>흐린 영상을 선명하게: 역투영에서 필터 역투영(FBP)까지</td><td>측정값을 영상으로 되돌리는 공식은 무엇인가?</td></tr>
+      <tr><td>5일차</td><td>평행빔 FBP를 컴퓨터로 계산해 보기</td><td>그 공식을 이산 데이터로 어떻게 계산하는가?</td></tr>
+      <tr><td>6일차</td><td>팬빔은 평행빔 공식을 어떻게 바꿔 쓸까요? (변수변환)</td><td>광선이 부채꼴로 퍼지면 공식이 어떻게 바뀌는가?</td></tr>
+      <tr><td>7일차</td><td>팬빔 FBP를 계산하고 1주 돌아보기</td><td>팬빔 FBP는 어떻게 계산하고, 1주 동안 무엇을 배웠는가?</td></tr>
+    </table>
+  </div>
+
+  <p>하루는 약 1시간이고, 날마다 마지막 페이지에 요약·퀴즈·직접 해보기가 있습니다.</p>
+
+  <div class="box note">
+    <p class="box-t">1편 자세히 보기와 함께 읽기</p>
+    <p>이 코스는 핵심 아이디어와 식의 의미만 다룹니다. 전체 유도, 수치 예, 한계와 반례는 1편 자세히 보기에 있습니다.
+    페이지마다 해당하는 1편 자세히 보기 페이지를 링크하니, 더 알고 싶은 곳만 따라가면 됩니다.
+    오늘 내용은 <a href="../../part0/ch01.html">0편 1장</a>(X선과 감쇠계수), <a href="../../part0/ch02.html">0편 2장</a>(투영과 선적분), <a href="../../part0/ch03.html">0편 3장</a>(재구성 방법의 분류)에 해당합니다.</p>
+  </div>
+
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="지수 감쇠와 로그 변환">
+  <p class="kicker">1일차 · 페이지 2</p>
+  <h2>지수 감쇠와 로그 변환</h2>
+
+  <p>X선은 물질을 지나면서 약해집니다. X선을 이루는 광자 일부가 흡수되거나 방향이 꺾여 검출기에 곧게 닿지 못하기 때문입니다.
+  감쇠계수 \(\mu\)는 아주 얇은 두께를 지날 때 줄어드는 비율을 그 두께로 나눈 값, 곧 단위 길이당 줄어드는 비율이고, 단위는 \(\mathrm{cm}^{-1}\)입니다.
+  물은 약 0.19, 뼈는 0.45 정도(이 코스의 예시값)이고 공기는 거의 0입니다.
+  예를 들어 물 0.1 cm에서는 약 \(0.19 \times 0.1 = 0.019\), 곧 1.9%가 줄어듭니다.
+  이 정의는 아주 얇은 층에만 그대로 맞습니다. 유한한 두께에서는 지나는 동안 세기가 계속 줄어 \(\mu\)와 두께의 곱이 그대로 비율이 되지 않습니다(물 1 cm에서는 0.19가 아니라 약 17%). 정확한 계산은 아래 법칙을 씁니다.</p>
+
+  <h3>지수 감쇠 법칙</h3>
+
+  <p>두께 \(L\)인 균일한 물질을 지나면 X선의 세기는 지수적으로 줄어듭니다.
+  이 관계를 지수 감쇠 법칙, 또는 비어–람베르트 법칙(<span class="term" data-term="beer">Beer–Lambert Law</span>)이라고 합니다.</p>
+
+  <p style="text-align:center">\[I = I_0\, e^{-\mu L}\]</p>
+
+  <p>\(I_0\)는 물질에 들어가기 전의 세기, \(I\)는 지난 뒤 검출기가 읽는 세기입니다.
+  두께 \(L\)을 \(n\)겹으로 쪼개면 겹마다 \(1-\mu L/n\)이 남으므로 전체에 남는 비율은 \((1-\mu L/n)^n\)이고, \(n\)을 한없이 키우면 이 값이 \(e^{-\mu L}\)에 가까워집니다.
+  물 10 cm를 지나면 \(I/I_0 = e^{-1.9} \approx 0.15\)로 15%가 남습니다.</p>
+
+  <p>광선이 여러 물질을 차례로 지날 때, 구간 \(k\)(감쇠계수 \(\mu_k\), 길이 \(\Delta\ell_k\))를 지나면 세기에 \(e^{-\mu_k\Delta\ell_k}\)가 곱해집니다.
+  구간마다 이 곱이 차례로 쌓이고, 지수 함수끼리 곱하면 지수가 더해지므로 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[I = I_0\,e^{-\sum_k \mu_k\Delta\ell_k}\]</p>
+
+  <p>지수에는 구간마다의 \(\mu_k\Delta\ell_k\)(감쇠계수 × 구간 길이)를 더한 값이 들어갑니다.
+  \(\mu\)가 위치에 따라 연속으로 변하면 이 합은 광선을 따라 \(\mu\)를 적분한 값이 되고, 이를 선적분(<span class="term" data-term="lineint">Line Integral</span>)이라고 합니다.
+  광선을 따라 잰 거리를 \(\ell\)이라 하면 식은 아래와 같고, 적분은 광선이 물체를 지나는 구간 전체에서 합니다.</p>
+
+  <p style="text-align:center">\[I = I_0\exp\!\left(-\int \mu\,d\ell\right)\]</p>
+
+  <h3>로그 변환과 투영값</h3>
+
+  <p>검출기가 읽는 것은 \(I\)이고, 물체가 없을 때의 세기 \(I_0\)는 따로 재어 둡니다.
+  두 값의 비에 자연로그를 취하고 부호를 바꾸면 \(\mu\)의 선적분이 그대로 나옵니다.
+  이 값을 투영값(<span class="term" data-term="projval">Projection Value</span>) \(p\)라고 합니다.</p>
+
+  <p style="text-align:center">\[p = -\ln\frac{I}{I_0} = \int \mu\,d\ell\]</p>
+
+  <p>로그를 취하기 전의 비 \(I/I_0\)는 구간마다의 비율을 곱한 값이고, \(\mu\)에 대해 지수 꼴입니다.
+  로그를 취한 \(p\)는 구간마다의 \(\mu_k\Delta\ell_k\)를 더한 값이어서, \(\mu\)에 대해 1차식(선형)입니다.
+  로그 한 번으로 곱이 합으로 바뀌고, 그 덕분에 재구성을 선형 문제로 다룰 수 있습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 206" role="img" aria-label="물 5cm, 뼈 1cm, 물 4cm를 차례로 지나며 남는 비율이 39%, 25%, 12%로 줄고, 투영값은 구간별 값의 합 2.16이 되는 그림">
+      <g class="svg-line" stroke-width="1.4">
+        <rect x="100" y="40" width="250" height="50"/>
+        <rect x="350" y="40" width="50" height="50"/>
+        <rect x="400" y="40" width="200" height="50"/>
+        <path d="M20 65 H100" stroke-dasharray="5 3"/>
+        <path d="M600 65 H625" stroke-dasharray="5 3"/>
+      </g>
+      <g class="svg-fg" fill-opacity=".18"><rect x="350" y="40" width="50" height="50"/></g>
+      <g class="svg-fg" font-size="12" font-weight="700" text-anchor="middle">
+        <text x="225" y="62">물 5 cm</text><text x="375" y="62">뼈 1 cm</text><text x="500" y="62">물 4 cm</text>
+      </g>
+      <g class="svg-muted" font-size="12" text-anchor="middle">
+        <text x="225" y="78">μ = 0.19</text><text x="375" y="78">0.45</text><text x="500" y="78">0.19</text>
+        <text x="60" y="55">입사 100%</text>
+        <text x="60" y="108">구간별 μ × 길이</text><text x="225" y="108">0.19 × 5 = 0.95</text><text x="375" y="108">0.45 × 1 = 0.45</text><text x="500" y="108">0.19 × 4 = 0.76</text>
+        <text x="350" y="138">지난 뒤 남는 비율</text>
+        <text x="350" y="153">39%</text><text x="400" y="153">25%</text><text x="600" y="153">12%</text>
+        <text x="350" y="176">e<tspan dy="-4" font-size="9">−0.95</tspan></text><text x="400" y="176">e<tspan dy="-4" font-size="9">−1.40</tspan></text><text x="600" y="176">e<tspan dy="-4" font-size="9">−2.16</tspan></text>
+              </g>
+      <text x="350" y="196" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">p = −ln 0.115 = 0.95 + 0.45 + 0.76 = 2.16</text>
+    </svg>
+    <figcaption>광선 하나가 세 구간을 차례로 지납니다. 남는 비율은 구간마다 곱해지고(반올림한 값), 투영값 \(p\)는 구간별 \(\mu_k\Delta\ell_k\)의 합입니다.
+    남는 비율의 지수는 구간 아래 숫자를 입구부터 더해 간 합입니다(0.95, 1.40, 2.16).</figcaption>
+  </figure>
+
+  <p>그림에서 남는 비율 0.115에 \(-\ln\)을 취하면 2.16이고, 이는 구간별 값 \(0.19\times5\), \(0.45\times1\), \(0.19\times4\)의 합과 같습니다.
+  다만 \(p\)는 합 하나뿐이어서, 뼈가 광선의 앞쪽에 있는지 뒤쪽에 있는지는 알려 주지 않습니다. 이 문제는 페이지 3에서 다룹니다.</p>
+
+  <div class="box note">
+    <p class="box-t">이 코스가 전제하는 측정</p>
+    <p>위 식은 X선의 에너지가 하나이고(단색광) 광자가 꺾이지 않는다(산란 없음)고 가정한 이상화 모델입니다.
+    이 코스는 검출기 보정(플랫필드 보정)이 끝나 물체가 없을 때 모든 검출기 칸이 같은 \(I_0\)를 읽는 데이터에서 출발하며, 측정 잡음은 다루지 않습니다.</p>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">1편에서 더 보기</p>
+    <ul>
+      <li><a href="../../part0/ch01.html#s4">0편 1장 페이지 4</a>: 지수 감쇠 법칙의 직관과 위젯</li>
+      <li><a href="../../part0/ch01.html#s5">0편 1장 페이지 5</a>: 여러 겹의 물질과 합이 적분이 되는 과정</li>
+      <li><a href="../../part0/ch02.html#s3">0편 2장 페이지 3</a>: 로그 변환의 전개</li>
+      <li><a href="../../part0/ch02.html#s4">0편 2장 페이지 4</a>: 선적분의 정의와 광선의 매개변수화</li>
+      <li>이 코스가 건너뛰는 것: <a href="../../part0/ch01.html#s6">0편 1장 페이지 6</a>(모델의 전제), <a href="../../part0/ch02.html#s2">0편 2장 페이지 2</a>(플랫필드 보정), <a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>(측정 잡음)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="재구성이 풀려는 문제: 역문제">
+  <p class="kicker">1일차 · 페이지 3</p>
+  <h2>그래서 재구성이 풀려는 문제는 무엇일까요? 역문제</h2>
+
+  <p>\(\mu\)를 알고 \(p\)를 계산하는 방향을 순문제(Forward Problem)라고 합니다.
+  재구성은 그 반대로, 광선마다의 \(p\)가 주어졌을 때 \(\mu(x, y)\)를 구합니다. 이처럼 결과(\(p\))에서 원인(\(\mu\))을 구하는 문제를 역문제(<span class="term" data-term="inverse">Inverse Problem</span>)라고 합니다.</p>
+
+  <p style="text-align:center">\[\text{주어진 것: 광선마다의 } p = \int \mu\,d\ell \qquad \text{구하는 것: } \mu(x, y)\]</p>
+
+  <p>광선 하나의 \(p\)는 합 하나뿐이어서 \(\mu\)가 광선 위 어디에 있는지 알려 주지 않습니다. 그렇다면 방향이 몇 개 있어야 할까요?
+  공기(\(\mu = 0\)) 속에 한 변 1 cm, \(\mu = 0.45\ \mathrm{cm}^{-1}\)인 정사각형 두 개가 중심 \((-2, 2)\)와 \((2, -2)\)에 놓인 물체로 확인해 봅시다.</p>
+
+  <h3>한 방향과 두 방향</h3>
+
+  <p>위에서 아래로 지나는 세로 광선만 쓰면 \(x = -2\)와 \(x = 2\)에서 \(p = 0.45\)가 읽히고 나머지는 0입니다.
+  정사각형의 \(x\) 좌표는 알 수 있지만, \(y\) 좌표는 광선 방향으로 더해지면서 사라집니다.
+  가로 광선을 더하면 \(y = 2\)와 \(y = -2\)도 알게 됩니다.
+  그래도 아래 그림처럼 \((-2, -2)\)와 \((2, 2)\)에 놓인 다른 배치가 똑같은 가로·세로 값을 줍니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 296" role="img" aria-label="가로와 세로 광선을 모두 써도 실제 배치와 다른 배치가 같은 검출기 값을 주는 그림">
+      <defs><marker id="d1-ip2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <rect x="70" y="30" width="160" height="160" class="svg-line" stroke-width="1.2"/><g class="svg-line" stroke-width="1.2" style="stroke:var(--muted)"><path d="M86 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M64 174 H234" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M118 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M64 142 H234" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M150 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M64 110 H234" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M182 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M64 78 H234" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M214 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M64 46 H234" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/></g><rect x="70" y="196" width="160" height="7" class="svg-fg" fill-opacity=".55"/><rect x="236" y="30" width="7" height="160" class="svg-fg" fill-opacity=".55"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="110.0" y="70.0" width="16" height="16"/><rect x="174.0" y="134.0" width="16" height="16"/></g><text x="86" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="252" y="178" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="118" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="252" y="146" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="150" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="252" y="114" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="182" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="252" y="82" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="214" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="252" y="50" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="150" y="258" text-anchor="middle" font-size="12" class="svg-fg">실제 배치: (−2, 2), (2, −2)</text><rect x="390" y="30" width="160" height="160" class="svg-line" stroke-width="1.2"/><g class="svg-line" stroke-width="1.2" style="stroke:var(--muted)"><path d="M406 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M384 174 H554" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M438 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M384 142 H554" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M470 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M384 110 H554" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M502 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M384 78 H554" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M534 24 V194" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/><path d="M384 46 H554" stroke-dasharray="4 3" marker-end="url(#d1-ip2)"/></g><rect x="390" y="196" width="160" height="7" class="svg-fg" fill-opacity=".55"/><rect x="556" y="30" width="7" height="160" class="svg-fg" fill-opacity=".55"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="430.0" y="134.0" width="16" height="16"/><rect x="494.0" y="70.0" width="16" height="16"/></g><text x="406" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="572" y="178" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="438" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="572" y="146" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="470" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="572" y="114" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="502" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="572" y="82" font-size="11" font-weight="700" style="fill:var(--accent)">0.45</text><text x="534" y="214" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="572" y="50" font-size="11" font-weight="700" style="fill:var(--muted)">0</text><text x="470" y="258" text-anchor="middle" font-size="12" class="svg-fg">다른 배치: (−2, −2), (2, 2)</text><text x="310" y="284" text-anchor="middle" font-size="12" style="fill:var(--accent)">두 배치의 가로·세로 검출기 값이 모두 같습니다.</text>
+    </svg>
+    <figcaption>점선은 광선, 회색 막대는 검출기, 숫자는 그 광선의 투영값 \(p\)입니다. 좌표는 \(x\)가 오른쪽, \(y\)가 위쪽이고, 광선 간격은 2 cm이며 가운데 광선이 \(x = 0\), \(y = 0\)을 지납니다.
+    정사각형 두 개라는 것을 미리 알아도, 가로·세로 두 방향만으로는 두 배치가 구분되지 않습니다.</figcaption>
+  </figure>
+
+  <h3>세 번째 방향: 대각선</h3>
+
+  <p>직선 \(y = -x\)를 따라 지나는 대각선 광선을 하나 더하면 구분됩니다.
+  실제 배치에서는 이 광선이 정사각형 두 개를 대각선 길이 \(\sqrt2\) cm씩 지나므로 \(p = 0.45 \times 2\sqrt2 \approx 1.27\)입니다.
+  다른 배치에서는 정사각형을 지나지 않아 \(p = 0\)입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 256" role="img" aria-label="대각선 광선이 실제 배치에서는 정사각형 두 개를 지나고 다른 배치에서는 지나지 않는 그림">
+      <defs><marker id="d1-ip3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+      <rect x="70" y="30" width="160" height="160" class="svg-line" stroke-width="1.2"/><path d="M70 30 L230 190" fill="none" stroke-width="2" stroke-dasharray="5 3" style="stroke:var(--warn)" marker-end="url(#d1-ip3)"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="110.0" y="70.0" width="16" height="16"/><rect x="174.0" y="134.0" width="16" height="16"/></g><text x="150" y="224" text-anchor="middle" font-size="12" class="svg-fg">실제 배치</text><text x="150" y="244" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--accent)">대각선 광선: p = 0.45 × 2√2 ≈ 1.27</text><rect x="390" y="30" width="160" height="160" class="svg-line" stroke-width="1.2"/><path d="M390 30 L550 190" fill="none" stroke-width="2" stroke-dasharray="5 3" style="stroke:var(--warn)" marker-end="url(#d1-ip3)"/><g style="fill:var(--accent);stroke:var(--accent)" fill-opacity=".55" stroke-width="1.2"><rect x="430.0" y="134.0" width="16" height="16"/><rect x="494.0" y="70.0" width="16" height="16"/></g><text x="470" y="224" text-anchor="middle" font-size="12" class="svg-fg">다른 배치</text><text x="470" y="244" text-anchor="middle" font-size="12" font-weight="700" style="fill:var(--muted)">대각선 광선: p = 0</text>
+    </svg>
+    <figcaption>주황색 점선이 직선 \(y = -x\)를 따라 지나는 대각선 광선입니다. 실제 배치에서만 정사각형을 지나므로 두 배치가 구분됩니다.</figcaption>
+  </figure>
+
+  <p>방향이 많을수록 같은 데이터를 주는 서로 다른 영상이 줄어듭니다.
+  정사각형 두 개라는 것을 아는 이 예에서는 대각선 하나로 충분했지만, 일반적인 영상에서는 방향이 유한하면 같은 데이터를 주는 다른 영상이 남습니다.
+  모든 방향의 선적분을 알면 \(\mu\)가 하나로 정해지며, 그 근거가 3일차의 푸리에 슬라이스 정리입니다.
+  실제 CT는 이 '모든 방향'에 가깝도록 물체 둘레를 돌며 수백 개 이상의 방향에서 촘촘히 측정합니다.
+  이렇게 모은 측정 전체를 하나의 함수로 정리한 것이 2일차의 Radon 변환과 sinogram입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">1편에서 더 보기</p>
+    <ul>
+      <li><a href="../../part0/ch02.html#s6">0편 2장 페이지 6</a>: 정사각형 두 개의 투영값 계산</li>
+      <li><a href="../../part0/ch02.html#s7">0편 2장 페이지 7</a>: 한 방향만 쓸 때의 세 배치, \(2\times2\) 화소로 다시 본 역문제</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="해석적 접근과 대수적 접근">
+  <p class="kicker">1일차 · 페이지 4</p>
+  <h2>해석적 접근과 대수적 접근</h2>
+
+  <p>재구성 알고리즘은 문제를 푸는 접근에 따라 크게 두 갈래로 나뉩니다.
+  어느 쪽이든 입력은 광선마다의 \(p\)이고 출력은 영상 \(\mu\)입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 240" role="img" aria-label="투영값에서 영상까지 가는 두 갈래. 위쪽은 연속 모델에서 역공식을 얻어 이산 데이터로 계산하는 해석적 방법, 아래쪽은 광선마다의 식을 모아 Ax = b 를 세워 푸는 대수적 방법">
+      <defs><marker id="d1-map" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-line" fill="none" stroke-width="1.4">
+        <rect x="10" y="95" width="104" height="50" rx="6"/>
+        <rect x="150" y="34" width="170" height="50" rx="6"/>
+        <rect x="350" y="34" width="130" height="50" rx="6"/>
+        <rect x="150" y="156" width="170" height="50" rx="6"/>
+        <rect x="350" y="156" width="130" height="50" rx="6"/>
+        <rect x="526" y="95" width="104" height="50" rx="6"/>
+      </g>
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.4">
+        <path d="M114 110 L148 66" marker-end="url(#d1-map)"/>
+        <path d="M114 130 L148 174" marker-end="url(#d1-map)"/>
+        <path d="M320 59 H348" marker-end="url(#d1-map)"/>
+        <path d="M320 181 H348" marker-end="url(#d1-map)"/>
+        <path d="M480 66 L524 110" marker-end="url(#d1-map)"/>
+        <path d="M480 174 L524 130" marker-end="url(#d1-map)"/>
+      </g>
+      <g text-anchor="middle" font-size="12" font-weight="700" class="svg-fg">
+        <text x="62" y="117">투영값 p</text>
+        <text x="235" y="56">푸리에 슬라이스 정리로</text><text x="235" y="73">역공식을 얻음</text>
+        <text x="415" y="56">이산 데이터로</text><text x="415" y="73">공식을 계산</text>
+        <text x="235" y="178">광선마다의 식을 모아</text><text x="235" y="195">Ax = b 로 씀</text>
+        <text x="415" y="178">Ax = b 를 풂</text><text x="415" y="195">(보통 반복 계산)</text>
+        <text x="578" y="117">영상</text>
+      </g>
+      <g text-anchor="middle" font-size="11" class="svg-muted">
+        <text x="62" y="133">(측정 데이터)</text>
+        <text x="578" y="133">μ(x, y)</text>
+      </g>
+      <g font-size="11" class="svg-muted">
+        <text x="150" y="24">해석적 방법: 이 코스(2~7일차)</text>
+        <text x="150" y="228">대수적 방법: 이 시리즈의 2편</text>
+      </g>
+    </svg>
+    <figcaption>투영값에서 영상까지 가는 두 갈래입니다. 위쪽은 공식을 먼저 얻고 계산하며, 아래쪽은 화소 격자 위에서 연립일차방정식을 세워 풉니다.</figcaption>
+  </figure>
+
+  <h3>해석적 재구성</h3>
+
+  <p>해석적(<span class="term" data-term="analytic">Analytic</span>) 재구성은 영상을 연속 함수 \(\mu(x, y)\)로, 측정을 모든 방향과 모든 위치의 선적분으로 봅니다.
+  이 둘의 관계를 푸리에 슬라이스 정리(<span class="term" data-term="fst">Fourier Slice Theorem</span>)로 풀면 \(\mu\)를 측정값으로 나타내는 공식(역공식)을 먼저 얻고, 컴퓨터에서는 이 공식을 이산 데이터로 계산합니다.
+  이 코스는 푸리에 슬라이스 정리(3일차)를 이용해 평행빔의 역공식을 얻고(2~4일차), 이를 이산 데이터로 계산하는 방법을 5일차에 봅니다. 6~7일차에는 팬빔으로 넓힙니다.
+  이 방법의 대표가 필터 역투영(FBP)입니다.</p>
+
+  <h3>대수적 재구성</h3>
+
+  <p>대수적(<span class="term" data-term="algebraic">Algebraic</span>) 재구성은 영상을 처음부터 화소 격자로 나누고 화소값 \(\mu_j\)를 미지수로 둡니다.
+  광선 \(i\)의 투영값은 광선이 지나는 화소의 값에, 그 화소 안에서 광선이 지나는 길이 \(w_{ij}\)를 곱해 더한 값입니다.</p>
+
+  <p style="text-align:center">\[p_i = \sum_j w_{ij}\,\mu_j\]</p>
+
+  <p>이 식을 모든 광선에 대해 모으면 연립일차방정식 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)가 됩니다.
+  \(\mathbf{x}\)는 화소값을, \(\mathbf{b}\)는 투영값을 모은 벡터이고, \(\mathbf{A}\)는 \(w_{ij}\)를 모은 행렬입니다.
+  \(512\times512\) 영상이면 미지수가 약 26만 개이고 광선 수도 비슷해서 \(\mathbf{A}\)는 26만 × 26만 규모의 행렬입니다.
+  이렇게 매우 커서 보통 반복 계산으로 풀며, 그래서 반복(Iterative) 재구성이라고도 합니다. 이 시리즈의 2편에서 다룹니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:7rem"></th><th>해석적</th><th>대수적</th></tr>
+      <tr><td>핵심 도구</td><td>역공식(푸리에 슬라이스 정리로 얻음)</td><td>연립방정식 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)</td></tr>
+      <tr><td>푸는 방식</td><td>역공식을 얻은 뒤 한 번 계산</td><td>\(\mathbf{A}\mathbf{x} = \mathbf{b}\)를 반복 계산으로 풂</td></tr>
+      <tr><td>대표 알고리즘</td><td>FBP(평행빔·팬빔)</td><td>여러 반복 알고리즘(2편에서 소개)</td></tr>
+      <tr><td>이 시리즈에서</td><td>이 코스, 1편</td><td>2편</td></tr>
+    </table>
+  </div>
+
+  <p>두 갈래를 나누는 기준은 \(\mu\)를 측정값으로 직접 나타내는 공식(역공식)을 구해 계산하느냐, 광선마다의 식을 연립방정식으로 세워 수치적으로 푸느냐입니다.
+  데이터가 연속이냐 이산이냐는 기준이 아닙니다. 해석적 방법도 마지막에는 이산 데이터로 계산하고, 대수적 방법도 연속 함수로 정식화할 수 있습니다.</p>
+
+  <p>이 코스가 해석적 방법을 다루는 이유는 두 가지입니다.
+  첫째, 공식의 각 부분이 하는 일이 식에 드러납니다.
+  둘째, 측정 데이터를 한 번 처리해 영상을 얻으므로 계산이 빠릅니다.</p>
+
+  <div class="box note">
+    <p class="box-t">1편에서 더 보기</p>
+    <ul>
+      <li><a href="../../part0/ch03.html#s1">0편 3장 페이지 1</a>: 두 갈래의 접근과 구분 기준, \(2\times2\) 화소 예로 세운 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)와 시스템 행렬의 크기</li>
+      <li><a href="../../part2/index.html">2편 목차</a>: 대수적 재구성</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">1일차 · 페이지 5</p>
+  <h2>1일차 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>CT 영상은 감쇠계수 \(\mu\)의 지도이고, 로그를 취한 측정값은 \(\mu\)의 선적분입니다. 재구성은 여러 방향의 선적분에서 \(\mu\)를 되찾는 역문제입니다.</li>
+      <li>X선 세기는 \(I = I_0\exp(-\int\mu\,d\ell)\)로 줄고, 투영값 \(p = -\ln(I/I_0) = \int\mu\,d\ell\)은 \(\mu\)에 대해 선형입니다. 로그 한 번으로 곱이 합이 됩니다.</li>
+      <li>광선 하나는 합만 알려 줍니다. 한 방향이나 두 방향으로는 같은 데이터를 주는 다른 배치가 남고, 방향을 늘려야 구분됩니다.</li>
+      <li>재구성은 해석적 접근(역공식을 얻어 계산, 이 코스)과 대수적 접근(\(\mathbf{A}\mathbf{x} = \mathbf{b}\), 2편)으로 나뉩니다. 기준은 역공식으로 계산하느냐, 방정식을 세워 푸느냐입니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">플랫필드 보정이 끝난 데이터에서, 광선 하나가 물(\(\mu = 0.19\ \mathrm{cm}^{-1}\)) 5 cm를 지난 뒤 뼈(\(\mu = 0.45\ \mathrm{cm}^{-1}\)) 2 cm를 지났습니다. 이 광선의 투영값 \(p\)는 얼마일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. e^(−1.85) ≈ 0.157 은 남는 비율 I/I₀ 입니다. 투영값은 이 비에 −ln 을 취한 값입니다.">\(p = e^{-1.85} \approx 0.157\)</li>
+      <li data-why="틀립니다. 구간마다 곱해지는 것은 남는 비율이고, 로그를 취한 투영값에서는 구간별 값이 더해집니다.">\(p = 0.95 \times 0.90 \approx 0.855\)</li>
+      <li data-why="틀립니다. 1 − e^(−1.85) ≈ 0.843 은 줄어든 비율입니다. 줄어든 비율은 구간별 μΔℓ 의 합으로 나타나지 않으므로 선적분이 아닙니다.">\(p = 1 - e^{-1.85} \approx 0.843\)</li>
+      <li data-why="맞습니다. 투영값은 구간별 μΔℓ 의 합이므로 0.19 × 5 + 0.45 × 2 = 0.95 + 0.90 = 1.85 입니다.">\(p = 0.95 + 0.90 = 1.85\)</li>
+    </ol>
+    <div class="explain">
+      <p>\(p\)를 물의 \(\mu = 0.19\)로 나누면 물 두께로 환산한 값이 됩니다. \(1.85 / 0.19 \approx 9.7\)이므로, 이 광선은 물 약 9.7 cm를 지난 것과 같은 감쇠를 받았습니다.
+      뼈 2 cm가 물 약 4.7 cm에 해당하는 감쇠를 낸 셈이고, 뼈의 위치가 광선의 앞이든 뒤든 이 값은 같습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">공기 속에 한 변 1 cm, \(\mu = 0.45\ \mathrm{cm}^{-1}\)인 정사각형 두 개가 중심 \((-2, 2)\)와 \((2, -2)\)에 있습니다. 가로 광선과 세로 광선을 모두 썼는데도 정사각형의 위치가 하나로 정해지지 않는 이유는 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 이 예는 잡음이 전혀 없는 이상적인 데이터입니다. 잡음이 없어도 가로·세로 두 방향만으로는 위치가 정해지지 않습니다.">측정값에 잡음이 섞여 있어서 정확한 값을 알 수 없기 때문입니다.</li>
+      <li data-why="틀립니다. 로그를 취한 투영값은 μ 에 대해 선형입니다. 위치가 정해지지 않는 것은 식의 모양이 아니라 방향이 부족하기 때문입니다.">투영값이 \(\mu\)에 대해 비선형인 식이라서 값을 되돌릴 수 없기 때문입니다.</li>
+      <li data-why="맞습니다. (−2, −2), (2, 2) 배치도 x = ±2, y = ±2 의 광선에서만 0.45 를 주므로 가로·세로 값이 모두 같습니다.">\((-2, -2)\), \((2, 2)\)의 배치도 같은 가로·세로 값을 주기 때문입니다.</li>
+      <li data-why="틀립니다. 가로·세로 광선은 x = ±2, y = ±2 에서 정사각형의 중심을 지나며 0.45 를 읽습니다. 광선은 정사각형을 놓치지 않았습니다.">가로·세로 광선이 정사각형의 중심을 지나지 않기 때문입니다.</li>
+    </ol>
+    <div class="explain">
+      <p>같은 일이 화소 격자에서도 일어납니다. \(2\times2\) 화소 격자(화소 4개, 미지수 4개)에서 가로 광선 둘과 세로 광선 둘은 식 네 개를 주지만, 가로 두 값의 합과 세로 두 값의 합이 모두 네 화소 전체의 합이어서 식 하나는 나머지 셋에서 저절로 나옵니다.
+      그래서 새 정보를 주는 서로 독립인 식은 세 개뿐입니다.
+      그래서 미지수 네 개를 정할 수 없고, 대각선 광선을 더해야 정해집니다(<a href="../../part0/ch02.html#s7">0편 2장 페이지 7</a>).</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">이 코스가 다루는 해석적 재구성을 바르게 설명한 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 화소마다 미지수를 두고 광선마다의 식을 모아 Ax = b 를 반복 계산으로 푸는 것은 대수적 재구성이며, 2편에서 다룹니다.">화소마다 미지수를 두고 광선마다의 식을 모은 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)를 반복 계산으로 풉니다.</li>
+      <li data-why="맞습니다. 연속 모델에서 μ 를 측정값으로 나타내는 공식을 먼저 얻고, 그 공식을 이산 데이터로 계산합니다. FBP 가 대표적입니다.">연속 모델에서 \(\mu\)를 측정값으로 나타내는 공식을 먼저 얻고, 그 공식을 이산 데이터로 계산합니다.</li>
+      <li data-why="틀립니다. 두 갈래를 나누는 기준은 연속·이산이 아니라 역공식으로 계산하느냐, 연립방정식을 세워 푸느냐입니다. 해석적 방법도 마지막에는 이산 데이터로 계산합니다.">연속 함수를 다루면 해석적 재구성, 이산 데이터를 다루면 대수적 재구성으로 나뉩니다.</li>
+      <li data-why="틀립니다. 측정값 I 는 μ 에 대해 지수 꼴이므로 먼저 −ln(I/I₀) 로 바꿔 선적분을 만든 뒤 재구성합니다.">로그를 취하지 않은 세기 \(I\)를 그대로 광선을 따라 되돌려 더해 영상을 얻습니다.</li>
+    </ol>
+    <div class="explain">
+      <p>두 갈래는 같은 측정 모델 \(p = \int\mu\,d\ell\)에서 출발하므로 서로 닮은 계산이 나옵니다.
+      예를 들어 대수적 방법에서 \(\mathbf{A}\)의 행과 열을 맞바꾼 전치 행렬 \(\mathbf{A}^{T}\)를 투영값에 곱하는 계산 \(\mathbf{A}^{T}\mathbf{b}\)는, 각 투영값을 광선이 지난 화소에 길이 \(w_{ij}\)를 곱해 더해 넣는 일입니다. 이것은 4일차에 볼 역투영을 화소 격자에서 한 것과 같습니다. 4일차에서 다시 다루므로 지금은 맛보기로 읽으면 됩니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>물(\(\mu = 0.19\ \mathrm{cm}^{-1}\)) 20 cm를 지나는 광선을 생각합니다. 뼈의 감쇠계수는 \(\mu = 0.45\ \mathrm{cm}^{-1}\)입니다.
+        <ul style="list-style:none;padding-left:0">
+          <li>(가) 이 광선의 \(p\)와 \(I/I_0\)를 구하세요.</li>
+          <li>(나) 그 가운데 4 cm가 뼈로 바뀌면 \(p\)는 얼마가 되고, \(I/I_0\)는 처음의 몇 배가 될까요?</li>
+          <li>(다) 뼈 4 cm가 광선의 어느 위치에 있는지가 답에 영향을 주는지 설명하세요.</li>
+        </ul></li>
+      <li>페이지 3의 정사각형 두 개에서, 대각선 광선 대신 직선 \(y = x\)를 따라 지나는 광선을 더해도 실제 배치 \((-2, 2), (2, -2)\)와 다른 배치 \((-2, -2), (2, 2)\)를 구분할 수 있을까요? 두 배치에서 이 광선의 \(p\)를 각각 구해 설명하세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번 (가).</b> 물 20 cm는 \(p = 0.19 \times 20 = 3.8\)이고 \(I/I_0 = e^{-3.8} \approx 0.022\)로, 약 2%가 남습니다.
+      <b>(나)</b> 4 cm가 뼈로 바뀌면 \(p = 0.19 \times 16 + 0.45 \times 4 = 3.04 + 1.80 = 4.84\)이고 \(I/I_0 = e^{-4.84} \approx 0.0079\)입니다.
+      \(p\)는 \((0.45 - 0.19) \times 4 = 1.04\)만큼 늘었고, \(I/I_0\)는 \(e^{-1.04} \approx 0.35\)배가 되었습니다.
+      <b>(다)</b> \(p\)는 구간별 값의 합이므로 뼈 4 cm가 광선의 앞에 있든 가운데나 뒤에 있든 답은 같습니다.</p>
+      <p><b>2번.</b> 직선 \(y = x\)는 \((-2, -2)\)와 \((2, 2)\)를 지납니다.
+      다른 배치에서는 이 광선이 정사각형 두 개를 \(\sqrt2\) cm씩 지나 \(p = 0.45 \times 2\sqrt2 \approx 1.27\)이고, 실제 배치에서는 정사각형을 지나지 않아 \(p = 0\)입니다.
+      값이 다르므로 이 광선으로도 구분할 수 있습니다. 가로·세로와 다른 방향을 하나 더하는 것이 핵심이고, 어느 대각선이든 같은 역할을 합니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>\(p\)와 \(I/I_0\)를 혼동하는 것입니다. \(p\)는 클수록 많이 약해진 광선이고, \(I/I_0\)는 작을수록 많이 약해진 광선입니다.</li>
+        <li>기존 \(p = 3.8\)에 뼈 값 \(0.45 \times 4\)를 그대로 더하는 것입니다. 바뀐 4 cm에 원래 들어 있던 물의 값 \(0.19 \times 4\)를 빼야 하며, 늘어난 양은 두 값의 차 \((0.45 - 0.19) \times 4\)입니다.</li>
+        <li>대각선 광선이 정사각형을 지나는 길이를 1 cm로 쓰는 것입니다. 한 변이 1 cm인 정사각형을 꼭짓점에서 꼭짓점으로 지나면 \(\sqrt2\) cm입니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="day2.html"><span>다음 장</span>2일차 — 찍은 데이터는 어떤 모양일까요? Radon 변환과 sinogram</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

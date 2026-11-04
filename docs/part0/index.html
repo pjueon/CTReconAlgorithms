@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko" data-page="cover">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CT 재구성 알고리즘0 - 기초편 — CT란 무엇이고, 재구성은 어떤 문제인가</title>
+<script src="../assets/theme.js"></script><link rel="stylesheet" href="../assets/base.css">
+<link rel="stylesheet" href="../assets/book.css">
+</head>
+<body>
+
+<div class="cover">
+
+  <p class="series-link"><a href="../index.html">← 홈으로</a></p>
+
+  <p class="kicker">CT 재구성 알고리즘 0편 · 1편(해석적)과 2편(대수적)의 공통 출발점</p>
+  <h1 class="title">CT 재구성 알고리즘0 - 기초편</h1>
+  <p class="sub">CT 영상의 숫자가 무엇인지, X선 측정이 어떤 수식이 되는지, 그 수식에서 영상을 구하는 방법이 어떤 두 갈래로 나뉘는지를 가볍게 훑습니다.<br>
+  본문 3장으로 구성되어 있고, 읽고 나면 1편과 2편 어느 쪽으로든 이어서 갈 수 있습니다.</p>
+  <p class="sub"><b>대상 독자</b> 미적분·푸리에 해석·선형대수의 기초를 배운 적이 있고 CT 재구성을 처음 배우는 학습자에게 맞습니다.</p>
+
+  <p><a class="resume" id="resume" href="ch01.html">처음부터 읽기</a></p>
+
+  <hr>
+
+  <div class="box note">
+    <p class="box-t">이미 CT를 안다면</p>
+    <p>CT 영상이 감쇠계수의 지도이고, 투영값이 선적분이며, 재구성에 해석적·대수적 두 갈래가 있다는 것을 이미 안다면 이 편은 건너뛰어도 됩니다.
+    <a href="../part1/quick/index.html">1편 빠르게 보기</a>의 1일차가 같은 내용을 한 번 더 요약해 줍니다.</p>
+  </div>
+
+  <h2>0편에서 다루는 것</h2>
+
+  <ul>
+    <li><b>CT란 무엇인가.</b> CT 영상의 숫자 하나가 물리적으로 무엇인지(X선 감쇠계수 μ)를 설명합니다.</li>
+    <li><b>수학적 모델.</b> X선 측정값이 어떻게 감쇠계수의 선적분(투영값)이 되는지, 그래서 단면 영상을 얻는 일이 왜 역문제가 되는지를 설명합니다.</li>
+    <li><b>재구성 알고리즘의 두 갈래.</b> 이 역문제를 푸는 방식을 해석적(Analytic) 방법과 대수적(Algebraic, 반복) 방법으로 나누어 보고, 각각 어떤 상황에 맞는지 가늠해 봅니다.</li>
+  </ul>
+
+  <h2>CT 재구성 알고리즘의 분류</h2>
+
+  <p>CT 재구성 알고리즘은 크게 두 갈래로 나눕니다.</p>
+  <ul>
+    <li><b>해석적(Analytic) 방법.</b> 푸리에 슬라이스 정리를 이용해 투영 데이터에서 영상을 구하는 역공식을 유도하고, 그 공식을 이산 데이터로 계산합니다.
+    한 번의 계산(필터링과 역투영)으로 끝나서 빠르고, 필터 역투영(Filtered Back Projection, FBP)이 대표적입니다. <b>1편에서 다룹니다.</b></li>
+    <li><b>대수적(Algebraic, 반복) 방법.</b> 처음부터 영상을 격자로 쪼개고, 광선마다 하나씩 세운 식을 모아 연립방정식
+    <b>Ax = b</b> 로 쓴 뒤 이를 반복 계산으로 풉니다. 잡음이 많거나 각도가 모자란 데이터처럼 해석적 방법이 힘든 상황에도 쓸 수 있습니다.
+    <b>2편에서 다룹니다.</b></li>
+  </ul>
+
+  <h2>사전 지식</h2>
+
+  <p>이 책은 독자가 기본적인 미적분, 푸리에 해석, 선형대수를 배운 적이 있다고 가정합니다.
+  0편에서 쓰는 수학은 지수·로그·적분 정도이며, 꼭 필요한 개념은 그때그때 간단히 복습하고 지나갑니다.</p>
+
+  <h2>이 책은 이렇게 생겼습니다</h2>
+
+  <p>한 장(chapter)은 <b>여러 개의 페이지</b>로 나뉩니다. 페이지는 <b>← → 방향키</b>나 아래쪽
+  버튼으로 넘깁니다. 어디까지 읽었는지는 이 브라우저에 저장되므로, 다음에 다시 열면
+  <b>이어서 읽기</b>가 나타납니다.</p>
+
+  <div class="box note">
+    <p class="box-t">읽는 방법</p>
+    <ul>
+      <li><b>접힌 상자</b>는 눌러서 펼치는 부분입니다. 수식의 상세한 단계별 전개가 여기에 들어 있으니,
+      본문의 결론과 핵심 식만 읽고 싶다면 건너뛰어도 됩니다. <b>모범답안</b>은 스스로 해본 다음에 열어보세요.</li>
+      <li><b>퀴즈</b>의 해설에는 본문 내용을 한 번 더 짚는 보충이 들어 있습니다.</li>
+      <li>점선 밑줄이 그어진 단어에 마우스를 올리거나 선택하면 뜻이 나옵니다.</li>
+      <li>용어는 처음 나올 때 영어를 함께 적습니다. 예: 투영(Projection, Forward Projection).</li>
+    </ul>
+  </div>
+
+  <h2>분량</h2>
+
+  <p>3장 · 20페이지 · 약 4시간입니다. 읽기만 하는 시간이 아니라 퀴즈와 직접 해보기까지 포함한 시간이며, 하루 1시간씩이면 나흘 안에 마칠 수 있습니다.</p>
+
+  <h2>목차</h2>
+  <ul class="toc-list" id="toc-list"></ul>
+
+  <div class="box" style="margin-top:2rem">
+    <p class="box-t">이 편을 다 읽으면</p>
+    <ol>
+      <li>CT 영상의 숫자가 무엇을 나타내는지(감쇠계수 μ) 설명할 수 있습니다.</li>
+      <li>X선 투영 값이 감쇠계수의 선적분이 되는 과정을 설명하고, 재구성이 왜 역문제인지 말할 수 있습니다.</li>
+      <li>해석적 방법과 대수적 방법이 각각 무엇이고 어떤 상황에서 쓰이는지 구분해 말할 수 있습니다.</li>
+    </ol>
+  </div>
+
+  <h2>다음에는 어디로 갈까요?</h2>
+
+  <ul>
+    <li><b><a href="../part1/index.html">1편 — 해석적 재구성</a></b>: Radon 변환, 푸리에 슬라이스 정리, FBP, 팬빔, 데이터 완전성, FDK. 평행빔 FBP부터 차례로 배웁니다. 처음이라면 <a href="../part1/quick/index.html">빠르게 보기(1주)</a>를 권합니다.</li>
+    <li><b><a href="../part2/index.html">2편 — 대수적 재구성</a></b>: 재구성을 Ax = b로 쓰고 ART·SIRT, 정규화와 TV, GPBB·ASD-POCS까지 배웁니다. 2편은 1편의 투영·역투영·FBP를 바탕으로 하므로, 1편 빠르게 보기를 먼저 읽기를 권합니다.</li>
+  </ul>
+
+</div>
+
+<script src="config.js"></script>
+<script src="../assets/book.js"></script>
+</body>
+</html>

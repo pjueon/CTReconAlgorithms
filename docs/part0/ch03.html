@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="ch03">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3장 · 재구성 방법의 큰 지도 — CT 재구성 알고리즘0 - 기초편</title>
+<script src="../assets/theme.js"></script><link rel="stylesheet" href="../assets/base.css">
+<link rel="stylesheet" href="../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../assets/math.css">
+<link rel="stylesheet" href="../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="재구성 문제와 두 접근">
+  <p class="kicker">3장 · 페이지 1</p>
+  <h1>재구성 방법의 큰 지도</h1>
+
+  <p class="lead">2장에서 광선마다의 투영값 \(p = \int\mu\,d\ell\)을 정의했습니다. 이 장에서는 그 값에서 \(\mu(x, y)\)를 구하는 문제를 푸는 방식에 따라 둘로 나누고, 1편과 2편이 각각 어느 쪽을 다루는지 정합니다.</p>
+
+  <h2>재구성 문제</h2>
+
+  <p>광선마다의 투영값 \(p\)에서 영상 \(\mu(x, y)\)를 구하는 일을 재구성(<span class="term" data-term="recon">Reconstruction</span>)이라고 합니다. 입력은 광선마다의 \(p\)이고 출력은 영상입니다.
+  재구성 알고리즘은 이 문제를 푸는 접근에 따라 크게 두 가지로 나뉩니다.</p>
+
+  <h2>해석적 접근</h2>
+
+  <p>해석적(<span class="term" data-term="analytic">Analytic</span>) 재구성은 영상을 연속 함수로, 측정을 모든 방향과 위치의 선적분으로 보고 둘의 관계를 풀어 \(\mu\)를 측정값으로 나타내는 공식(역공식)을 먼저 얻는 접근입니다.
+  이 공식을 얻은 뒤에 이산 데이터로 계산합니다.
+  역공식을 얻는 도구는 푸리에 슬라이스 정리(Fourier Slice Theorem)이며 1편 4장에서 다룹니다.
+  대표적인 알고리즘은 필터 역투영(Filtered Back Projection, FBP)으로 1편 5·6장에서 다루고, 팬빔 FBP(1편 8·9장)와 FDK(1편 14장)도 같은 계열입니다.
+  푸리에 변환은 신호를 주파수 성분으로 나누는 계산입니다.</p>
+
+  <h2>대수적 접근</h2>
+
+  <p>대수적(<span class="term" data-term="algebraic">Algebraic</span>) 재구성은 영상을 화소 격자로 나누고, 광선 하나하나의 투영값을 화소값으로 쓴 연립일차방정식을 푸는 접근입니다.
+  2장 페이지 5에서 본 것처럼 광선 하나의 투영값은 화소값의 1차식입니다.
+  광선 \(i\)가 화소 \(j\) 안에서 지나는 길이를 \(w_{ij}\), 화소 \(j\)의 값을 \(\mu_j\)라고 하면(화소 안에서 \(\mu\)가 일정하다고 본 근사입니다) 화소가 \(n\)개일 때 광선 \(i\)의 식은 다음과 같습니다.</p>
+  <p style="text-align:center">\[p_i = w_{i1}\mu_1 + w_{i2}\mu_2 + \cdots + w_{in}\mu_n = \sum_{j=1}^{n} w_{ij}\,\mu_j\]</p>
+  <p>광선이 \(m\)개이면 이런 식이 \(m\)개이고, 미지수는 화소값 \(n\)개입니다. 이 연립방정식을 한꺼번에 쓰면 다음과 같습니다.</p>
+  <p style="text-align:center">\[\mathbf{A}\mathbf{x} = \mathbf{b}\]</p>
+  <ul>
+    <li>\(\mathbf{b}\)는 측정한 투영값 \(m\)개를 세로로 쌓은 벡터입니다(\(b_i = p_i\)).</li>
+    <li>\(\mathbf{x}\)는 화소값 \(n\)개를 세로로 쌓은 벡터이고 구하려는 영상입니다(\(x_j = \mu_j\)).</li>
+    <li>\(\mathbf{A}\)는 \(m \times n\) 행렬입니다. 행 하나가 광선 하나, 열 하나가 화소 하나이고 \(i\)행 \(j\)열 원소는 \(w_{ij}\)입니다. 광선이 지나지 않는 화소의 원소는 0입니다.
+    이 행렬을 시스템 행렬(<span class="term" data-term="sysmat">System Matrix</span>)이라고 합니다.</li>
+  </ul>
+  <p>\(\mathbf{A}\mathbf{x} = \mathbf{b}\)는 새로운 모델이 아니라 2장의 투영을 격자 위에서 행렬로 쓴 것입니다.</p>
+
+  <details class="fold">
+    <summary>2×2 화소의 예</summary>
+    <div class="fold-body">
+      <p>2장 페이지 9 '직접 해보기'의 \(2\times2\) 화소로 \(\mathbf{A}\)를 써 봅시다.
+      화소값은 \(\mu_1 = 0.2,\ \mu_2 = 0.5,\ \mu_3 = 0.1,\ \mu_4 = 0.3\)이고, 광선은 가로 ①②, 세로 ③④, 대각선 ⑤ 다섯 개입니다.
+      가로와 세로 광선은 화소 둘을 1 cm씩 지나고, 대각선 광선은 화소 1과 4를 \(\sqrt2\) cm씩 지납니다.</p>
+      <p style="text-align:center">\[\begin{pmatrix}1&1&0&0\\0&0&1&1\\1&0&1&0\\0&1&0&1\\\sqrt2&0&0&\sqrt2\end{pmatrix}\begin{pmatrix}0.2\\0.5\\0.1\\0.3\end{pmatrix}=\begin{pmatrix}0.7\\0.4\\0.3\\0.8\\0.707\end{pmatrix}\]</p>
+      <p>각 행에 \(\mathbf{x}\)를 곱해 더한 값이 \(\mathbf{b}\)입니다. 예를 들어 광선 ⑤는 \(\sqrt2\times0.2 + \sqrt2\times0.3 \approx 0.707\)이고, 2장 페이지 9의 투영값과 같습니다.</p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>시스템 행렬의 크기</summary>
+    <div class="fold-body">
+      <p>영상이 \(512\times512\)이면 \(n = 262{,}144\)이고, 각도 720개에 검출기 칸 736개이면 \(m \approx 530{,}000\)입니다.
+      원소는 \(m \times n \approx 1.4\times10^{11}\)개이고, 한 원소를 4바이트로 저장하면 수백 GB입니다.
+      한 광선이 지나는 화소는 많아야 1000개 정도여서 \(\mathbf{A}\)의 원소 대부분은 0입니다.
+      이 크기를 어떻게 다루는지는 2편 1장에서 봅니다.</p>
+    </div>
+  </details>
+
+  <p>이렇게 \(\mathbf{A}\)가 매우 커서 \(\mathbf{x}\)를 한 번에 구하기 어렵기 때문에, 보통 현재 추정 영상을 투영해 측정값과 비교하고 고치는 계산을 반복해서 풉니다. 이 때문에 대수적 재구성을 반복(Iterative) 재구성이라고도 부릅니다.
+  또 투영값에 잡음이 있으면 모든 식을 정확히 만족하는 \(\mathbf{x}\)가 없을 수도 있습니다. 반복 방법과 잡음의 처리는 2편에서 다룹니다.</p>
+
+  <h2>두 접근의 구분</h2>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 240" role="img" aria-label="투영값에서 영상까지 가는 두 갈래. 위쪽은 연속 모델에서 역공식을 얻어 이산 데이터로 계산하는 해석적 방법, 아래쪽은 광선마다의 식을 모아 Ax = b 를 세워 푸는 대수적 방법">
+      <defs><marker id="map-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-line" fill="none" stroke-width="1.4">
+        <rect x="10" y="95" width="104" height="50" rx="6"/>
+        <rect x="150" y="34" width="170" height="50" rx="6"/>
+        <rect x="350" y="34" width="130" height="50" rx="6"/>
+        <rect x="150" y="156" width="170" height="50" rx="6"/>
+        <rect x="350" y="156" width="130" height="50" rx="6"/>
+        <rect x="526" y="95" width="104" height="50" rx="6"/>
+      </g>
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.4">
+        <path d="M114 110 L148 66" marker-end="url(#map-arr)"/>
+        <path d="M114 130 L148 174" marker-end="url(#map-arr)"/>
+        <path d="M320 59 H348" marker-end="url(#map-arr)"/>
+        <path d="M320 181 H348" marker-end="url(#map-arr)"/>
+        <path d="M480 66 L524 110" marker-end="url(#map-arr)"/>
+        <path d="M480 174 L524 130" marker-end="url(#map-arr)"/>
+      </g>
+      <g text-anchor="middle" font-size="12" font-weight="700" class="svg-fg">
+        <text x="62" y="117">투영값 p</text>
+        <text x="235" y="56">연속 모델에서</text><text x="235" y="73">역공식을 얻음</text>
+        <text x="415" y="56">이산 데이터로</text><text x="415" y="73">공식을 계산</text>
+        <text x="235" y="178">광선마다의 식을 모아</text><text x="235" y="195">Ax = b 로 씀</text>
+        <text x="415" y="178">Ax = b 를 풂</text><text x="415" y="195">(보통 반복 계산)</text>
+        <text x="578" y="117">영상</text>
+      </g>
+      <g text-anchor="middle" font-size="11" class="svg-muted">
+        <text x="62" y="133">(측정 데이터)</text>
+        <text x="578" y="133">μ(x, y)</text>
+      </g>
+      <g font-size="11" class="svg-muted">
+        <text x="150" y="24">해석적 방법: 역공식을 얻어 계산 (도구: 푸리에 슬라이스 정리)</text>
+        <text x="150" y="228">대수적 방법: Ax = b 를 세워 풂</text>
+      </g>
+    </svg>
+    <figcaption>투영값에서 영상까지 가는 두 갈래입니다. 위쪽 경로는 연속 모델에서 역공식을 얻은 뒤 그 공식을 이산 데이터로 계산하고, 아래쪽 경로는 광선마다의 식을 모아 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)로 쓴 뒤 풉니다.</figcaption>
+  </figure>
+
+  <p>두 접근을 나누는 기준은 데이터가 연속이냐 이산이냐가 아니라, 같은 문제를 무엇을 이용해 어떻게 푸느냐입니다.
+  두 접근 모두 입력은 광선마다의 \(p\)입니다.
+  해석적 방법은 연속 함수로 공식을 얻고 계산은 이산 데이터로 하며, 대수적 방법은 화소 격자 위에서 설명하지만 연속 함수로도 정식화할 수 있습니다. 대수적 방법의 연속 정식화는 2편 10·11장에서 다룹니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="1편과 2편, 어디로 갈까요? 그리고 표기 규약">
+  <p class="kicker">3장 · 페이지 2</p>
+  <h2>1편과 2편, 어디로 갈까요? 그리고 표기 규약</h2>
+
+  <p>0편은 여기까지가 공통입니다. 이제부터는 푸는 접근에 따라 두 편으로 갈라집니다. 처음 배우는 분이 한꺼번에 두 접근을 익히지 않도록 나눈 것입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:5.5rem">편</th><th style="width:6rem">접근</th><th>답하는 질문</th><th style="width:11rem">코스</th></tr>
+      <tr><td><a href="../part1/index.html">1편</a></td><td>해석적</td><td>연속 모델에서 역공식을 어떻게 얻고, 이산 데이터로 어떻게 계산하는가. 평행빔·팬빔 FBP, 데이터 완전성(Parker·Wang weight), 3차원 FDK</td><td><a href="../part1/quick/index.html">빠르게 보기</a> 7일<br><a href="../part1/detail/index.html">자세히 보기</a> 15장</td></tr>
+      <tr><td><a href="../part2/index.html">2편</a></td><td>대수적</td><td>재구성을 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)로 쓰고 어떻게 푸는가. ART·SIRT, 정규화와 TV, 압축 센싱, GPBB·ASD-POCS</td><td><a href="../part2/quick/index.html">빠르게 보기</a> 7일<br><a href="../part2/detail/index.html">자세히 보기</a> 11장</td></tr>
+    </table>
+  </div>
+
+  <ul>
+    <li><b>처음 배운다면 <a href="../part1/quick/index.html">1편 빠르게 보기</a>(1주 코스)부터.</b> 1편은 투영, 역투영, 푸리에 슬라이스 정리 같은 재구성의 기본 도구를 만듭니다. 유도와 이산화까지 따라가고 싶다면 <a href="../part1/detail/index.html">1편 자세히 보기</a>로 갑니다.</li>
+    <li><b>대수적 재구성은 그다음에 2편으로.</b> 2편은 1편의 투영·역투영·FBP를 바탕으로 하므로, 1편 빠르게 보기를 먼저 읽고 오기를 권합니다.</li>
+    <li><b>이미 해석적 재구성을 안다면</b> 2편 빠르게 보기부터 시작해도 됩니다.</li>
+  </ul>
+
+  <h3>표기 규약</h3>
+
+  <p>이후 1편과 2편의 모든 장이 같은 좌표계와 표기를 씁니다. 1장과 2장에서 이미 쓴 것을 정리한 것이며, 아래 표에서 확인할 수 있습니다.</p>
+
+  <details class="fold">
+    <summary>좌표·단위·기호 규약 표</summary>
+    <div class="fold-body">
+      <div class="table-wrap">
+        <table>
+          <tr><th style="width:9rem">항목</th><th>규칙</th></tr>
+          <tr><td>영상 좌표</td><td>\((x, y)\). \(x\)는 오른쪽, \(y\)는 위쪽이 양의 방향입니다. 원점 \(O\)는 이후 장에서 회전 중심에 둡니다</td></tr>
+          <tr><td>길이와 단위</td><td>광선 위 거리 \(\ell\)을 포함한 길이는 cm, \(\mu\)는 \(\mathrm{cm}^{-1}\)입니다. 투영값 \(p\)는 단위가 없습니다</td></tr>
+          <tr><td>각도</td><td>\(x\) 축에서 반시계 방향이 양입니다. 단위는 라디안이고, 도로 말할 때는 \(180^\circ\)처럼 단위를 붙입니다</td></tr>
+          <tr><td>벡터와 행렬</td><td>영상이나 데이터를 한 열로 쌓은 벡터는 소문자 굵은 글씨(\(\mathbf{x},\ \mathbf{b}\)), 행렬은 대문자 굵은 글씨(\(\mathbf{A}\))입니다. 좌표 \(x,\ y\)는 기울임꼴이어서 굵은 \(\mathbf{x}\)와 구분됩니다. 2장의 방향 벡터 \(u = (u_x, u_y)\)처럼 성분으로 쓰는 기하 벡터는 굵게 쓰지 않습니다</td></tr>
+          <tr><td>연속과 이산</td><td>연속 함수는 소괄호 \(f(x)\), 이산 샘플은 대괄호 \(f[n]\)입니다</td></tr>
+          <tr><td>푸리에 변환</td><td>주파수 기호와 \(2\pi\)의 위치는 푸리에 변환을 처음 쓸 때 밝힙니다</td></tr>
+          <tr><td>영어 병기</td><td>용어는 처음 나올 때 한글 뒤에 괄호로 영어를 적고, 약어는 처음 쓸 때 풉니다. 이후에는 한글만 씁니다</td></tr>
+        </table>
+      </div>
+    </div>
+  </details>
+
+  <p>글자가 모자라서 장마다 다른 대상에 같은 글자를 쓰기도 합니다. 예를 들어 \(u\)는 2장에서는 광선의 방향이고, 뒤에서는 검출기 좌표입니다. 이런 경우에는 해당 장에서 그때마다 뜻을 밝힙니다.</p>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">3장 · 페이지 3</p>
+  <h2>3장 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>재구성은 투영값 \(p\)에서 영상 \(\mu\)를 구하는 일이고, 문제를 푸는 접근에 따라 해석적 방법과 대수적 방법으로 나뉩니다. 연속이냐 이산이냐는 기준이 아닙니다.</li>
+      <li>해석적 방법은 연속 모델에서 역공식을 얻어 이산 데이터로 계산하는 접근입니다. 푸리에 슬라이스 정리가 역공식을 얻는 도구이고, 대표 알고리즘은 필터 역투영(FBP)입니다.</li>
+      <li>대수적 방법은 광선마다의 식 \(p_i = \sum_j w_{ij}\mu_j\)를 모아 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)로 세워 푸는 접근입니다. 보통 반복 계산으로 풀며, 2편에서 다룹니다.</li>
+      <li>1편은 해석적 재구성을, 2편은 대수적 재구성을 다룹니다. 처음 배운다면 1편부터 읽기를 권합니다.</li>
+      <li>좌표는 \((x, y)\)에 cm 단위, 각도는 반시계 방향이 양입니다. 굵은 글씨는 벡터와 행렬이고, 용어는 처음 나올 때 한글과 영어를 함께 씁니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">해석적 방법과 대수적 방법을 나누는 가장 기본적인 차이는 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 연속이냐 이산이냐는 기준이 아닙니다. 대수적 방법도 이론상 연속 함수로 정식화할 수 있고(2편 10·11장), 해석적 방법도 계산은 이산 데이터로 합니다.">해석적 방법은 연속 함수로 주어진 데이터를 받고, 대수적 방법은 격자로 나눈 데이터를 받는다.</li>
+      <li data-why="틀립니다. 차원은 두 방법을 나누는 기준이 아닙니다. 3차원에서도 해석적 방법인 FDK와 대수적 방법이 모두 쓰입니다.">해석적 방법은 3차원 데이터에만 쓰이고, 대수적 방법은 2차원 데이터에만 쓰이는 방법이다.</li>
+      <li data-why="맞습니다. 해석적 방법은 연속 모델에서 얻은 역공식을 이산 데이터로 계산하고, 대수적 방법은 광선마다의 식을 모은 Ax = b를 세워 풉니다. 입력은 같고 푸는 접근이 다릅니다.">해석적 방법은 역공식으로 계산하고, 대수적 방법은 \(\mathbf{Ax} = \mathbf{b}\)를 세워 푼다.</li>
+      <li data-why="틀립니다. 반복 계산은 대수적 방법이 보통 쓰는 방식입니다. 해석적 방법은 공식을 한 번 적용하며, 각 방향의 데이터를 한 번씩 필터링해서 영상으로 옮깁니다.">해석적 방법은 계산을 반복해 해에 다가가고, 대수적 방법은 공식을 한 번만 적용한다.</li>
+    </ol>
+    <div class="explain">
+      <p>두 방법 모두 입력은 광선마다의 투영값이고, 나뉘는 곳은 이 입력으로 문제를 푸는 접근입니다.
+      입력이 같으므로 2편의 대수적 방법도 2장의 투영 모델을 그대로 씁니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">\(10\times10\) 화소 영상을 광선 180개로 측정했습니다. \(\mathbf{A}\mathbf{x} = \mathbf{b}\)에서 \(\mathbf{A}\)의 크기(행의 수 \(\times\) 열의 수)는 얼마일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 100 × 180은 행과 열을 바꾼 것입니다. 행은 광선이므로 행의 수가 광선 수 180입니다.">\(100\times180\)</li>
+      <li data-why="틀립니다. 180 × 180은 열의 수도 광선 수로 센 것입니다. 열은 화소에 대응하고 화소는 100개입니다.">\(180\times180\)</li>
+      <li data-why="틀립니다. 100 × 100은 행의 수도 화소 수로 센 것입니다. 행은 광선에 대응하고 광선은 180개입니다.">\(100\times100\)</li>
+      <li data-why="맞습니다. 행은 광선 하나에 하나이므로 180개, 열은 화소 하나에 하나이므로 100개입니다. 그래서 A는 180 × 100 행렬입니다.">\(180\times100\)</li>
+    </ol>
+    <div class="explain">
+      <p>\(10\times10\) 격자에서 한 광선이 지나는 화소는 많아야 19개이므로, 한 행의 원소 100개 가운데 0이 아닌 것은 많아야 19개입니다.
+      영상이 커질수록 0의 비율이 커지고, \(512\times512\)에서는 한 행에서 0이 아닌 원소가 많아야 1023개입니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="q">이 시리즈의 1편은 재구성 방법을 어떻게 다룰까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. 1편은 필터 역투영(FBP)을 비롯한 해석적 재구성을 자세히 다루고, 이 장 페이지 1에서 본 대수적 재구성은 2편에서 다룹니다.">해석적 재구성을 자세히 다루고, 대수적 재구성은 2편에서 다룬다.</li>
+      <li data-why="틀립니다. 1편에서 두 접근을 같은 비중으로 다루지 않습니다. 대수적 재구성은 2편에서 다룹니다.">해석적 재구성과 대수적 재구성을 같은 비중으로 다룬다.</li>
+      <li data-why="틀립니다. 순서가 반대입니다. 1편이 해석적 재구성을 다루고 대수적 재구성이 2편에 옵니다.">대수적 재구성을 먼저 다루고, 해석적 재구성은 2편에서 다룬다.</li>
+      <li data-why="틀립니다. 대수적 재구성을 시리즈에서 빼는 것이 아닙니다. 0편에서는 이 장에서 소개만 하고 알고리즘은 2편에서 다룹니다.">해석적 재구성만 다루고, 대수적 재구성은 시리즈에서 뺀다.</li>
+    </ol>
+    <div class="explain">
+      <p>1편의 마지막인 1편 15장은 1편에서 배운 내용을 한 장의 지도로 돌아보고, 1편이 다루지 않은 것과 2편으로 어떻게 이어지는지를 짧게 정리합니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <p>페이지 1의 \(2\times2\) 화소(\(\mu_1 = 0.2,\ \mu_2 = 0.5,\ \mu_3 = 0.1,\ \mu_4 = 0.3\))와 광선 ①~⑤를 다시 씁니다. 가로 ①②, 세로 ③④, 대각선 ⑤이고, 대각선 광선은 화소 1과 4를 \(\sqrt2\) cm씩 지납니다.</p>
+    <ol>
+      <li>반대쪽 대각선 광선 ⑥이 화소 2와 3을 \(\sqrt2\) cm씩 지난다고 합시다. 광선 ⑥에 해당하는 \(\mathbf{A}\)의 행과 투영값 \(b_6\)를 구하세요.</li>
+      <li>행 ①과 행 ②를 더한 것과 행 ③과 행 ④를 더한 것을 비교하고, 이것이 \(\mathbf{b}\)의 값에 어떤 관계를 만드는지 쓰세요.</li>
+      <li>다른 영상 \(\mathbf{x}' = (0.3,\ 0.4,\ 0.0,\ 0.4)\)에 대해 광선 ①~⑤의 \(\mathbf{A}\mathbf{x}'\)를 계산하고, \(\mathbf{b}\)와 어느 광선에서 다른지 쓰세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> 화소 2와 3을 \(\sqrt2\) cm씩 지나므로 행 ⑥은 다음과 같습니다.</p>
+      <p style="text-align:center">\[(0,\ \sqrt2,\ \sqrt2,\ 0)\]</p>
+      <p>\(b_6 = \sqrt2\times0.5 + \sqrt2\times0.1 = \sqrt2\times0.6 \approx 0.849\)입니다. 행이 하나 늘어 \(\mathbf{A}\)는 \(6\times4\)가 됩니다.</p>
+      <p><b>2번.</b> 행 ①+행 ②는 \((1, 1, 1, 1)\)이고 행 ③+행 ④도 \((1, 1, 1, 1)\)입니다.
+      그래서 \(\mathbf{A}\mathbf{x}\)의 첫 네 값은 항상 \(b_1 + b_2 = b_3 + b_4\)를 만족합니다(\(0.7 + 0.4 = 0.3 + 0.8 = 1.1\)). 가로 광선 둘과 세로 광선 둘이 각각 네 화소를 한 번씩 지나므로, 어느 쪽으로 더해도 네 화소값의 합 1.1이 나옵니다.</p>
+      <p><b>3번.</b> \(\mathbf{A}\mathbf{x}' = (0.7,\ 0.4,\ 0.3,\ 0.8,\ \sqrt2\times0.7)\)이고 \(\sqrt2\times0.7 \approx 0.990\)입니다.
+      ①~④는 \(\mathbf{b}\)와 같고, 광선 ⑤에서만 \(0.990\)과 \(0.707\)로 다릅니다.
+      그래서 \(\mathbf{x}'\)는 측정값과 맞지 않고, 맞는 것은 원래 영상 \(\mathbf{x}\)입니다. 가로·세로 광선 네 개만으로는 두 영상을 가르지 못하고, 대각선 광선이 가릅니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 행 ⑥의 원소를 \((\sqrt2,\ 0,\ 0,\ \sqrt2)\)로 쓰는 것입니다. 이 행은 화소 1과 4를 지나는 광선 ⑤의 행입니다. 광선 ⑥은 화소 2와 3을 지납니다.</li>
+        <li>행 ⑤나 ⑥의 원소를 1로 쓰는 것입니다. 한 변이 1 cm인 화소를 대각선으로 지나는 길이는 \(\sqrt2\) cm입니다.</li>
+        <li>3번에서 \(\mathbf{x}'\)의 합이 \(\mathbf{x}\)와 같다는 이유로 ①~④만 보고 같은 영상이라고 답하는 것입니다. 다섯째 광선까지 확인해야 합니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="../part1/index.html"><span>다음 편</span>1편 — 해석적 재구성(코스 고르기)</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../assets/katex/katex.min.js"></script>
+<script src="../assets/katex/auto-render.min.js"></script>
+<script src="../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../assets/book.js"></script>
+</body>
+</html>

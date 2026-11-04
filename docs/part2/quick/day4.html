@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="day4">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4일차 · 데이터가 모자라거나 잡음이 있으면: 정규화와 TV — CT 재구성 2편 빠르게 보기</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="잡음 증폭과 Tikhonov 정규화">
+  <p class="kicker">4일차 · 페이지 1</p>
+  <h1>데이터가 모자라거나 잡음이 있으면: 정규화와 TV</h1>
+
+  <p class="lead"><a href="day3.html">3일차</a>에서는 불량조건과 반 수렴을 보았습니다. 오늘은 그 문제를 식으로 해결하는 방법을 배웁니다. 먼저 잡음 증폭을 누르는 정규화(Regularization)를 보고(페이지 1), 영상에 더 잘 맞는 정규화인 Total Variation(TV)이 무엇인지 봅니다(페이지 2~3). 이어서 TV가 각도가 모자란 sparse-view CT에 쓰이는 이유(페이지 4)와 실제 재구성 결과(페이지 5)를 확인합니다.</p>
+
+  <h3>작은 잡음이 큰 오차가 되는 예</h3>
+
+  <p><a href="day3.html">3일차</a>에서 본, 거의 나란한 두 광선으로 만든 연립방정식 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)를 다시 봅니다.</p>
+
+  <p style="text-align:center">\[\mathbf{A} = \begin{pmatrix} 1 & 1 \\ 1 & 1.01 \end{pmatrix}\]</p>
+
+  <p>측정값이 \(\mathbf{b} = (2,\ 2.01)\)이면 풀이는 \(\mathbf{x} = (1,\ 1)\)입니다. 둘째 측정값만 \(0.5\%\) 바꿔 \(\mathbf{b} = (2,\ 2.02)\)로 하면 풀이는 \(\mathbf{x} = (0,\ 2)\)가 됩니다. 두 식의 직선이 거의 겹쳐 있어서, 직선이 조금만 움직여도 교점이 크게 옮겨 가기 때문입니다.</p>
+
+  <p>입력의 오차를 풀이에서 최대 몇 배로 키우는지는 행렬의 조건수(Condition Number)로 나타냅니다. 조건수는 가장 큰 특이값(Singular Value)과 가장 작은 특이값의 비입니다. 3일차에서 본 대로 이 행렬은 특이값이 약 \(2.005\)와 \(0.005\)라서 조건수가 약 \(402\)이고, 상대 오차가 최악의 경우 \(402\)배까지 증폭될 수 있습니다. 광선이 서로 비슷한 방향을 많이 지나는 CT 시스템 행렬(각도가 모자랄 때 등)에서도 같은 일이 일어납니다.</p>
+
+  <p>아래 위젯에서 두 번째 측정값에 섞인 잡음 \(\varepsilon\)(\(b_2 = 2.01+\varepsilon\))을 움직이면 주황 점(풀이)이 어떻게 옮겨 가는지 볼 수 있습니다. \(\varepsilon=\pm0.010\)은 측정값의 \(\pm0.5\%\)입니다. 파란 점은 잡음이 없을 때(\(b_2 = 2.010\))의 풀이입니다. 아래 슬라이더로 정규화 강도 \(\lambda\)를 올리면 두 점이 어떻게 달라지는지도 볼 수 있습니다. \(\lambda\)는 뒤에서 정의합니다.</p>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="d4-b">두 번째 측정값의 잡음 \(\varepsilon\) (\(b_2=2.01+\varepsilon\))</label>
+    <input id="d4-b" type="range" min="-10" max="10" step="1" value="10" style="width:14rem">
+    <b id="d4-bv">+0.010</b>
+  </div>
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.4rem">
+    <label for="d4-l">정규화 강도 \(\lambda\)</label>
+    <input id="d4-l" type="range" min="0" max="5" step="1" value="0" style="width:14rem">
+    <b id="d4-lv">0</b>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="x1 과 x2 평면에서 b2 와 정규화 강도에 따라 풀이 두 점이 움직이는 모습">
+      <rect x="40" y="15" width="270" height="270" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <g class="svg-line" stroke-width=".6" opacity=".6">
+        <path d="M40 262.5 H310 M40 150 H310 M40 37.5 H310"/>
+        <path d="M62.5 15 V285 M175 15 V285 M287.5 15 V285"/>
+      </g>
+      <g font-size="10" class="svg-muted" text-anchor="middle">
+        <text x="62.5" y="298">0</text><text x="175" y="298">1</text><text x="287.5" y="298">2</text>
+        <text x="34" y="266" text-anchor="end">0</text><text x="34" y="154" text-anchor="end">1</text><text x="34" y="41" text-anchor="end">2</text>
+      </g>
+      <g font-size="11" class="svg-fg"><text x="300" y="296" text-anchor="end">x₁</text><text x="48" y="28">x₂</text></g>
+      <circle id="d4-ring" r="9" fill="none" stroke-width="1.4" style="stroke:var(--muted)"/>
+      <circle id="d4-p1" r="5.5" style="fill:var(--accent)"/>
+      <circle id="d4-p2" r="5.5" style="fill:var(--warn)"/>
+      <g font-size="11.5" class="svg-fg">
+        <text x="340" y="40" font-weight="700">풀이 (x₁, x₂)</text>
+        <circle cx="348" cy="62" r="5" style="fill:var(--accent)"/><text x="360" y="66">b = (2, 2.010)</text>
+        <circle cx="348" cy="112" r="5" style="fill:var(--warn)"/><text x="360" y="116">b = (2, 2.01 + ε)</text>
+        <circle cx="348" cy="162" r="7" fill="none" stroke-width="1.4" style="stroke:var(--muted)"/><text x="360" y="166">참값 (1, 1)</text>
+      </g>
+      <g font-size="11" class="svg-muted">
+        <text x="360" y="84" id="d4-t1"></text>
+        <text x="360" y="134" id="d4-t2"></text>
+      </g>
+    </svg>
+    <figcaption>가로축이 \(x_1\), 세로축이 \(x_2\)입니다. 회색 고리가 참값 \((1,1)\)입니다. \(\lambda = 0\)에서 잡음 \(\varepsilon\)을 \(0\)에서 \(0.010\)으로 바꾸면(\(b_2\)가 \(2.010\)에서 \(2.020\)으로) 주황 점이 \((1,1)\)에서 \((0,2)\)까지 움직입니다.</figcaption>
+  </figure>
+
+  <script>
+  (function () {
+    var LAMS = [0, 0.0001, 0.001, 0.01, 0.1, 1];
+    var sb = document.getElementById('d4-b'), sl = document.getElementById('d4-l');
+    function tik(b2, lam) {          // (AᵀA + λI) x = Aᵀ b,  A = [[1,1],[1,1.01]], b = (2, b2)
+      var a11 = 2 + lam, a12 = 2.01, a22 = 2.0201 + lam, r1 = 2 + b2, r2 = 2 + 1.01 * b2, det = a11 * a22 - a12 * a12;
+      return [(r1 * a22 - a12 * r2) / det, (a11 * r2 - a12 * r1) / det];
+    }
+    function X(v) { return 40 + (v + 0.2) * 112.5; }
+    function Y(v) { return 285 - (v + 0.2) * 112.5; }
+    function render() {
+      var eps = +sb.value / 1000, b2 = 2.01 + eps, lam = LAMS[+sl.value], p1 = tik(2.01, lam), p2 = tik(b2, lam);
+      document.getElementById('d4-bv').textContent = (eps >= 0 ? '+' : '−') + Math.abs(eps).toFixed(3);
+      document.getElementById('d4-lv').textContent = lam;
+      var r = document.getElementById('d4-ring'), c1 = document.getElementById('d4-p1'), c2 = document.getElementById('d4-p2');
+      r.setAttribute('cx', X(1)); r.setAttribute('cy', Y(1));
+      c1.setAttribute('cx', X(p1[0]).toFixed(1)); c1.setAttribute('cy', Y(p1[1]).toFixed(1));
+      c2.setAttribute('cx', X(p2[0]).toFixed(1)); c2.setAttribute('cy', Y(p2[1]).toFixed(1));
+      function f4(v) { var s = v.toFixed(4); return s === '-0.0000' ? '0.0000' : s; }
+      document.getElementById('d4-t1').textContent = '(' + f4(p1[0]) + ', ' + f4(p1[1]) + ')';
+      document.getElementById('d4-t2').textContent = '(' + f4(p2[0]) + ', ' + f4(p2[1]) + ')';
+    }
+    sb.addEventListener('input', render); sl.addEventListener('input', render); render();
+  })();
+  </script>
+
+  <h3>Tikhonov 정규화</h3>
+
+  <p>잡음이 증폭되는 것은 풀이가 데이터에만 맞추려 하기 때문입니다. 데이터와의 차이 \(\lVert\mathbf{A}\mathbf{x} - \mathbf{b}\rVert^2\)에 풀이의 크기를 누르는 항을 더해 증폭을 억제하는 방법을 <span class="term" data-term="regularization">정규화</span>(Regularization)라고 합니다. 가장 간단한 것이 <span class="term" data-term="tikhonov">Tikhonov 정규화</span>입니다.</p>
+
+  <p style="text-align:center">\[J(\mathbf{x}) = \lVert\mathbf{A}\mathbf{x} - \mathbf{b}\rVert^2 + \lambda\,\lVert\mathbf{x}\rVert^2, \qquad \hat{\mathbf{x}} = (\mathbf{A}^{\mathsf T}\mathbf{A} + \lambda\mathbf{I})^{-1}\mathbf{A}^{\mathsf T}\mathbf{b}\]</p>
+
+  <p>\(\lambda \ge 0\)은 정규화 강도이며 사람이 고릅니다. 같은 글자로 쓰는 값(5일차에서 나옵니다)과는 다른 값입니다. 위 예에 적용한 결과는 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(\lambda\)</th><th>\(\mathbf{b} = (2,\ 2.01)\)의 풀이</th><th>\(\mathbf{b} = (2,\ 2.02)\)의 풀이</th></tr>
+      <tr><td>\(0\)</td><td>\((1.0000,\ 1.0000)\)</td><td>\((0.0000,\ 2.0000)\)</td></tr>
+      <tr><td>\(0.001\)</td><td>\((0.9973,\ 1.0022)\)</td><td>\((0.9755,\ 1.0289)\)</td></tr>
+      <tr><td>\(1\)</td><td>\((0.7988,\ 0.8028)\)</td><td>\((0.8008,\ 0.8048)\)</td></tr>
+    </table>
+  </div>
+
+  <p>\(\lambda = 0.001\)이면 두 측정값의 풀이가 모두 참값 \((1,1)\) 근처에 머뭅니다. 증폭이 거의 사라진 것입니다. 그러나 \(\lambda = 1\)에서는 올바른 데이터의 풀이도 \((0.80,\ 0.80)\)으로 참값에서 \(20\%\) 밀려납니다. \(\lambda\)가 커질수록 안정되지만 풀이가 참값에서 멀어지는 오차(편향, Bias)가 커집니다. 슬라이더로 직접 확인해 보세요.</p>
+
+  <details class="fold">
+    <summary>작은 \(\lambda\)로 증폭만 누를 수 있는 이유</summary>
+    <div class="fold-body">
+      <p>행렬을 특이값분해하면 풀이는 특이값 \(\sigma_k\)마다의 방향 성분으로 나뉩니다. Tikhonov 정규화는 각 성분을 \(f_k = \sigma_k^2/(\sigma_k^2 + \lambda)\)배로 줄입니다. 이 예에서 \(\lambda = 0.001\)이면 \(f_1 \approx 0.9998\)(큰 특이값 방향, 거의 그대로)이고 \(f_2 \approx 0.0243\)(작은 특이값 방향, 약 \(2.4\%\)로 억제)입니다. 잡음이 크게 증폭되는 방향은 작은 특이값 방향이므로, 그 방향만 누르면 믿을 만한 성분을 거의 건드리지 않고 증폭을 막을 수 있습니다. \(\lambda = 1\)에서는 \(f_1 \approx 0.80\)이라 좋은 방향까지 눌리기 시작합니다.</p>
+    </div>
+  </details>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch03.html#s6">2편 3장 페이지 6</a>: 조건수의 계산과 잡음 증폭</li>
+      <li><a href="../detail/ch04.html#s1">2편 4장 페이지 1</a>, <a href="../detail/ch04.html#s2">페이지 2</a>: 이 페이지의 예와 \(\lambda\)에 따른 풀이의 궤적</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="L2 벌점의 한계와 희소한 기울기">
+  <p class="kicker">4일차 · 페이지 2</p>
+  <h2>L2 벌점의 한계와 희소한 기울기</h2>
+
+  <p>Tikhonov 정규화는 영상에 쓰면 어떤 문제가 있을까요? 화소 값 자체가 아니라 이웃한 두 화소의 차이를 제곱해 누르는 경우를 작은 예로 봅니다. 두 화소의 원래 값을 \(y_1, y_2\), 복원값을 \(x_1, x_2\)라 하고 다음을 최소화합니다.</p>
+
+  <p style="text-align:center">\[(x_1 - y_1)^2 + (x_2 - y_2)^2 + \lambda\,(x_2 - x_1)^2\]</p>
+
+  <p>미분해서 풀면 복원값의 차이 \(d = x_2 - x_1\)은 원래 차이 \(d_y = y_2 - y_1\)의 일정한 비율이 됩니다.</p>
+
+  <p style="text-align:center">\[d = \frac{d_y}{1 + 2\lambda}\]</p>
+
+  <p>\(\lambda = 0.2\)이면 \(d = d_y/1.4\)입니다. 높이 \(1\)인 진짜 경계는 \(0.7143\)으로 \(29\%\) 낮아지고, 크기 \(0.05\)인 잡음은 \(0.0357\)로 남습니다. 제곱 벌점은 경계와 잡음을 구별하지 못하고 똑같은 비율로 줄입니다. 그래서 \(\lambda\)를 키워 잡음을 지우면 경계도 흐려집니다.</p>
+
+  <h3>영상의 기울기와 희소성</h3>
+
+  <p>CT 영상에서는 이웃한 화소의 차이 대부분이 \(0\)입니다. 한 조직 안에서는 감쇠계수가 거의 일정하고 값이 바뀌는 곳은 조직의 경계뿐이기 때문입니다. 이웃한 화소 값의 차이를 영상의 기울기(Image Gradient)라고 합니다. 화소마다 오른쪽 이웃과의 차이와 아래쪽 이웃과의 차이, 두 값이 있습니다.</p>
+
+  <p>\(48 \times 48\) Shepp-Logan 팬텀에서 가로·세로로 이웃한 화소 쌍은 모두 \(4{,}512\)개이고, 이 가운데 값이 다른 쌍은 \(447\)개입니다.</p>
+
+  <p style="text-align:center">\[\frac{447}{4{,}512} \approx 9.91\%\]</p>
+
+  <figure class="fig">
+    <div style="display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap">
+      <div style="text-align:center"><canvas id="d4-sp-img" width="48" height="48" style="width:210px;height:210px;image-rendering:pixelated;border:1px solid var(--line)" role="img" aria-label="48 곱하기 48 Shepp-Logan 팬텀"></canvas><div style="font-size:.84rem;color:var(--muted)">팬텀(화소 값)</div></div>
+      <div style="text-align:center"><canvas id="d4-sp-grad" width="48" height="48" style="width:210px;height:210px;image-rendering:pixelated;border:1px solid var(--line)" role="img" aria-label="이웃 화소와 값이 다른 자리를 흰색으로 표시한 그림"></canvas><div style="font-size:.84rem;color:var(--muted)">기울기가 \(0\)이 아닌 자리(흰색)</div></div>
+    </div>
+    <figcaption>팬텀은 밝기 창 \(0.98\sim1.05\)로 그렸습니다. 오른쪽은 화소 \((i,j)\)가 오른쪽 이웃이나 아래쪽 이웃과 값이 다르면 흰색입니다. 흰색은 조직의 경계에만 가늘게 놓이고, 나머지 검은 영역에서는 기울기가 정확히 \(0\)입니다.</figcaption>
+  </figure>
+
+<script>
+(function () {
+  var D2R = Math.PI / 180, N = 48, half = 1.0, cell = 2 * half / N;
+  var SL = [
+    [0, 0, 0.92, 0.69, 90, 2.0], [0, -0.0184, 0.874, 0.6624, 90, -0.98],
+    [0.22, 0, 0.31, 0.11, 72, -0.02], [-0.22, 0, 0.41, 0.16, 108, -0.02],
+    [0, 0.35, 0.25, 0.21, 90, 0.01], [0, 0.1, 0.046, 0.046, 0, 0.01],
+    [0, -0.1, 0.046, 0.046, 0, 0.01], [-0.08, -0.605, 0.046, 0.023, 0, 0.01],
+    [0, -0.605, 0.023, 0.023, 0, 0.01], [0.06, -0.605, 0.046, 0.023, 90, 0.01]
+  ];
+  function mu(x, y) {
+    var v = 0, i, e, c, s, u, w;
+    for (i = 0; i < SL.length; i++) {
+      e = SL[i]; c = Math.cos(e[4] * D2R); s = Math.sin(e[4] * D2R);
+      u = (x - e[0]) * c + (y - e[1]) * s; w = -(x - e[0]) * s + (y - e[1]) * c;
+      if (u * u / (e[2] * e[2]) + w * w / (e[3] * e[3]) <= 1) v += e[5];
+    }
+    return v;
+  }
+  var img = [], mark = new Array(N * N).fill(0), ix, iy, i;
+  for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) img.push(mu(-half + (ix + 0.5) * cell, half - (iy + 0.5) * cell));
+  for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+    i = iy * N + ix;
+    if ((ix < N - 1 && Math.abs(img[i + 1] - img[i]) > 0) || (iy < N - 1 && Math.abs(img[i + N] - img[i]) > 0)) mark[i] = 1;
+  }
+  function paint(cv, f) {
+    var ctx = cv.getContext('2d'), im = ctx.createImageData(N, N), k, g;
+    for (k = 0; k < N * N; k++) { g = f(k); im.data[4 * k] = im.data[4 * k + 1] = im.data[4 * k + 2] = g; im.data[4 * k + 3] = 255; }
+    ctx.putImageData(im, 0, 0);
+  }
+  paint(document.getElementById('d4-sp-img'), function (k) { return Math.round(255 * Math.max(0, Math.min(1, (img[k] - 0.98) / 0.07))); });
+  paint(document.getElementById('d4-sp-grad'), function (k) { return mark[k] ? 255 : 0; });
+})();
+</script>
+
+  <p>나머지 약 \(90\%\)는 차이가 정확히 \(0\)입니다. 이처럼 대부분이 \(0\)이고 일부만 \(0\)이 아닌 성질을 <span class="term" data-term="sparsity">희소성</span>(Sparsity)이라고 합니다. 이 영상은 화소 값이 희소한 것이 아니라 영상의 기울기가 희소합니다. 따라서 "차이는 작을수록 좋다"가 아니라 "차이는 대부분 정확히 \(0\)이어야 한다"를 식에 담는 벌점이 필요합니다.</p>
+
+  <h3>L1 벌점과 soft-threshold</h3>
+
+  <p>차이의 제곱 대신 절댓값에 벌점을 걸면 풀이가 달라집니다. 절댓값을 더한 크기를 <span class="term" data-term="l1norm">L1 노름</span>이라고 하고(L1 Norm, 제곱해 더한 뒤 제곱근을 취한 크기는 L2 노름입니다), 위 예를 \(\lambda\,\lvert x_2 - x_1\rvert\)로 바꾸면 복원값의 차이는 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[d = \operatorname{sign}(d_y)\,\max\bigl(\lvert d_y\rvert - \lambda,\ 0\bigr)\]</p>
+
+  <p>이 함수를 <span class="term" data-term="softthr">soft-threshold</span>(부드러운 문턱 함수)라고 합니다. 차이가 문턱 \(\lambda\)보다 작으면 정확히 \(0\)으로 만들고, 그보다 크면 \(\lambda\)만큼만 줄입니다. 같은 \(\lambda = 0.2\)로 두 벌점을 비교하면 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>경우</th><th>원래 차이 \(d_y\)</th><th>L2 벌점: \(d_y/(1+2\lambda)\)</th><th>L1 벌점: soft-threshold</th></tr>
+      <tr><td>진짜 경계</td><td>\(1\)</td><td>\(0.7143\)(\(29\%\) 감소)</td><td>\(0.8000\)(\(0.2\)만 감소)</td></tr>
+      <tr><td>작은 잡음</td><td>\(0.05\)</td><td>\(0.0357\)(남음)</td><td>\(0.0000\)(제거)</td></tr>
+    </table>
+  </div>
+
+  <p>L1 벌점은 잡음을 지우면서 경계는 거의 지킵니다. 아래 위젯에서 \(\lambda\)와 원래 차이를 바꾸어 두 벌점이 만드는 복원값의 차이를 비교해 보세요.</p>
+
+  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="d4-c-l">\(\lambda\)</label>
+    <input id="d4-c-l" type="range" min="5" max="50" step="5" value="20" style="width:10rem">
+    <b id="d4-c-lv">0.20</b>
+    <label for="d4-c-d">원래 차이 \(d_y\)</label>
+    <input id="d4-c-d" type="range" min="0" max="100" step="1" value="5" style="width:10rem">
+    <b id="d4-c-dv">0.05</b>
+  </div>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 270" role="img" aria-label="원래 차이에 대한 복원값의 차이를 L2 벌점과 L1 벌점으로 비교한 그래프">
+      <rect x="60" y="15" width="250" height="220" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <path d="M60 235 L310 15" fill="none" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <path id="d4-c-l2" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <path id="d4-c-l1" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <circle id="d4-c-m2" r="5" style="fill:var(--accent)"/>
+      <circle id="d4-c-m1" r="5" style="fill:var(--warn)"/>
+      <g font-size="10" class="svg-muted" text-anchor="middle">
+        <text x="60" y="250">0</text><text x="185" y="250">0.5</text><text x="310" y="250">1.0</text>
+        <text x="52" y="238" text-anchor="end">0</text><text x="52" y="128" text-anchor="end">0.5</text><text x="52" y="22" text-anchor="end">1.0</text>
+      </g>
+      <g font-size="11" class="svg-fg">
+        <text x="185" y="266" text-anchor="middle">원래 차이 d_y</text>
+        <text x="330" y="40" font-weight="700">복원값의 차이 d</text>
+        <rect x="330" y="56" width="22" height="3" style="fill:var(--accent)"/><text x="358" y="62">L2 벌점</text>
+        <rect x="330" y="82" width="22" height="3" style="fill:var(--warn)"/><text x="358" y="88">L1 벌점(soft-threshold)</text>
+        <path d="M330 110 H352" stroke-width="1" stroke-dasharray="4 3" style="stroke:var(--muted)"/><text x="358" y="114">벌점 없음(d = d_y)</text>
+      </g>
+      <g font-size="11" class="svg-muted"><text x="330" y="160" id="d4-c-t1"></text><text x="330" y="182" id="d4-c-t2"></text></g>
+    </svg>
+    <figcaption>점선은 벌점이 없을 때의 \(d = d_y\)입니다. 파란 직선(L2)은 기울기가 \(1/(1+2\lambda)\)로 줄어들 뿐 \(d_y\)가 작아도 \(0\)이 되지 않습니다. 주황 꺾은선(L1)은 \(d_y \le \lambda\)에서 \(0\)이고 그 뒤에는 점선과 나란합니다.</figcaption>
+  </figure>
+
+  <script>
+  (function () {
+    var sl = document.getElementById('d4-c-l'), sd = document.getElementById('d4-c-d');
+    function X(v) { return 60 + v * 250; }
+    function Y(v) { return 235 - v * 220; }
+    function l2(dy, lam) { return dy / (1 + 2 * lam); }
+    function l1(dy, lam) { return Math.max(dy - lam, 0); }
+    function render() {
+      var lam = +sl.value / 100, dy = +sd.value / 100, i, p2 = '', p1 = '', v;
+      for (i = 0; i <= 100; i++) {
+        v = i / 100;
+        p2 += (i ? 'L' : 'M') + X(v).toFixed(1) + ' ' + Y(l2(v, lam)).toFixed(1);
+        p1 += (i ? 'L' : 'M') + X(v).toFixed(1) + ' ' + Y(l1(v, lam)).toFixed(1);
+      }
+      document.getElementById('d4-c-l2').setAttribute('d', p2);
+      document.getElementById('d4-c-l1').setAttribute('d', p1);
+      document.getElementById('d4-c-lv').textContent = lam.toFixed(2);
+      document.getElementById('d4-c-dv').textContent = dy.toFixed(2);
+      var m2 = document.getElementById('d4-c-m2'), m1 = document.getElementById('d4-c-m1');
+      m2.setAttribute('cx', X(dy).toFixed(1)); m2.setAttribute('cy', Y(l2(dy, lam)).toFixed(1));
+      m1.setAttribute('cx', X(dy).toFixed(1)); m1.setAttribute('cy', Y(l1(dy, lam)).toFixed(1));
+      document.getElementById('d4-c-t1').textContent = 'L2: d = ' + l2(dy, lam).toFixed(4);
+      document.getElementById('d4-c-t2').textContent = 'L1: d = ' + l1(dy, lam).toFixed(4);
+    }
+    sl.addEventListener('input', render); sd.addEventListener('input', render); render();
+  })();
+  </script>
+
+  <details class="fold">
+    <summary>작은 예로 보는 L1과 L2의 차이</summary>
+    <div class="fold-body">
+      <p><a href="../detail/ch03.html#s3">2편 3장 페이지 3</a>의 화소 네 개짜리 \(2 \times 2\) 영상(광선 ①~④)에서는 영상 \(\mathbf{x}_0 = (0.2,\ 0.5,\ 0.1,\ 0.3)\)에 영공간 방향 \(\mathbf{n} = (1,\ -1,\ -1,\ 1)\)의 배수를 더한 모든 영상 \(\mathbf{x}(t) = \mathbf{x}_0 + t\mathbf{n}\)이 네 방정식을 똑같이 만족합니다. 이 직선 위에서 노름이 가장 작은 영상을 고르면 결과가 갈립니다.</p>
+      <ul>
+        <li>L2 노름은 \(t = 0.025\)에서만 가장 작고, 이때 네 화소 \((0.225,\ 0.475,\ 0.075,\ 0.325)\)가 모두 \(0\)이 아닙니다.</li>
+        <li>L1 노름은 \(t \in [-0.2,\ 0.1]\) 구간 전체에서 \(1.1\)로 같고 가장 작습니다. 구간의 끝점 \(t = 0.1\)에서는 화소 하나가 정확히 \(0\)인 \((0.3,\ 0.4,\ 0,\ 0.4)\)입니다.</li>
+      </ul>
+      <p>L2는 모든 성분을 조금씩 남기는 점을, L1은 일부 성분을 정확히 \(0\)으로 만드는 점을 고르기 쉽습니다. 압축 센싱(Compressed Sensing, 페이지 4)도 이 성질을 이용합니다.</p>
+    </div>
+  </details>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch04.html#s3">2편 4장 페이지 3</a>: 기울기가 희소하다는 것을 문턱별로 확인하는 위젯</li>
+      <li><a href="../detail/ch04.html#s6">2편 4장 페이지 6</a>: 위 접기의 예를 직선과 그래프로 본 L1과 L2의 기하</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="Total Variation의 정의와 최소화 형태">
+  <p class="kicker">4일차 · 페이지 3</p>
+  <h2>Total Variation의 정의와 최소화 형태</h2>
+
+  <p>영상의 기울기를 모두 모아 L1 노름처럼 더한 값을 <span class="term" data-term="tv">Total Variation</span>(TV)이라고 합니다. 화소 \((i, j)\)에서 가로 방향 이웃(\(i+1\))과 세로 방향 이웃(\(j+1\))과의 차이를 다음과 같이 씁니다.</p>
+
+  <p style="text-align:center">\[(\partial_x \mathbf{x})_{i,j} = x_{i+1,j} - x_{i,j}, \qquad (\partial_y \mathbf{x})_{i,j} = x_{i,j+1} - x_{i,j}\]</p>
+
+  <p>가장자리에서 이웃이 없는 차이는 \(0\)으로 둡니다. 두 차이를 한 화소의 기울기 벡터로 보고, 그 크기를 모든 화소에서 더하는 방식은 두 가지입니다.</p>
+
+  <p style="text-align:center">\[\text{등방(Isotropic)}:\ \mathrm{TV}(\mathbf{x}) = \sum_{i,j}\sqrt{(\partial_x\mathbf{x})_{i,j}^2 + (\partial_y\mathbf{x})_{i,j}^2}\]</p>
+
+  <p style="text-align:center">\[\text{이방(Anisotropic)}:\ \mathrm{TV}(\mathbf{x}) = \sum_{i,j}\bigl(\lvert(\partial_x\mathbf{x})_{i,j}\rvert + \lvert(\partial_y\mathbf{x})_{i,j}\rvert\bigr)\]</p>
+
+  <p>등방 TV는 가로·세로 차이를 한 번에 묶어 재므로 경계의 방향에 관계없이 거의 같은 값을 줍니다. 이방 TV는 계산이 단순하지만 대각선 경계에서 값이 조금 더 큽니다. 이 코스는 등방 TV를 기본으로 씁니다. TV는 Rudin, Osher, Fatemi(1992)의 영상 잡음 제거 논문에서 정규화로 쓰이기 시작했습니다.</p>
+
+  <h3>1차원 예로 본 TV</h3>
+
+  <p>화소가 한 줄인 1차원 신호에서는 TV가 이웃한 화소의 차이의 절댓값을 모두 더한 값입니다. 같은 높이만큼 올라가는 세 신호의 TV와, Tikhonov 정규화가 누르는 차이의 제곱합을 비교합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 150" role="img" aria-label="화소 8개 신호 세 개. 계단, 경사, 잡음이 섞인 계단">
+      <g fill="none" stroke-width="2" style="stroke:var(--accent)" stroke-linejoin="round">
+        <polyline points="20,100 45,100 70,100 95,100 120,30 145,30 170,30 195,30"/>
+        <polyline points="235,100 260,100 285,100 310,82 335,65 360,48 385,30 410,30"/>
+        <polyline points="450,100 475,82 500,100 525,82 550,48 575,30 600,48 625,30"/>
+      </g>
+      <g style="fill:var(--accent)">
+        <circle cx="20" cy="100" r="3"/><circle cx="45" cy="100" r="3"/><circle cx="70" cy="100" r="3"/><circle cx="95" cy="100" r="3"/><circle cx="120" cy="30" r="3"/><circle cx="145" cy="30" r="3"/><circle cx="170" cy="30" r="3"/><circle cx="195" cy="30" r="3"/>
+        <circle cx="235" cy="100" r="3"/><circle cx="260" cy="100" r="3"/><circle cx="285" cy="100" r="3"/><circle cx="310" cy="82" r="3"/><circle cx="335" cy="65" r="3"/><circle cx="360" cy="48" r="3"/><circle cx="385" cy="30" r="3"/><circle cx="410" cy="30" r="3"/>
+        <circle cx="450" cy="100" r="3"/><circle cx="475" cy="82" r="3"/><circle cx="500" cy="100" r="3"/><circle cx="525" cy="82" r="3"/><circle cx="550" cy="48" r="3"/><circle cx="575" cy="30" r="3"/><circle cx="600" cy="48" r="3"/><circle cx="625" cy="30" r="3"/>
+      </g>
+      <g font-size="11.5" class="svg-fg" font-weight="700">
+        <text x="20" y="18">계단</text><text x="235" y="18">경사</text><text x="450" y="18">잡음이 섞인 계단</text>
+      </g>
+      <g font-size="11" class="svg-muted">
+        <text x="20" y="128">TV 1, 차이 제곱합 1</text><text x="235" y="128">TV 1, 차이 제곱합 0.25</text><text x="450" y="128">TV 2, 차이 제곱합 0.625</text>
+      </g>
+    </svg>
+    <figcaption>점이 화소 값입니다. 세 신호 모두 \(0\)에서 \(1\)까지 오릅니다. 경사는 \(0.25\)씩 네 번 오르고, 잡음이 섞인 계단은 중간에 오르내림이 있습니다.</figcaption>
+  </figure>
+
+  <p>계단과 경사의 TV는 모두 \(1\)입니다. 한쪽으로만 오르는 신호에서는 한 번에 오르든 여러 번에 나누어 오르든 차이의 절댓값의 합이 전체 높이 차와 같기 때문입니다. 반면 차이의 제곱합은 경사가 \(4\)배 작습니다. 제곱 벌점은 경계를 나누어 번지게 할수록 줄어들므로 경계를 흐립니다. TV는 날카로운 경계와 번진 경계를 구별하지 않습니다. 잡음이 섞이면 위아래로 오르내리는 차이가 더해져 TV가 커지므로, TV를 줄이면 경계의 높이는 지키면서 잡음이 줄어드는 방향으로 갑니다.</p>
+
+  <h3>TV 최소화의 두 가지 형태</h3>
+
+  <p>TV를 정규화로 쓰는 재구성 문제는 두 가지 방식으로 씁니다. 두 식 모두 감쇠계수가 음수가 될 수 없다는 조건 \(\mathbf{x} \ge \mathbf{0}\)을 넣었습니다.</p>
+
+  <p style="text-align:center">\[\text{벌점형}:\ \min_{\mathbf{x} \ge \mathbf{0}}\ \lVert\mathbf{A}\mathbf{x} - \mathbf{b}\rVert^2 + \lambda\,\mathrm{TV}(\mathbf{x}) \qquad\qquad \text{제약형}:\ \min_{\mathbf{x} \ge \mathbf{0}}\ \mathrm{TV}(\mathbf{x})\ \ \text{s.t.}\ \ \lVert\mathbf{A}\mathbf{x} - \mathbf{b}\rVert \le \varepsilon\]</p>
+
+  <p><span class="term" data-term="penalform">벌점형</span>(Penalized Form)은 데이터와의 차이와 TV를 함께 줄이며 \(\lambda\)로 둘의 비중을 정합니다. <span class="term" data-term="constrform">제약형</span>(Constrained Form)은 데이터와의 차이를 \(\varepsilon\) 이하로 묶어 두고 그 안에서 TV가 가장 작은 영상을 찾습니다. 두 값을 적절히 짝지으면 같은 풀이가 나옵니다. 제약형의 \(\varepsilon\)은 측정 잡음의 크기와 직접 연결되고, 벌점형의 \(\lambda\)는 그런 물리적인 뜻이 보이지 않아 따로 골라야 합니다(페이지 5). 5일차에서는 벌점형을, 6일차에서는 제약형을 그대로 푸는 알고리즘을 배웁니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">TV를 계산에 쓸 때 필요한 평활화(Smoothing)</p>
+    <p>TV의 각 항은 기울기가 정확히 \((0,0)\)인 곳에서 미분할 수 없습니다. 팬텀에서는 화소 \(2304\)개 가운데 \(1943\)개(약 \(84\%\))가 그런 곳입니다. 그래서 계산에는 원점 근처(기울기 크기가 작은 양수 \(\delta\) 이하)만 2차식으로 둥글리고 그 밖은 그대로 둔 함수(<span class="term" data-term="huber">Huber 함수</span>)로 TV를 바꾼 평활화 TV를 씁니다. \(\delta\)가 작을수록 원래 TV에 가깝습니다. 페이지 5의 결과는 \(\delta = 0.01\)인 평활화 TV로 계산한 것이고, 5일차에서 이 TV의 기울기를 사용합니다.</p>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch04.html#s4">2편 4장 페이지 4</a>: TV의 정의와 볼록성, <a href="../detail/ch04.html#s5">페이지 5</a>: 두 형태</li>
+      <li><a href="../detail/ch04.html#s7">2편 4장 페이지 7</a>(심화): Huber 평활화</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="압축 센싱의 기본 생각">
+  <p class="kicker">4일차 · 페이지 4</p>
+  <h2>압축 센싱의 기본 생각</h2>
+
+  <p>TV 정규화에는 잡음을 누르는 것보다 더 큰 쓸모가 있습니다. "영상의 기울기가 대부분 \(0\)이다"라는 사전 정보(<a href="#s2">페이지 2</a>에서 본 대로, 이웃한 화소 값의 차이가 조직 경계를 빼면 거의 모두 \(0\)이라는 뜻입니다)를 쓰면 화소 수보다 적은 측정으로도 영상을 복원할 수 있다는 이론이 있고, 이를 <span class="term" data-term="cs">압축 센싱</span>(Compressed Sensing)이라고 합니다. 이 페이지는 이론의 증명이 아니라 핵심 생각만 봅니다.</p>
+
+  <h3>사전 정보가 필요한 점의 수를 줄이는 예</h3>
+
+  <p>평면 위의 점 4개만 알 때 이 점들이 놓였던 원래 곡선을 복원할 수 있을까요? 점 4개를 지나는 곡선은 무수히 많으므로 복원할 수 없습니다. 그런데 곡선이 축에 평행한 타원이라는 정보가 있으면 상황이 달라집니다.</p>
+
+  <p style="text-align:center">\[\frac{(x - x_0)^2}{a^2} + \frac{(y - y_0)^2}{b^2} = 1\]</p>
+
+  <p>미지수는 중심 \((x_0, y_0)\)와 반지름 \(a, b\)의 4개이고 점 하나가 식 하나를 주므로, 일반적인 위치의 점 4개로 타원이 하나로 정해집니다. 점이 3개뿐이면 다시 모호해집니다. 사전 정보가 후보를 "무수히 많음"에서 "미지수 4개"로 줄인 것입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 200" role="img" aria-label="왼쪽은 점 4개와 이를 지나는 서로 다른 곡선 두 개, 오른쪽은 같은 점 4개를 지나는 축에 평행한 타원 하나">
+      <g fill="none" stroke-width="1.6" style="stroke:var(--muted)">
+        <path d="M30 120 C 70 40, 110 40, 130 80 S 190 150, 270 60" stroke-dasharray="5 4"/>
+        <polyline points="30,120 80,62 150,128 270,60" stroke-dasharray="5 4"/>
+      </g>
+      <g style="fill:var(--accent)"><circle cx="30" cy="120" r="4.5"/><circle cx="80" cy="62" r="4.5"/><circle cx="150" cy="128" r="4.5"/><circle cx="270" cy="60" r="4.5"/></g>
+      <ellipse cx="480" cy="100" rx="120" ry="70" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <g style="fill:var(--accent)"><circle cx="584" cy="65" r="4.5"/><circle cx="480" cy="30" r="4.5"/><circle cx="367" cy="124" r="4.5"/><circle cx="540" cy="161" r="4.5"/></g>
+      <g font-size="11.5" class="svg-fg" font-weight="700"><text x="30" y="20">점 4개만 있을 때</text><text x="360" y="20">"타원이다"라는 정보가 있을 때</text></g>
+      <g font-size="11" class="svg-muted"><text x="30" y="188">같은 점을 지나는 곡선은 끝없이 많습니다</text><text x="360" y="188">점 4개를 지나는 타원은 하나입니다</text></g>
+    </svg>
+    <figcaption>왼쪽의 점선은 같은 점 4개를 지나는 곡선의 예 두 개이고, 이 밖에도 끝없이 많습니다. 오른쪽 타원은 4개의 점을 정확히 지납니다.</figcaption>
+  </figure>
+
+  <h3>압축 센싱</h3>
+
+  <p>같은 생각을 신호 복원에 옮기면 압축 센싱이 됩니다. 미지수 \(N\)개의 벡터 \(\mathbf{x}\)를 선형 측정 \(m\)개로 복원하는데 \(m\)이 \(N\)보다 작습니다.</p>
+
+  <p style="text-align:center">\[\mathbf{y} = \mathbf{A}\mathbf{x}, \qquad \mathbf{A} \in \mathbb{R}^{m \times N}, \quad m &lt; N\]</p>
+
+  <p>식이 미지수보다 적어 \(\mathbf{x}\)는 하나로 정해지지 않습니다. 그러나 \(0\)이 아닌 성분이 \(s\)개 이하(\(s \ll N\))라는 정보가 있고 측정이 조건을 만족하면, 측정과 맞는 해 가운데 가장 희소한 것을 L1 최소화로 찾아 복원할 수 있다는 것이 압축 센싱의 결과입니다(Candès·Romberg·Tao, 2006; Donoho, 2006). 신호 자체가 아니라 이웃 화소의 차이처럼 변환을 거친 값이 희소해도 됩니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>곡선 맞추기</th><th>CT의 TV 재구성</th></tr>
+      <tr><td>사전 정보</td><td>곡선이 타원이다</td><td>영상의 기울기가 희소하다</td></tr>
+      <tr><td>줄어드는 미지수</td><td>무한히 많음에서 4개로</td><td>화소 수에서 경계의 수로</td></tr>
+      <tr><td>부족한 정보</td><td>점이 모자람</td><td>각도가 모자람(sparse-view)</td></tr>
+    </table>
+  </div>
+
+  <p>각도를 줄여 듬성듬성 찍는 CT를 <span class="term" data-term="sparseview">희소 투영각 CT</span>(Sparse-View CT)라고 합니다. 한 각도에서 얻은 투영 하나를 뷰(View)라고 부르며, 각도를 줄이면 방사선량과 촬영 시간을 줄일 수 있습니다. 대신 측정 수가 화소 수보다 훨씬 적어집니다.</p>
+
+  <p>왜 부족해지는지는 1편의 <a href="../../part1/quick/day3.html">푸리에 슬라이스 정리</a>로 볼 수 있습니다. 각도 하나의 투영은 주파수 평면에서 원점을 지나는 직선 하나를 채웁니다. 각도를 줄이면 이웃한 직선 사이의 틈이 원점에서 멀수록 벌어지고, 그 틈의 고주파 정보가 비어 FBP에는 줄무늬가 생깁니다. TV 정규화는 "경계가 적은 영상"만 후보로 남겨 이 틈을 일부 보충합니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">이론과 CT 사이의 차이</p>
+    <p>압축 센싱이 성립하려면 측정이 희소한 성분 어느 한쪽에 쏠리지 않고 골고루 정보를 모아야 합니다. 이를 <span class="term" data-term="incoherence">비간섭성</span>(Incoherence)이라고 합니다. 그러나 CT의 각도는 무작위가 아니라 \(0^{\circ}\)에서 \(180^{\circ}\)까지 정해진 패턴으로 놓이므로 이 조건을 엄밀히 만족하지 않습니다. 따라서 압축 센싱의 정리가 sparse-view CT에 그대로 적용되지는 않습니다. TV로 sparse-view CT를 잘 복원한다는 것은 증명이 아니라 실험으로 확인된 결과입니다(다음 페이지). 영상이 구간 상수에서 멀수록, 곧 완만한 변화나 질감이 많을수록 "기울기가 희소하다"는 정보가 틀리므로 TV의 효과도 줄어듭니다.</p>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch05.html#s1">2편 5장 페이지 1</a>: 곡선 맞추기와 압축 센싱의 정의</li>
+      <li><a href="../detail/ch05.html#s4">2편 5장 페이지 4</a>: TV 재구성을 압축 센싱으로 읽기</li>
+      <li><a href="../detail/ch05.html#s7">2편 5장 페이지 7</a>(심화): 비간섭성과 CT sparse-view</li>
+      <li><a href="../../part1/detail/ch05.html#s13">1편 5장 페이지 13</a>: 각도가 모자랄 때 1편이 예고한 "일부 보충"</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 -->
+<section class="screen" data-title="정규화 강도와 sparse-view 재구성 결과">
+  <p class="kicker">4일차 · 페이지 5</p>
+  <h2>정규화 강도와 sparse-view 재구성 결과</h2>
+
+  <p>정규화는 \(\lambda\)를 어떻게 고르느냐에 따라 효과가 달라집니다. 이어서 \(48 \times 48\) 팬텀의 sparse-view 재구성 결과로 TV의 효과를 확인합니다.</p>
+
+  <h3>정규화 강도 λ의 영향</h3>
+
+  <p>길이 \(20\)의 1차원 신호에 완만하게 휘어지는 구간과 높이 \(0.401\)인 진짜 경계 하나를 두고 표준편차 \(0.02\)의 잡음을 더했습니다. 평활화 TV(\(\delta = 0.005\))로 \(600\)회 이상 반복해 \(\lambda\)를 바꾸며 복원한 결과입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>\(\lambda\)</th><th>참값과의 오차(RMSE)</th><th>경계 높이(참값 \(0.401\))</th><th>모습</th></tr>
+      <tr><td>\(0.002\)</td><td>\(0.0141\)</td><td>\(0.378\)</td><td>잡음이 거의 그대로 남음</td></tr>
+      <tr><td>\(0.03\)</td><td>\(0.0197\)</td><td>\(0.322\)</td><td>완만한 구간이 조금 평평해지고 경계가 낮아짐</td></tr>
+      <tr><td>\(0.2\)</td><td>\(0.0550\)</td><td>\(0.144\)</td><td>뚜렷한 계단 모양, 경계가 크게 낮아짐</td></tr>
+    </table>
+  </div>
+
+  <p>참값과의 오차는 복원한 값과 참값의 화소별 차이를 제곱해 평균한 뒤 제곱근을 취한 값으로, <span class="term" data-term="rmse">RMSE</span>(Root Mean Square Error)라고 부릅니다. 잡음이 있는 관측값 자체의 RMSE도 \(0.0140\)이라서 \(\lambda = 0.002\)의 작은 오차는 잡음을 누르지 못한 결과입니다. \(\lambda\)가 너무 작으면 잡음이 남고, 너무 크면 완만한 구간이 평평한 구간들로 쪼개지는 <span class="term" data-term="staircase">계단 아티팩트</span>(Staircase Artifact)가 생기고 진짜 경계도 낮아집니다.</p>
+
+  <p>이 예에서는 참값을 알고 있었기에 좋은 \(\lambda\)를 고를 수 있었습니다. 실제로는 참값을 모르므로, 데이터와의 차이가 알고 있는 잡음 크기와 비슷해지는 \(\lambda\)를 고르는 방법이 널리 쓰입니다(제약형의 \(\varepsilon\)과 같은 생각입니다).</p>
+
+  <h3>sparse-view 재구성 결과</h3>
+
+  <p>\(48 \times 48\) Shepp-Logan 팬텀과 검출기 \(61\)개로 각도 수 \(K\)를 \(0^{\circ}\)에서 \(180^{\circ}\)까지 고르게 줄이며 세 방법을 비교합니다. 숫자는 잡음 없는 데이터에서 참값과의 RMSE이며 작을수록 좋습니다.</p>
+
+  <ul>
+    <li><b>FBP.</b> 1편의 필터 역투영입니다.</li>
+    <li><b>정규화 없음.</b> 정규화 항 없이(\(\lambda = 0\)) 비음수 조건만 지키며 반복하는 대수적 재구성입니다.</li>
+    <li><b>TV.</b> 같은 반복에 평활화 TV(\(\lambda = 0.001\), \(\delta = 0.01\))를 더한 재구성입니다. 두 반복법은 모두 같은 방법(걸음 크기를 고정한 비음수 경사하강법)을 \(600\)회 돌렸습니다.</li>
+  </ul>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>각도 수 \(K\)</th><th>FBP</th><th>정규화 없음</th><th>TV</th></tr>
+      <tr><td>\(10\)</td><td>\(0.3245\)</td><td>\(0.1860\)</td><td>\(0.1461\)</td></tr>
+      <tr><td>\(18\)</td><td>\(0.2376\)</td><td>\(0.1141\)</td><td>\(0.0577\)</td></tr>
+      <tr><td>\(40\)</td><td>\(0.1769\)</td><td>\(0.0456\)</td><td>\(0.0129\)</td></tr>
+    </table>
+  </div>
+
+  <p>표에서 세 가지를 읽을 수 있습니다.</p>
+
+  <ol>
+    <li>정규화 없는 대수적 재구성이 이미 FBP보다 오차가 낮습니다. 광선의 실제 기하를 시스템 행렬에 그대로 쓰기 때문입니다.</li>
+    <li>TV는 모든 \(K\)에서 오차를 더 줄입니다. \(K = 40\)에서는 FBP의 \(0.1769\)가 \(0.0129\)로, 약 \(13.7\)배 낮아집니다.</li>
+    <li>\(K = 10\)에서는 TV도 \(0.1461\)이 남습니다. 측정이 너무 적으면 기울기가 희소하다는 가정만으로는 메울 수 없는 부분이 생깁니다.</li>
+  </ol>
+
+  <div class="box warn">
+    <p class="box-t">이 표를 읽을 때 주의할 점</p>
+    <ul>
+      <li>\(\lambda = 0.001\)은 참값과의 오차가 가장 작도록 미리 고른 값입니다. 참값을 모르는 실제에서는 이렇게 고를 수 없습니다.</li>
+      <li>반복 \(600\)회에서 멈춘 값입니다. 걸음 크기를 고정한 방법은 이 설정에서 수렴까지 훨씬 오래 걸리며, 5일차에서 같은 문제를 걸음 크기를 스스로 고르는 방법으로 수렴할 때까지 풉니다.</li>
+      <li>\(K = 40\) 데이터에 측정 잡음을 더하면 FBP \(0.1776\), 정규화 없음 \(0.0536\), TV \(0.0198\)입니다. 잡음이 없을 때(FBP \(0.1769\), 정규화 없음 \(0.0456\), TV \(0.0129\))와 비교하면 FBP는 거의 그대로이고, 반복법은 조금 커집니다. 반복 횟수를 \(600\)회로 미리 정한 것이 조기 종료처럼 암묵적인 정규화 역할을 해서 증가가 작게 나타난 것입니다.</li>
+      <li>팬텀은 구간 상수에 가까워 TV에 유리한 영상입니다. 질감이 많은 실제 영상에서는 효과가 이보다 작을 수 있습니다.</li>
+    </ul>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch04.html#s8">2편 4장 페이지 8</a>: \(\lambda\) 선택과 계단 아티팩트 위젯</li>
+      <li><a href="../detail/ch05.html#s8">2편 5장 페이지 8</a>: 같은 표를 재구성 영상으로 나란히 비교하는 위젯</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 6 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">4일차 · 페이지 6</p>
+  <h2>4일차 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>조건수가 큰 문제에서는 측정의 작은 오차가 풀이에서 크게 증폭됩니다. Tikhonov 정규화 \(\lVert\mathbf{A}\mathbf{x} - \mathbf{b}\rVert^2 + \lambda\lVert\mathbf{x}\rVert^2\)는 작은 \(\lambda\)로 증폭을 누르지만, \(\lambda\)가 커지면 풀이가 참값에서 멀어집니다.</li>
+      <li>이웃 화소의 차이에 제곱 벌점을 걸면 경계와 잡음이 같은 비율로 줄어듭니다. CT 영상은 기울기가 희소하므로, L1 벌점(soft-threshold)으로 작은 차이는 \(0\)으로 만들고 큰 경계는 거의 지키는 편이 맞습니다.</li>
+      <li>TV는 영상의 기울기 크기를 모두 더한 값입니다. 재구성 문제는 벌점형 \(\min_{\mathbf{x}\ge\mathbf{0}}\lVert\mathbf{A}\mathbf{x} - \mathbf{b}\rVert^2 + \lambda\,\mathrm{TV}(\mathbf{x})\)나 제약형으로 쓰고, 계산에는 미분할 수 있게 평활화한 TV를 씁니다.</li>
+      <li>기울기가 희소하다는 사전 정보는 sparse-view CT에서 후보를 좁혀 줍니다. 압축 센싱의 정리가 CT에 그대로 적용되는 것은 아니며, TV의 효과는 실험으로 확인한 결과입니다.</li>
+      <li>\(48 \times 48\) 팬텀에서 TV는 모든 각도 수에서 FBP와 정규화 없는 반복법보다 오차가 낮았습니다. 각도가 너무 적은 \(K = 10\)에서는 TV로도 메우지 못하는 부분이 남습니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="q">\(\mathbf{A} = \begin{pmatrix}1&1\\1&1.01\end{pmatrix}\)에서 둘째 측정값을 \(2.01\)에서 \(2.02\)로 \(0.5\%\)만 바꾸자 풀이가 \((1,1)\)에서 \((0,2)\)로 크게 바뀌었습니다. 가장 알맞은 원인은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. 두 광선이 거의 나란해 조건수가 약 402로 크기 때문에, 측정의 작은 오차가 풀이에서 최악의 경우 그만큼 증폭됩니다.">조건수가 약 \(402\)로 커서 측정의 작은 오차가 풀이에서 크게 증폭되기 때문입니다.</li>
+      <li data-why="틀립니다. 이 연립방정식은 직접 푼 풀이입니다. 반복법이 아니므로 반복 횟수는 관계가 없습니다.">반복 횟수가 부족해서 풀이가 아직 수렴하지 않았기 때문입니다.</li>
+      <li data-why="틀립니다. 행렬식이 0이 아니어서 두 경우 모두 풀이가 하나로 정해집니다. 문제는 해의 존재가 아니라 민감도입니다.">두 경우 모두 풀이가 존재하지 않아 계산기가 임의의 값을 내기 때문입니다.</li>
+      <li data-why="틀립니다. 비음수 조건은 이 예에서 쓰지 않았고, 풀이 (0, 2)도 음수가 없습니다. 원인은 조건수입니다.">비음수 조건을 지키지 않아서 풀이가 음수 쪽으로 밀렸기 때문입니다.</li>
+    </ol>
+    <div class="explain">
+      <p>반복법에서는 반복을 일찍 멈추는 조기 종료도 같은 증폭을 누릅니다. 그러나 이 방법은 반복 횟수로만 세기를 조절할 수 있고 반복법이 아닌 방법에는 쓸 수 없습니다. 그래서 식에 항을 직접 넣는 정규화를 씁니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="q">이웃 화소의 차이에 L1 벌점(soft-threshold)을 걸면 L2 벌점보다 잡음은 지우고 경계는 지키는 데 유리합니다. 그 이유로 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. 문턱 λ보다 작은 차이(잡음)는 정확히 0이 되고, 큰 차이(경계)는 λ만큼만 줄어듭니다. L2는 모든 차이를 같은 비율로 줄입니다.">작은 차이는 \(0\)으로 만들고 큰 차이는 \(\lambda\)만 줄이기 때문입니다.</li>
+      <li data-why="틀립니다. L1 벌점도 큰 차이를 λ만큼 줄입니다. 경계가 전혀 줄지 않는 것은 아니고, 줄어드는 양이 높이와 상관없이 일정합니다.">큰 차이든 작은 차이든 복원값에서 차이의 크기를 전혀 바꾸지 않기 때문입니다.</li>
+      <li data-why="틀립니다. 모든 차이를 같은 비율로 줄이는 것은 L2 벌점 d = d_y/(1+2λ)의 성질입니다.">모든 차이를 같은 비율로 줄여 경계와 잡음의 균형을 맞추기 때문입니다.</li>
+      <li data-why="틀립니다. 벌점의 종류와 반복 횟수는 별개입니다. L1 벌점은 한 번의 최소화에서 이미 작은 차이를 0으로 만듭니다.">한 번 최소화한 뒤 반복 횟수를 늘리면 잡음이 저절로 사라지기 때문입니다.</li>
+    </ol>
+    <div class="explain">
+      <p>L1 벌점에는 대가가 있습니다. 문턱 \(\lambda\)보다 작은 차이는 잡음과 같이 지워지므로, 대비가 낮은 진짜 구조도 \(\lambda\)가 크면 사라집니다. \(\lambda\)를 고르는 문제(페이지 5)가 여기서 나옵니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">sparse-view 비교에서 \(K = 10\)일 때 TV의 오차가 \(0.1461\)로 남았습니다. 이 결과가 보여 주는 것으로 가장 알맞은 것은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 같은 K=10에서 FBP의 오차는 0.3245로 TV보다 훨씬 큽니다. TV가 FBP보다 못한 것이 아닙니다.">각도가 \(10\)개이면 TV가 FBP보다 오히려 오차가 크다는 것입니다.</li>
+      <li data-why="틀립니다. λ를 키우면 완만한 구간이 계단이 되고 경계가 낮아져 오차가 오히려 커질 수 있습니다. 항상 0에 가까워지지 않습니다.">\(\lambda\)를 충분히 키우면 오차를 항상 \(0\)에 가깝게 줄일 수 있다는 것입니다.</li>
+      <li data-why="틀립니다. 이 표의 K=10 결과는 계산이 잘못된 것이 아니라 정보가 부족한 상황의 결과입니다. 원인은 정보의 부족입니다.">각도가 \(10\)개일 때는 구현에 계산 오류가 있어 믿을 수 없다는 것입니다.</li>
+      <li data-why="맞습니다. 측정이 너무 적으면 기울기가 희소하다는 가정만으로는 메울 수 없는 부분이 남습니다. 압축 센싱도 최소한의 측정 수가 필요하다고 봅니다.">각도가 너무 적으면 기울기가 희소하다는 정보만으로는 부족한 부분이 남는다는 것입니다.</li>
+    </ol>
+    <div class="explain">
+      <p>압축 센싱 이론도 같은 방향입니다. 무작위로 고른 측정의 경우 측정 수가 대략 희소도 \(s\)와 \(\log N\)에 비례하는 값 이상이어야 높은 확률로 복원된다고 알려져 있으며, 그보다 적은 측정에는 복원 보장이 없습니다(<a href="../detail/ch05.html#s7">2편 5장 페이지 7</a>, 심화).</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>\(\lambda = 0.5\)일 때 원래 차이가 \(d_y = 1\)인 경계와 \(d_y = 0.3\)인 작은 구조에 대해, L2 벌점과 L1 벌점(soft-threshold)의 복원값 차이 \(d\)를 각각 구하세요. 어느 벌점이 작은 구조를 지우는지 말하세요.</li>
+      <li>1차원 신호 \((0,\ 0,\ 2,\ 2,\ 1,\ 1)\)의 TV와 이웃 차이의 제곱합을 구하세요.</li>
+      <li>페이지 5의 표에서 \(K = 18\)일 때 FBP의 오차는 TV 오차의 몇 배이고, 정규화 없음의 오차는 TV 오차의 몇 배인지 구하세요. 두 배수의 차이는 무엇을 뜻하는지 한 문장으로 쓰세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> L2 벌점은 \(d = d_y/(1 + 2\lambda) = d_y/2\)이므로 \(d_y = 1\)이면 \(0.5\), \(d_y = 0.3\)이면 \(0.15\)입니다. L1 벌점은 \(d = \operatorname{sign}(d_y)\max(\lvert d_y\rvert - 0.5,\ 0)\)이므로 \(d_y = 1\)이면 \(0.5\), \(d_y = 0.3\)이면 \(0.3 - 0.5 < 0\)이라 \(0\)입니다. 두 벌점은 큰 경계에서 같은 값 \(0.5\)를 주지만, 작은 구조는 L1 벌점만 지웁니다. L1 벌점은 문턱 \(\lambda\)보다 작은 차이를 모두 지우므로, \(\lambda\)가 크면 진짜 구조도 문턱보다 작을 때 함께 지워집니다.</p>
+      <p><b>2번.</b> 이웃 차이는 \((0,\ 2,\ 0,\ -1,\ 0)\)이므로 TV는 \(0 + 2 + 0 + 1 + 0 = 3\)이고, 차이의 제곱합은 \(0 + 4 + 0 + 1 + 0 = 5\)입니다. 신호가 올랐다 내려가므로 TV가 전체 높이 차(마지막 값 \(1\)에서 처음 값 \(0\)을 뺀 것)와 같지 않습니다.</p>
+      <p><b>3번.</b> FBP는 \(0.2376/0.0577 \approx 4.12\)배이고 정규화 없음은 \(0.1141/0.0577 \approx 1.98\)배입니다. 앞의 배수에는 "광선의 실제 기하를 쓰는 대수적 모델 자체"의 이득이 섞여 있고, 뒤의 배수는 정규화 항(TV)만의 효과를 보여 줍니다. 그래서 \(K=18\)에서 TV만의 효과는 약 \(2\)배로 읽는 것이 맞습니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>1번에서 L1 벌점의 문턱을 \(d_y\)에서 빼지 않고 \(d_y/(1 + 2\lambda)\)를 쓰는 것입니다. 두 벌점의 식을 서로 바꾸어 쓰지 않도록 합니다.</li>
+        <li>2번에서 TV를 \(\lvert 1 - 0\rvert = 1\)처럼 처음과 끝의 차이만으로 구하는 것입니다. TV는 모든 이웃 차이의 절댓값을 더한 것이며, 오르내리는 만큼 커집니다.</li>
+        <li>3번에서 첫 번째 배수만으로 "TV가 FBP보다 4배 좋다"고 결론짓는 것입니다. 그 배수에는 정규화와 관계없는 대수적 모델의 이득이 들어 있습니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="day5.html"><span>다음 장</span>5일차 — TV를 계산하는 법: GPBB(사영 + BB 스텝)</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

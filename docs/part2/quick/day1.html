@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="day1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1일차 · 재구성을 Ax = b로 쓰기: 순투영 A, 역투영 Aᵀ — CT 재구성 2편 빠르게 보기</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="코스 전체의 흐름과 기호">
+  <p class="kicker">1일차 · 페이지 1</p>
+  <h1>재구성을 Ax = b로 쓰기: 순투영 A, 역투영 Aᵀ</h1>
+
+  <p class="lead">1편에서는 측정값에서 영상을 구하는 공식을 얻어 한 번 계산했습니다. 2편은 다른 길을 갑니다.
+  광선마다의 식을 먼저 세우고, 그 식들을 반복해서 조금씩 풉니다. 이 코스는 7일 동안 그 길을 따라갑니다.
+  1일차에는 식을 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)로 세우고(페이지 2), 이 식에서 나오는 두 계산인 순투영과 역투영을 익힙니다(페이지 3).
+  그리고 역투영이 왜 하필 \(\mathbf{A}\)의 전치인지(페이지 4)를 봅니다.</p>
+
+  <h3>1편에서 가져오는 것</h3>
+
+  <p>이 코스는 <a href="../../part1/quick/index.html">1편 빠르게 보기</a>를 읽었다고 가정합니다. 거기서 가져오는 것은 세 가지입니다.</p>
+  <ul>
+    <li>광선 하나의 투영값은 감쇠계수의 선적분이고(<a href="../../part1/quick/day1.html#s2">1편 1일차 페이지 2</a>), 이를 영상 칸(화소)마다 상수로 보면 합이 됩니다.</li>
+    <li>광선 \(i\)의 투영값은 \(p_i = \sum_j w_{ij}\mu_j\)이고, 모든 광선의 식을 모으면 \(\mathbf{A}\mathbf{x} = \mathbf{b}\)입니다(<a href="../../part1/quick/day1.html#s4">1편 1일차 페이지 4</a>).</li>
+    <li>역투영은 광선의 값을 그 광선이 지난 자리에 되돌려 칠하는 연산이고, 투영의 역연산이 아닙니다(<a href="../../part1/quick/day4.html#s1">1편 4일차 페이지 1</a>).</li>
+  </ul>
+
+  <p>2편은 같은 양에 글자를 다르게 붙입니다. 아래 표대로 읽어 주세요.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>1편 빠르게 보기</th><th>이 코스</th><th>뜻</th></tr>
+      <tr><td>투영값 \(p_i\)</td><td>\(b_i\)</td><td>광선 \(i\)의 측정값(로그를 취한 값)</td></tr>
+      <tr><td>감쇠계수 \(\mu_j\)</td><td>\(x_j\)</td><td>화소 \(j\)의 값. 구하려는 영상</td></tr>
+      <tr><td>길이 가중 \(w_{ij}\)</td><td>\(a_{ij}\)</td><td>광선 \(i\)가 화소 \(j\)에 기여하는 가중치</td></tr>
+    </table>
+  </div>
+
+  <h3>공식 한 번 대 계산 되풀이</h3>
+
+  <p>1편의 필터 역투영(<span class="term" data-term="fbp">FBP</span>)은 아래 그림의 위쪽 줄처럼 측정값을 필터링하고 역투영하면 끝납니다.
+  이 코스의 방법은 아래쪽 줄의 고리를 돕니다. 지금 가진 영상으로 측정값을 예측해 보고, 실제 측정값과 비교한 차이를 영상 쪽으로 되돌려 영상을 고칩니다.
+  이 일을 만족할 때까지 되풀이합니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 680 262" role="img" aria-label="위쪽은 측정값에서 램프 필터링과 역투영을 한 번 거쳐 영상이 나오는 한 줄 흐름이다. 아래쪽은 추정 영상을 순투영하고 측정값과의 차이를 구해 역투영한 뒤 영상을 고치는 과정을 되풀이하는 고리이다.">
+      <defs><marker id="p2d1-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--muted)"/></marker></defs>
+      <g class="svg-fg" font-size="12" font-weight="700"><text x="20" y="22">1편 FBP: 공식을 한 번 계산</text><text x="16" y="116">2편 반복법: 고리를 되풀이</text></g>
+      <g class="svg-line" fill="none" stroke-width="1.3">
+        <rect x="20" y="34" width="110" height="40" rx="6"/>
+        <rect x="200" y="34" width="110" height="40" rx="6"/>
+        <rect x="380" y="34" width="110" height="40" rx="6"/>
+        <rect x="560" y="34" width="100" height="40" rx="6"/>
+        <rect x="16" y="128" width="104" height="44" rx="6"/>
+        <rect x="152" y="128" width="104" height="44" rx="6"/>
+        <rect x="288" y="128" width="104" height="44" rx="6"/>
+        <rect x="424" y="128" width="104" height="44" rx="6"/>
+        <rect x="560" y="128" width="104" height="44" rx="6"/>
+      </g>
+      <g text-anchor="middle" font-size="12" class="svg-fg">
+        <text x="75" y="59">측정값 b</text>
+        <text x="255" y="59">램프 필터링</text>
+        <text x="435" y="59">역투영</text>
+        <text x="610" y="59">재구성 영상</text>
+        <text x="68" y="155">추정 영상 x</text>
+        <text x="204" y="155">순투영 Ax</text>
+        <text x="340" y="155">잔차 b − Ax</text>
+        <text x="476" y="155">역투영 Aᵀ</text>
+        <text x="612" y="155">x 고치기</text>
+      </g>
+      <g style="stroke:var(--muted)" fill="none" stroke-width="1.4">
+        <path d="M132 54 H198" marker-end="url(#p2d1-ar)"/>
+        <path d="M312 54 H378" marker-end="url(#p2d1-ar)"/>
+        <path d="M492 54 H558" marker-end="url(#p2d1-ar)"/>
+        <path d="M122 150 H150" marker-end="url(#p2d1-ar)"/>
+        <path d="M258 150 H286" marker-end="url(#p2d1-ar)"/>
+        <path d="M394 150 H422" marker-end="url(#p2d1-ar)"/>
+        <path d="M530 150 H558" marker-end="url(#p2d1-ar)"/>
+        <path d="M612 174 V204 H68 V176" marker-end="url(#p2d1-ar)"/>
+      </g>
+      <g text-anchor="middle" font-size="11" class="svg-muted">
+        <text x="340" y="222">멈춤 조건을 만족할 때까지 되풀이</text>
+        <text x="340" y="248">1일차는 순투영 Ax 와 역투영 Aᵀ, 2일차는 "x 고치기"의 세 가지 방식을 다룹니다</text>
+      </g>
+    </svg>
+    <figcaption>위쪽은 필터링과 역투영을 한 번 거치는 해석적 방법, 아래쪽은 순투영과 역투영을 번갈아 쓰는 반복법의 공통 구조입니다.</figcaption>
+  </figure>
+
+  <h3>7일 일정</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th style="width:4.5rem">일차</th><th>주제</th><th>그날 답하는 질문</th></tr>
+      <tr><td>1일차</td><td>재구성을 Ax = b로 쓰기: 순투영 A, 역투영 Aᵀ</td><td>고리의 두 연산은 무엇이고, 왜 서로 짝인가?</td></tr>
+      <tr><td>2일차</td><td>한 광선씩, 또는 한꺼번에: ART·SIRT·SART</td><td>식이 수십만 개일 때 영상을 어떤 단위로 고치는가?</td></tr>
+      <tr><td>3일차</td><td>언제 멈출까? 목적함수, 불량조건, 반 수렴</td><td>잡음이 있는데 반복을 계속하면 어떻게 되는가?</td></tr>
+      <tr><td>4일차</td><td>데이터가 모자라거나 잡음이 있으면: 정규화와 TV</td><td>식만으로 모자랄 때 무엇을 더하는가?</td></tr>
+      <tr><td>5일차</td><td>TV를 계산하는 법: GPBB(사영 + BB 스텝)</td><td>그렇게 더한 문제를 어떻게 푸는가?</td></tr>
+      <tr><td>6일차</td><td>잡음 크기를 제약으로: ASD-POCS(사영 + TV 하강)</td><td>잡음 크기를 알면 바로 제약으로 쓸 수 있는가?</td></tr>
+      <tr><td>7일차</td><td>FBP 대 반복법, 1·2편 돌아보기</td><td>실무에서는 둘 중 무엇을 쓰는가?</td></tr>
+    </table>
+  </div>
+
+  <p>하루는 약 1시간이고, 날마다 마지막 페이지에 요약·퀴즈·직접 해보기가 있습니다. 이 코스는 코드 없이 이론만 다룹니다.</p>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기와 함께 읽기</p>
+    <p>이 코스는 핵심 아이디어와 식의 의미만 다룹니다. 전체 유도, 수치 예, 한계는 2편 자세히 보기에 있습니다.
+    페이지마다 해당하는 2편 자세히 보기 페이지를 링크하니, 더 알고 싶은 곳만 따라가면 됩니다.
+    오늘 내용은 <a href="../detail/ch01.html">2편 1장</a>(선형 모델과 시스템 행렬)에 해당합니다.
+    1편과 2편의 두 접근을 나란히 놓은 설명은 <a href="../../part1/quick/day1.html#s4">1편 1일차 페이지 4</a>와 <a href="../detail/ch01.html#s9">2편 1장 페이지 9</a>에 있습니다.</p>
+  </div>
+
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="광선 하나를 식 하나로">
+  <p class="kicker">1일차 · 페이지 2</p>
+  <h2>광선 하나를 식 하나로: 작은 예로 Ax = b 세우기</h2>
+
+  <p>식을 세우는 과정을 가장 작은 영상으로 따라가 봅시다. 화소 네 개짜리 \(2\times2\) 영상이고, 화소 번호는 왼쪽 위가 1, 오른쪽 위가 2, 왼쪽 아래가 3, 오른쪽 아래가 4입니다.
+  화소 값은 \(\mathbf{x} = (x_1, x_2, x_3, x_4) = (0.2,\ 0.5,\ 0.1,\ 0.3)\)이라고 합시다. 한 변의 길이는 1입니다.
+  광선은 다섯 개를 씁니다. 가로 광선 ①, ②, 세로 광선 ③, ④, 그리고 왼쪽 위에서 오른쪽 아래로 가는 대각선 광선 ⑤입니다.
+  이 \(2\times2\) 예는 이 코스 전체에서 계속 씁니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 -12 640 262" role="img" aria-label="2×2 화소 격자. 화소 값은 왼쪽 위 0.2, 오른쪽 위 0.5, 왼쪽 아래 0.1, 오른쪽 아래 0.3. 가로 광선 ①②, 세로 광선 ③④, 대각선 광선 ⑤가 격자를 지난다.">
+      <defs><marker id="p2d1-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+      <g class="svg-line" fill="none" stroke-width="1.3">
+        <rect x="120" y="30" width="180" height="180"/><path d="M210 30 V210 M120 120 H300"/>
+      </g>
+      <g class="svg-fg" font-size="20" font-weight="700" text-anchor="middle">
+        <text x="190" y="106">0.2</text><text x="280" y="106">0.5</text><text x="190" y="196">0.1</text><text x="280" y="196">0.3</text>
+      </g>
+      <g class="svg-muted" font-size="11" text-anchor="middle">
+        <text x="165" y="48">화소 1</text><text x="255" y="48">화소 2</text><text x="165" y="138">화소 3</text><text x="255" y="138">화소 4</text>
+      </g>
+      <g fill="none" stroke-width="2.2" stroke-linecap="round" style="stroke:var(--warn)">
+        <path d="M100 75 H322" marker-end="url(#p2d1-g)" opacity=".85"/>
+        <path d="M100 165 H322" marker-end="url(#p2d1-g)" opacity=".85"/>
+        <path d="M165 10 V232" marker-end="url(#p2d1-g)" opacity=".85"/>
+        <path d="M255 10 V232" marker-end="url(#p2d1-g)" opacity=".85"/>
+        <path d="M108 18 L312 222" stroke-dasharray="6 4" marker-end="url(#p2d1-g)" opacity=".85"/>
+      </g>
+      <g class="svg-fg" font-size="14" font-weight="700" text-anchor="middle">
+        <text x="84" y="80">①</text><text x="84" y="170">②</text><text x="165" y="6">③</text><text x="255" y="6">④</text><text x="100" y="14">⑤</text>
+      </g>
+      <g class="svg-muted" font-size="12">
+        <text x="360" y="60">광선이 화소를 지나는 길이 aᵢⱼ</text>
+        <text x="360" y="84">① 화소 1, 2에서 각각 1</text>
+        <text x="360" y="104">② 화소 3, 4에서 각각 1</text>
+        <text x="360" y="124">③ 화소 1, 3에서 각각 1</text>
+        <text x="360" y="144">④ 화소 2, 4에서 각각 1</text>
+        <text x="360" y="164">⑤ 화소 1, 4에서 각각 √2</text>
+        <text x="360" y="192">대각선이 한 화소를 가로지르는 길이는</text>
+        <text x="360" y="210">한 변의 √2 배입니다.</text>
+      </g>
+    </svg>
+    <figcaption>\(2\times2\) 화소 영상과 광선 다섯 개입니다. 광선이 지나는 화소에는 그 화소 안에서 광선이 지난 길이가 가중치로 붙습니다.</figcaption>
+  </figure>
+
+  <h3>광선 하나가 식 하나</h3>
+
+  <p>광선 ①은 화소 1과 2를 길이 1씩 지납니다. 그래서 광선 ①의 측정값은 \(b_1 = 1\cdot x_1 + 1\cdot x_2 + 0\cdot x_3 + 0\cdot x_4\)입니다. 이 식을 모든 광선에 대해 쓰면 다음과 같습니다.</p>
+
+  <p style="text-align:center">\[
+  \underbrace{\begin{pmatrix}1&1&0&0\\0&0&1&1\\1&0&1&0\\0&1&0&1\\\sqrt2&0&0&\sqrt2\end{pmatrix}}_{\mathbf{A}}
+  \begin{pmatrix}x_1\\x_2\\x_3\\x_4\end{pmatrix}=
+  \begin{pmatrix}b_1\\b_2\\b_3\\b_4\\b_5\end{pmatrix},
+  \qquad
+  \mathbf{b}=\begin{pmatrix}0.7\\0.4\\0.3\\0.8\\0.707\end{pmatrix}\]</p>
+
+  <p>행렬 \(\mathbf{A}\)를 시스템 행렬(<span class="term" data-term="sysmat">System Matrix</span>)이라고 합니다. <b>행 하나가 광선 하나, 열 하나가 화소 하나</b>이고, \(i\)행 \(j\)열의 원소 \(a_{ij}\)는 광선 \(i\)가 화소 \(j\)를 지나는 길이입니다.
+  광선이 지나지 않는 화소의 원소는 0입니다. 행렬과 벡터의 곱은 행 하나마다 "같은 자리끼리 곱해 더한 값"을 내놓습니다.
+  예를 들어 대각선 광선은 \(b_5 = \sqrt2\cdot0.2 + \sqrt2\cdot0.3 \approx 0.707\)입니다.
+  이 식에서 \(\mathbf{x}\)를 알면 \(\mathbf{b}\)를 계산하기는 쉽고, 재구성은 반대로 \(\mathbf{b}\)에서 \(\mathbf{x}\)를 구하는 일입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">길이는 가중치의 한 가지 모델</p>
+    <p>이 코스는 \(a_{ij}\)를 광선이 화소 안에서 지나는 길이로 둡니다. 가장 단순한 모델이고, 1편의 \(w_{ij}\)가 이것입니다.
+    실제 구현에서는 길이 말고도 계산이 빠르거나 역투영에서 성긴 자리가 덜 생기는 모델을 고르며, 이는 <a href="../detail/ch01.html#s4">2편 1장 페이지 4</a>에서 다룹니다.</p>
+  </div>
+
+  <h3>실제 크기</h3>
+
+  <p>\(512\times512\) 영상이면 미지수가 \(262{,}144\)개입니다. 각도 720개에 검출기 칸 736개이면 광선이 약 \(530{,}000\)개이므로 \(\mathbf{A}\)의 원소는 약 \(1.4\times10^{11}\)개입니다.
+  원소 하나를 4바이트로 저장하면 약 556 GB입니다. 이 행렬을 그대로 다루는 방법(역행렬, 가우스 소거)은 쓸 수 없고, 그래서 반복법을 씁니다.</p>
+
+  <p>다행히 \(\mathbf{A}\)의 대부분은 0입니다. 한 광선이 지나는 화소는 많아야 \(2\times512-1 = 1023\)개이고, 전체 열이 262,144개이므로 한 행의 0이 아닌 원소는 많아야 0.4%입니다.
+  0이 아닌 값과 열 번호만 저장하는 희소 저장(<span class="term" data-term="sparse">Sparse Storage</span>)을 쓰면 약 4.3 GB(상한)까지 줄어듭니다.</p>
+
+  <details class="fold">
+    <summary>크기 계산</summary>
+    <div class="fold-body">
+      <p>광선 수는 \(720\times736 = 529{,}920\)이고 화소 수는 \(512^2 = 262{,}144\)이므로 원소 수는 \(529{,}920\times262{,}144\approx1.39\times10^{11}\)입니다. 4바이트로 저장하면 \(5.56\times10^{11}\)바이트, 곧 약 556 GB입니다.</p>
+      <p>희소 저장의 상한은 모든 광선이 최대 개수 1023개 화소를 지난다고 가정한 값입니다. 원소 수가 \(529{,}920\times1023\approx5.4\times10^{8}\)개이고, 값(4바이트)과 열 번호(4바이트)를 함께 저장하면 약 \(4.3\times10^{9}\)바이트입니다. 실제로는 대부분의 광선이 이보다 적은 화소를 지나므로 더 작습니다.</p>
+    </div>
+  </details>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch01.html#s1">2편 1장 페이지 1</a>: 화소로 나누는 것은 계산을 위한 선택이라는 설명과 기저 함수</li>
+      <li><a href="../detail/ch01.html#s2">2편 1장 페이지 2</a>: \(a_{ij}\)를 적분으로 정의하는 과정과 광선 한 행을 보여 주는 위젯</li>
+      <li><a href="../detail/ch01.html#s3">2편 1장 페이지 3</a>: 시스템 행렬의 크기, 0이 아닌 자리의 그림, 저장 용량</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="순투영 Ax와 역투영 Aᵀd">
+  <p class="kicker">1일차 · 페이지 3</p>
+  <h2>두 방향의 계산: 순투영 \(\mathbf{A}\mathbf{x}\)와 역투영 \(\mathbf{A}^{\mathsf T}\mathbf{d}\)</h2>
+
+  <p>페이지 1의 고리에는 두 연산이 있습니다. 하나는 영상에서 측정값 쪽으로 가는 연산이고, 다른 하나는 측정값 쪽에서 영상으로 돌아오는 연산입니다. 둘 다 같은 \(a_{ij}\)를 씁니다.</p>
+
+  <h3>순투영: 영상에서 광선으로</h3>
+
+  <p>지금 추정한 영상 \(\mathbf{x}\)를 넣었을 때 검출기가 읽었을 값을 구하는 계산 \(\mathbf{A}\mathbf{x}\)를 순투영(<span class="term" data-term="fwdproj">Forward Projection</span>)이라고 합니다.
+  페이지 2에서 \(b_5\)를 계산한 것이 이 계산입니다. 광선마다 지나는 화소의 값에 \(a_{ij}\)를 곱해 모읍니다.</p>
+
+  <p style="text-align:center">\[(\mathbf{A}\mathbf{x})_i = \sum_j a_{ij}\,x_j\]</p>
+
+  <h3>역투영: 광선에서 영상으로</h3>
+
+  <p>반대 방향은 광선마다의 값을 모은 벡터 \(\mathbf{d}\)(측정값이거나, 측정값과 예측값의 차이)를 받아 영상 쪽 벡터를 내놓는 계산입니다.
+  광선 \(i\)의 값 \(d_i\)를 그 광선이 지나는 화소 \(j\)에 \(a_{ij}\)배로 더해 넣습니다.</p>
+
+  <p style="text-align:center">\[(\mathbf{A}^{\mathsf T}\mathbf{d})_j = \sum_i a_{ij}\,d_i\]</p>
+
+  <p>이 계산이 1편에서 본 역투영, 곧 광선의 값을 지나간 자리에 되돌려 칠하는 연산을 화소 격자에서 한 것입니다(<span class="term" data-term="backproj">Back Projection</span>).
+  식의 합이 \(i\)에 대해 이루어진다는 점만 순투영과 다릅니다. 행렬로는 \(\mathbf{A}\)의 행과 열을 맞바꾼 전치(<span class="term" data-term="transpose">Transpose</span>) \(\mathbf{A}^{\mathsf T}\)를 곱하는 것이 됩니다. \(\mathbf{A}^{\mathsf T}\)의 \(j\)행 \(i\)열이 \(a_{ij}\)이기 때문입니다.</p>
+
+  <p>두 계산을 광선별로 따라가 봅니다. 순투영은 화소 값을 광선 쪽으로 모으고, 역투영은 광선의 값을 화소 쪽으로 흩뿌립니다. 방향과 광선을 골라 보세요.
+  (역투영의 \(\mathbf{d}\)에는 페이지 2의 측정값 \(\mathbf{b}\)를 넣었습니다.)</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 270" role="img" aria-label="2×2 화소 격자와 광선 ①~⑤. 순투영 모드에서는 광선이 지나는 화소의 a_ij 곱하기 화소값이 모여 광선의 예측값이 되고, 역투영 모드에서는 광선의 측정값에 a_ij를 곱한 몫이 각 화소에 더해진다">
+      <defs><marker id="p2d1-r3arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--warn)"/></marker></defs>
+      <g id="p2d1-cells"></g>
+      <path id="p2d1-ray" fill="none" stroke-width="2.6" stroke-linecap="round" opacity=".8" style="stroke:var(--warn)" marker-end="url(#p2d1-r3arr)"/>
+      <g id="p2d1-cellt"></g>
+      <g id="p2d1-txt" class="svg-fg" font-size="12.5"></g>
+    </svg>
+    <figcaption>칸 위쪽의 작은 글자는 순투영에서는 화소 값 \(x_j\), 역투영에서는 광선의 값 \(b_i\)이고, 칸 가운데의 큰 숫자는 그 화소가 주고받는 몫입니다.
+    화소 번호는 왼쪽 위가 1, 오른쪽 위가 2, 왼쪽 아래가 3, 오른쪽 아래가 4입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.4rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-bottom:.3rem" id="p2d1-mode">
+    <span>방향</span>
+    <button type="button" data-mode="f">순투영 Ax</button>
+    <button type="button" data-mode="b">역투영 Aᵀb</button>
+  </div>
+  <div style="display:flex;gap:.4rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="p2d1-rayui">
+    <span>광선</span>
+    <button type="button" data-ray="0">①</button>
+    <button type="button" data-ray="1">②</button>
+    <button type="button" data-ray="2">③</button>
+    <button type="button" data-ray="3">④</button>
+    <button type="button" data-ray="4">⑤</button>
+    <button type="button" data-ray="-1">모두</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="p2d1-note"></p>
+
+<script>
+(function () {
+  var S2 = Math.SQRT2, A = [[1, 1, 0, 0], [0, 0, 1, 1], [1, 0, 1, 0], [0, 1, 0, 1], [S2, 0, 0, S2]];
+  var X = [0.2, 0.5, 0.1, 0.3], B = [0.7, 0.4, 0.3, 0.8, 0.707];
+  var NAMES = ['①', '②', '③', '④', '⑤'], SD = ['₁', '₂', '₃', '₄', '₅'];
+  var CS = 100, GX = 30, GY = 40;
+  var cellsEl = document.getElementById('p2d1-cells'), rayEl = document.getElementById('p2d1-ray'),
+      txt = document.getElementById('p2d1-txt'), note = document.getElementById('p2d1-note'),
+      modeUi = document.getElementById('p2d1-mode'), rayUi = document.getElementById('p2d1-rayui');
+  var mode = 'f', ray = 4;
+  var RAYS = [
+    [GX - 20, GY + 50, GX + 2 * CS + 20, GY + 50], [GX - 20, GY + 150, GX + 2 * CS + 20, GY + 150],
+    [GX + 50, GY - 20, GX + 50, GY + 2 * CS + 20], [GX + 150, GY - 20, GX + 150, GY + 2 * CS + 20],
+    [GX - 14, GY - 14, GX + 2 * CS + 14, GY + 2 * CS + 14]
+  ];
+  function f2(v) { return v.toFixed(3); }
+  function render() {
+    var html = '', th = '', j, i, x, y, sum, parts = [], big, small, a;
+    for (j = 0; j < 4; j++) {
+      x = GX + (j % 2) * CS; y = GY + Math.floor(j / 2) * CS;
+      a = ray >= 0 ? A[ray][j] : 0;
+      html += '<rect x="' + x + '" y="' + y + '" width="' + CS + '" height="' + CS + '" class="svg-line" stroke-width="1.2" fill-opacity="' + (ray >= 0 ? (a > 0 ? 0.2 : 0) : 0.1) + '" style="fill:var(--accent)"/>';
+      if (ray >= 0) {
+        if (mode === 'f') { small = 'x' + SD[j] + ' = ' + X[j]; big = a > 0 ? f2(a * X[j]) : '0'; }
+        else { small = 'b' + SD[ray] + ' = ' + B[ray]; big = a > 0 ? f2(a * B[ray]) : '0'; }
+      } else {
+        if (mode === 'f') { small = 'x' + SD[j]; big = String(X[j]); }
+        else { big = 0; for (i = 0; i < 5; i++) big += A[i][j] * B[i]; small = '화소 ' + (j + 1); big = big.toFixed(1); }
+      }
+      th += '<text x="' + (x + 8) + '" y="' + (y + 18) + '" font-size="10.5" class="svg-muted">' + small + '</text>';
+      th += '<text x="' + (x + CS / 2) + '" y="' + (y + CS / 2 + 8) + '" text-anchor="middle" font-size="' + (ray >= 0 && a === 0 ? 16 : 20) + '" font-weight="700" class="' + (ray >= 0 && a === 0 ? 'svg-muted' : 'svg-fg') + '">' + big + '</text>';
+    }
+    cellsEl.innerHTML = html; document.getElementById('p2d1-cellt').innerHTML = th;
+    if (ray >= 0) {
+      var r = RAYS[ray];
+      rayEl.setAttribute('d', 'M' + r[0] + ' ' + r[1] + ' L' + r[2] + ' ' + r[3]);
+    } else rayEl.setAttribute('d', '');
+    var tx = 290, t = '';
+    if (ray >= 0 && mode === 'f') {
+      sum = 0;
+      for (j = 0; j < 4; j++) if (A[ray][j] > 0) { parts.push((A[ray][j] === 1 ? '' : '√2 × ') + X[j]); sum += A[ray][j] * X[j]; }
+      t += '<text x="' + tx + '" y="70" font-weight="700">순투영: 광선 ' + NAMES[ray] + '의 예측값</text>';
+      t += '<text x="' + tx + '" y="100" class="svg-muted">(Ax)ᵢ = Σ aᵢⱼxⱼ</text>';
+      t += '<text x="' + tx + '" y="128">= ' + parts.join(' + ') + '</text>';
+      t += '<text x="' + tx + '" y="156" font-weight="700">= ' + f2(sum) + '</text>';
+      t += '<text x="' + tx + '" y="190" class="svg-muted">측정값 b' + SD[ray] + ' = ' + B[ray] + '</text>';
+      note.textContent = '순투영, 광선 ' + NAMES[ray] + ': Σ aᵢⱼxⱼ = ' + f2(sum);
+    } else if (ray >= 0) {
+      var cnt = 0; for (j = 0; j < 4; j++) if (A[ray][j] > 0) cnt++;
+      t += '<text x="' + tx + '" y="70" font-weight="700">역투영: 광선 ' + NAMES[ray] + '의 몫</text>';
+      t += '<text x="' + tx + '" y="100" class="svg-muted">화소 j += aᵢⱼ × b' + SD[ray] + '</text>';
+      t += '<text x="' + tx + '" y="128">b' + SD[ray] + ' = ' + B[ray] + '</text>';
+      t += '<text x="' + tx + '" y="156">지나는 화소 ' + cnt + '개에 더함</text>';
+      t += '<text x="' + tx + '" y="190" class="svg-muted">나머지 화소는 0을 받음</text>';
+      note.textContent = '역투영, 광선 ' + NAMES[ray] + ': 지나는 화소에 aᵢⱼ × ' + B[ray] + '를 더함';
+    } else if (mode === 'f') {
+      t += '<text x="' + tx + '" y="70" font-weight="700">순투영 Ax (광선 5개)</text>';
+      t += '<text x="' + tx + '" y="100" class="svg-muted">화소 값 x = (0.2, 0.5, 0.1, 0.3)</text>';
+      var bb = []; for (i = 0; i < 5; i++) { sum = 0; for (j = 0; j < 4; j++) sum += A[i][j] * X[j]; bb.push(f2(sum)); }
+      t += '<text x="' + tx + '" y="128">Ax = (' + bb.join(', ') + ')</text>';
+      note.textContent = '순투영 전체: Ax = (' + bb.join(', ') + ')';
+    } else {
+      var at = []; for (j = 0; j < 4; j++) { sum = 0; for (i = 0; i < 5; i++) sum += A[i][j] * B[i]; at.push(sum.toFixed(1)); }
+      t += '<text x="' + tx + '" y="70" font-weight="700">역투영 Aᵀb (5개를 합함)</text>';
+      t += '<text x="' + tx + '" y="100" class="svg-muted">b = (0.7, 0.4, 0.3, 0.8, 0.707)</text>';
+      t += '<text x="' + tx + '" y="128">Aᵀb = (' + at.join(', ') + ')</text>';
+      note.textContent = '역투영 전체: Aᵀb = (' + at.join(', ') + ')';
+    }
+    txt.innerHTML = t;
+    Array.prototype.forEach.call(modeUi.querySelectorAll('button'), function (b) { var on = b.getAttribute('data-mode') === mode; b.setAttribute('aria-pressed', on); b.style.fontWeight = on ? 700 : 400; b.style.outline = on ? '2px solid var(--accent)' : ''; });
+    Array.prototype.forEach.call(rayUi.querySelectorAll('button'), function (b) { var on = +b.getAttribute('data-ray') === ray; b.setAttribute('aria-pressed', on); b.style.fontWeight = on ? 700 : 400; b.style.outline = on ? '2px solid var(--accent)' : ''; });
+  }
+  modeUi.addEventListener('click', function (e) { var t = e.target.closest('button[data-mode]'); if (t) { mode = t.getAttribute('data-mode'); render(); } });
+  rayUi.addEventListener('click', function (e) { var t = e.target.closest('button[data-ray]'); if (t) { ray = +t.getAttribute('data-ray'); render(); } });
+  render();
+})();
+</script>
+
+  <h3>역투영은 역연산이 아닙니다</h3>
+
+  <p>이름 때문에 역투영을 순투영의 되돌리기로 오해하기 쉽습니다. 되돌리기라면 \(\mathbf{A}^{\mathsf T}(\mathbf{A}\mathbf{x}) = \mathbf{x}\)여야 합니다. 위젯의 '모두' 버튼으로 본 \(\mathbf{A}^{\mathsf T}\mathbf{b} = (2.0,\ 1.5,\ 0.7,\ 2.2)\)가 바로 \(\mathbf{b} = \mathbf{A}\mathbf{x}\)를 역투영한 결과입니다.
+  원래 영상 \(\mathbf{x} = (0.2,\ 0.5,\ 0.1,\ 0.3)\)과 다르고 비례하지도 않습니다. 화소 1은 원래 값이 화소 2보다 작은데, 지나는 광선이 ①③⑤로 세 개(화소 2는 ①④ 두 개)여서 역투영 값은 더 큽니다.
+  역투영은 화소를 지나는 광선들의 값을 모을 뿐, 그 값이 어느 화소에서 왔는지를 풀어 주지 않습니다. 순투영 뒤에 역투영을 한 영상이 흐린 것은 1편에서 본 현상과 같습니다(<a href="../../part1/quick/day4.html#s2">1편 4일차 페이지 2</a>).</p>
+
+  <p>그렇다면 반복법에서는 역투영을 어디에 쓸까요? 고리에서 측정값과 예측값의 차이, 곧 잔차(<span class="term" data-term="residual">Residual</span>) \(\mathbf{b}-\mathbf{A}\mathbf{x}\)는 광선 쪽에 있는 양입니다. 영상을 고치려면 이 값을 영상 쪽으로 옮겨야 하는데, 그 길이 역투영입니다.
+  정확한 해를 한 번에 구하는 대신, 잔차를 영상 쪽으로 옮겨 조금씩 고치는 일을 되풀이하는 것입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch01.html#s5">2편 1장 페이지 5</a>: 순투영과 역투영의 정의, 위 위젯의 원본</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="내적과 수반, 짝 맞추기">
+  <p class="kicker">1일차 · 페이지 4</p>
+  <h2>왜 하필 \(\mathbf{A}^{\mathsf T}\)일까요: 내적과 수반</h2>
+
+  <p>역투영을 계산하는 방법은 여러 가지가 있을 법한데, 왜 반드시 \(\mathbf{A}\)의 전치를 쓸까요? 이 질문의 답이 수반(Adjoint)입니다.
+  먼저 필요한 도구 하나를 정리합니다.</p>
+
+  <h3>내적</h3>
+
+  <p>길이가 같은 두 벡터의 같은 자리 성분을 곱해 모두 더한 수를 내적(<span class="term" data-term="inner">Inner Product</span>) \(\langle\mathbf{a},\mathbf{c}\rangle\)라고 합니다.</p>
+
+  <p style="text-align:center">\[\langle\mathbf{a},\mathbf{c}\rangle=\sum_j a_jc_j,\qquad \text{예: }\langle(1,2),(3,4)\rangle=1\cdot3+2\cdot4=11\]</p>
+
+  <p>페이지 2에서 본 것처럼 \((\mathbf{A}\mathbf{x})_i\)는 \(\mathbf{A}\)의 \(i\)행과 \(\mathbf{x}\)의 내적입니다.</p>
+
+  <h3>수반 관계</h3>
+
+  <p>영상 \(\mathbf{x}\)와 광선 쪽 벡터 \(\mathbf{d}\)를 아무것이나 하나씩 고릅니다. 광선 쪽에서 \(\mathbf{A}\mathbf{x}\)와 \(\mathbf{d}\)의 내적을 재는 것과, 영상 쪽에서 \(\mathbf{x}\)와 \(\mathbf{A}^{\mathsf T}\mathbf{d}\)의 내적을 재는 것은 항상 같은 값을 줍니다.</p>
+
+  <p style="text-align:center">\[\langle\mathbf{A}\mathbf{x},\ \mathbf{d}\rangle=\langle\mathbf{x},\ \mathbf{A}^{\mathsf T}\mathbf{d}\rangle\qquad(\text{모든 }\mathbf{x},\mathbf{d}\text{에 대해})\]</p>
+
+  <p>이 관계를 만족하는 연산을 \(\mathbf{A}\)의 수반(<span class="term" data-term="adjoint">Adjoint</span>)이라고 부르며, 실수 벡터에서는 수반이 정확히 전치입니다. 페이지 2의 예로 확인합니다. \(\mathbf{d}=(1,0,0,0,1)\)이면 다음과 같습니다.</p>
+  <ul>
+    <li>왼쪽: \(\mathbf{A}\mathbf{x}=(0.7,\ 0.4,\ 0.3,\ 0.8,\ 0.707)\)이므로 \(\langle\mathbf{A}\mathbf{x},\mathbf{d}\rangle=0.7+0.707=1.407\)입니다.</li>
+    <li>오른쪽: \(\mathbf{A}^{\mathsf T}\mathbf{d}\)는 \(\mathbf{A}\)의 1행과 5행을 더한 \((1+\sqrt2,\ 1,\ 0,\ \sqrt2)\)이므로 \(\langle\mathbf{x},\mathbf{A}^{\mathsf T}\mathbf{d}\rangle=0.2\cdot2.414+0.5\cdot1+0.3\cdot1.414\approx1.407\)입니다.</li>
+  </ul>
+
+  <p>의미는 이렇습니다. 광선 하나의 값만 1이고 나머지가 0인 \(\mathbf{d}\)를 넣으면, 왼쪽은 그 광선의 측정값 하나입니다. 오른쪽의 \(\mathbf{A}^{\mathsf T}\mathbf{d}\)는 그 광선이 지나는 화소에만 가중치가 놓인 영상이므로, 같은 측정값을 영상 쪽에서 "화소 값에 가중치를 곱해 더한 값"으로 다시 재는 것입니다.
+  <b>역투영은 측정 쪽의 양을 영상 쪽에서 똑같이 잴 수 있게 옮기는 연산</b>이며, 이 성질을 지키는 것이 \(\mathbf{A}^{\mathsf T}\)뿐입니다.</p>
+
+  <details class="fold">
+    <summary>수반 관계가 성립하는 이유</summary>
+    <div class="fold-body">
+      <p>합의 순서를 바꾸면 됩니다.</p>
+      <p style="text-align:center">\[\langle\mathbf{A}\mathbf{x},\mathbf{d}\rangle=\sum_i\Bigl(\sum_j a_{ij}x_j\Bigr)d_i=\sum_j x_j\Bigl(\sum_i a_{ij}d_i\Bigr)=\langle\mathbf{x},\mathbf{A}^{\mathsf T}\mathbf{d}\rangle\]</p>
+      <p>가운데 등호가 \(i\)에 대한 합과 \(j\)에 대한 합의 순서를 바꾼 것이고, 마지막 괄호가 역투영 \((\mathbf{A}^{\mathsf T}\mathbf{d})_j\)입니다. 영상이 화소 격자가 아니라 연속 함수일 때도 합이 적분으로 바뀔 뿐 같은 증명이 됩니다(<a href="../../part1/detail/ch04.html#s6">1편 4장 페이지 6</a>).</p>
+    </div>
+  </details>
+
+  <h3>짝이 맞는다는 것</h3>
+
+  <p>순투영 행렬 \(\mathbf{A}\)와 역투영에 쓰는 행렬 \(\mathbf{B}\)가 \(\mathbf{B}=\mathbf{A}^{\mathsf T}\)이면 둘을 짝(<span class="term" data-term="matched">Matched Pair</span>)이라고 합니다. \(\mathbf{B}\ne\mathbf{A}^{\mathsf T}\)이면 짝이 맞지 않는다(Unmatched)고 합니다.
+  실제 구현에서는 순투영과 역투영을 따로 만드는 일이 흔해서, 짝이 맞는지를 위의 수반 관계로 점검합니다. 아주 작은 예로 확인합니다. \(\mathbf{A}=\begin{pmatrix}1&1\\0&1\end{pmatrix}\)에 대해 정확한 전치는 \(\mathbf{A}^{\mathsf T}=\begin{pmatrix}1&0\\1&1\end{pmatrix}\)이고,
+  따로 구현한 역투영은 \(\mathbf{B}=\begin{pmatrix}1&0\\1&0.5\end{pmatrix}\)로 거의 비슷해 보입니다. \(\mathbf{x}=(1,2)\), \(\mathbf{d}=(1,1)\)로 점검하면 다음과 같습니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>역투영</th><th>\(\langle\mathbf{A}\mathbf{x},\mathbf{d}\rangle\)</th><th>\(\langle\mathbf{x},\text{역투영}(\mathbf{d})\rangle\)</th><th>판정</th></tr>
+      <tr><td>\(\mathbf{A}^{\mathsf T}\)</td><td>\(\langle(3,2),(1,1)\rangle=5\)</td><td>\(\langle(1,2),(1,2)\rangle=5\)</td><td>같음: 짝이 맞음</td></tr>
+      <tr><td>\(\mathbf{B}\)</td><td>\(5\)</td><td>\(\langle(1,2),(1,1.5)\rangle=4\)</td><td>다름: 짝이 맞지 않음</td></tr>
+    </table>
+  </div>
+
+  <p>겉보기에 비슷해도 점검에서 걸러집니다. 짝이 맞지 않으면 역투영이 잔차를 줄이는 방향이 아니게 되어, 반복이 수렴하지 않거나 풀려던 문제와 다른 점으로 수렴할 수 있습니다.</p>
+
+  <div class="box note">
+    <p class="box-t">짝을 맞추는 가장 쉬운 방법</p>
+    <p>시스템 행렬을 저장하지 않고, 순투영과 역투영이 필요할 때마다 같은 \(a_{ij}\) 계산 코드를 불러 쓰는 방식을 즉석 계산(<span class="term" data-term="onthefly">On-the-fly</span>) 연산자라고 합니다.
+    순투영은 그 값을 "곱해서 모으고", 역투영은 같은 값을 "곱해서 흩뿌리므로" 두 연산이 저절로 전치 관계가 됩니다. 메모리를 아끼고 짝도 맞는 대신, 계산량은 줄지 않습니다.</p>
+  </div>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch01.html#s5">2편 1장 페이지 5</a>: 수반 관계를 1편 4장과 연결하는 설명</li>
+      <li><a href="../detail/ch01.html#s6">2편 1장 페이지 6</a>: 짝이 맞지 않는 경우와 실무의 선택</li>
+      <li><a href="../detail/ch01.html#s7">2편 1장 페이지 7</a>: 즉석 계산 연산자</li>
+      <li><a href="../detail/ch02.html#s7">2편 2장 페이지 7(심화)</a>: 짝이 맞지 않을 때 수렴 조건이 어떻게 바뀌는지</li>
+      <li><a href="../../part1/detail/ch04.html#s6">1편 4장 페이지 6</a>: 역투영의 정의와 수반 연산</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">1일차 · 페이지 5</p>
+  <h2>1일차 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>광선 하나가 식 하나이고, 모든 식을 모으면 \(\mathbf{A}\mathbf{x}=\mathbf{b}\)입니다. \(\mathbf{A}\)의 행은 광선, 열은 화소, 원소 \(a_{ij}\)는 광선 \(i\)가 화소 \(j\)에 기여하는 가중치(여기서는 지나는 길이)입니다. 1편의 \(p_i, \mu_j, w_{ij}\)가 \(b_i, x_j, a_{ij}\)로 바뀐 것입니다.</li>
+      <li>\(\mathbf{A}\)는 아주 크지만 대부분 0이어서(희소), 역행렬 대신 반복법으로 풉니다. 반복법의 고리는 순투영 \(\mathbf{A}\mathbf{x}\), 잔차 \(\mathbf{b}-\mathbf{A}\mathbf{x}\), 역투영 \(\mathbf{A}^{\mathsf T}\), 영상 고치기입니다.</li>
+      <li>순투영 \((\mathbf{A}\mathbf{x})_i=\sum_j a_{ij}x_j\)는 화소 값을 광선 쪽으로 모으고, 역투영 \((\mathbf{A}^{\mathsf T}\mathbf{d})_j=\sum_i a_{ij}d_i\)는 광선의 값을 화소 쪽으로 흩뿌립니다. 역투영은 순투영의 역연산이 아닙니다.</li>
+      <li>역투영이 \(\mathbf{A}^{\mathsf T}\)인 이유는 수반 관계 \(\langle\mathbf{A}\mathbf{x},\mathbf{d}\rangle=\langle\mathbf{x},\mathbf{A}^{\mathsf T}\mathbf{d}\rangle\)가 성립하는 연산이기 때문입니다. 따로 구현한 역투영 \(\mathbf{B}\)는 이 관계로 점검하고, 같은 \(a_{ij}\)를 공유하는 즉석 계산은 저절로 짝이 맞습니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="q">페이지 2의 \(2\times2\) 예에서 광선 ⑤의 값만 1이고 나머지가 0인 \(\mathbf{d}=(0,0,0,0,1)\)을 역투영한 \(\mathbf{A}^{\mathsf T}\mathbf{d}\)(화소 1, 2, 3, 4 순서)는 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="맞습니다. 광선 ⑤는 화소 1과 4를 길이 √2 씩 지나므로 그 두 화소에만 √2 × 1 이 더해지고, 나머지 화소는 0 입니다.">\((\sqrt2,\ 0,\ 0,\ \sqrt2)\)</li>
+      <li data-why="틀립니다. 모든 화소에 같은 값을 칠하는 것은 광선 ⑤가 모든 화소를 지날 때의 결과입니다. 광선 ⑤는 화소 1과 4만 지납니다.">\((1,\ 1,\ 1,\ 1)\)</li>
+      <li data-why="틀립니다. 화소 2와 3을 지나는 것은 반대쪽 대각선입니다. 광선 ⑤는 왼쪽 위에서 오른쪽 아래로 가므로 화소 1과 4를 지납니다.">\((0,\ \sqrt2,\ \sqrt2,\ 0)\)</li>
+      <li data-why="틀립니다. 역투영은 값 1에 aᵢⱼ(=√2)를 곱해 지나는 화소에 더합니다. 값을 두 화소로 나누어(0.5씩) 주는 계산이 아닙니다.">\((0.5,\ 0,\ 0,\ 0.5)\)</li>
+    </ol>
+    <div class="explain">
+      <p>이 결과는 \(\mathbf{A}^{\mathsf T}\)의 5번째 열, 곧 \(\mathbf{A}\)의 5행을 세로로 세운 것입니다. 역투영에 광선 하나만 넣으면 그 광선의 행이 그대로 나옵니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">페이지 3에서 \(\mathbf{b}=\mathbf{A}\mathbf{x}\)의 역투영은 \((2.0,\ 1.5,\ 0.7,\ 2.2)\)로, 원래 영상 \(\mathbf{x}=(0.2,\ 0.5,\ 0.1,\ 0.3)\)과 달랐습니다. 가장 알맞은 설명은 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 광선 5개의 값은 이상적인 데이터이고 잡음이 없습니다. 잡음이 없어도 역투영은 영상을 되돌려 주지 않습니다.">측정값에 잡음이 섞여 있어서 정확한 영상이 나오지 않습니다.</li>
+      <li data-why="틀립니다. 광선을 더 쓰면 값이 달라지기는 하지만, 역투영이 하는 일은 광선의 값을 지난 화소에 모으는 것이어서 광선 수를 늘려도 역연산이 되지 않습니다.">광선을 충분히 많이 쓰지 않았기 때문이고, 광선이 많아지면 같아집니다.</li>
+      <li data-why="맞습니다. 역투영은 화소마다 그 화소를 지나는 광선들의 값을 aᵢⱼ 배로 모읍니다. 어느 화소에서 온 값인지를 구별하지 못하므로 지나는 광선이 많은 화소(화소 1은 ①③⑤)의 값이 커집니다.">역투영은 화소를 지나는 광선들의 값을 모을 뿐, 그 값이 어느 화소에서 왔는지를 풀어 주지 않습니다.</li>
+      <li data-why="틀립니다. 계산 오류가 아닙니다. Aᵀ(Ax) 는 원래 x 와 다릅니다. 모든 x 에서 같아지려면 AᵀA 가 항등행렬이어야 하는데 이 A 는 그렇지 않습니다.">계산 중에 반올림 오차가 생겨서 값이 달라졌습니다.</li>
+    </ol>
+    <div class="explain">
+      <p>역투영은 순투영의 수반이지 역연산이 아닙니다. 수반이라는 성질은 \(\langle\mathbf{A}\mathbf{x},\mathbf{d}\rangle=\langle\mathbf{x},\mathbf{A}^{\mathsf T}\mathbf{d}\rangle\)가 성립한다는 것이고, 원래 영상을 돌려준다는 뜻이 아닙니다.
+      영상을 돌려받으려면 역투영을 한 번 하고 끝내지 않고 잔차를 이용해 되풀이해서 고쳐야 하며, 이것이 2일차의 주제입니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">\(\mathbf{A}=\begin{pmatrix}1&1\\0&1\end{pmatrix}\)에 대해 따로 구현한 역투영이 \(\mathbf{B}=\begin{pmatrix}1&0\\1&2\end{pmatrix}\)입니다. \(\mathbf{x}=(1,2)\), \(\mathbf{d}=(1,1)\)로 수반 점검을 하면 어떻게 될까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. ⟨Ax, d⟩ = ⟨(3,2),(1,1)⟩ = 5 이고 ⟨x, Bd⟩ = ⟨(1,2),(1,3)⟩ = 7 로 서로 다릅니다.">두 내적이 모두 5로 같아서 짝이 맞습니다.</li>
+      <li data-why="맞습니다. Ax = (3, 2) 이므로 ⟨Ax, d⟩ = 5 이고, Bd = (1, 3) 이므로 ⟨x, Bd⟩ = 1 + 6 = 7 입니다. 두 값이 다르므로 B 는 A 의 전치가 아닙니다.">\(\langle\mathbf{A}\mathbf{x},\mathbf{d}\rangle=5\), \(\langle\mathbf{x},\mathbf{B}\mathbf{d}\rangle=7\)로 달라서 짝이 맞지 않습니다.</li>
+      <li data-why="틀립니다. 점검이 한 번 어긋나면 B 는 전치가 아닙니다. 한 쌍의 x, d 에서 어긋났다면 짝이 아니라는 결론에는 충분합니다.">한 쌍의 \(\mathbf{x},\mathbf{d}\)로는 판정할 수 없고 여러 쌍을 시험해야 합니다.</li>
+      <li data-why="틀립니다. 수반 점검은 A 의 크기나 B 가 얼마나 비슷해 보이는지와 상관없이 쓸 수 있고, 이 예에서도 한 번의 점검으로 판정됩니다.">\(\mathbf{B}\)가 \(\mathbf{A}^{\mathsf T}\)와 비슷해 보이므로 짝이 맞는다고 봅니다.</li>
+    </ol>
+    <div class="explain">
+      <p>짝이 맞는다는 것을 확인하려면 모든 \(\mathbf{x},\mathbf{d}\)에서 성립해야 하지만, 맞지 않는다는 것은 어긋나는 한 쌍만 찾으면 증명됩니다. 실제 코드에서는 무작위 \(\mathbf{x},\mathbf{d}\)를 한두 쌍 고르는 것으로 대개 충분합니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>페이지 2의 \(\mathbf{A}\)에 다른 영상 \(\mathbf{x}=(0.1,\ 0.2,\ 0.3,\ 0.4)\)를 넣습니다.
+        <ul style="list-style:none;padding-left:0">
+          <li>(가) 순투영 \(\mathbf{A}\mathbf{x}\)를 광선 ①~⑤마다 구하세요.</li>
+          <li>(나) \(\mathbf{d}=(0,0,0,0,1)\)일 때 \(\langle\mathbf{A}\mathbf{x},\mathbf{d}\rangle\)와 \(\langle\mathbf{x},\mathbf{A}^{\mathsf T}\mathbf{d}\rangle\)를 구해 같은지 확인하세요.</li>
+        </ul></li>
+      <li>역투영을 따로 구현했는데 광선 ⑤의 가중치를 \(\sqrt2\) 대신 1로 쓴 \(\mathbf{B}\)(\(\mathbf{A}^{\mathsf T}\)에서 5번째 열만 \(\sqrt2\)를 1로 바꾼 행렬)가 되었다고 합시다. 1번의 \(\mathbf{x}\), \(\mathbf{d}\)로 수반 점검을 하고, 짝이 맞는지 판정하세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번 (가).</b> 행마다 같은 자리끼리 곱해 더합니다. ① \(0.1+0.2=0.3\), ② \(0.3+0.4=0.7\), ③ \(0.1+0.3=0.4\), ④ \(0.2+0.4=0.6\), ⑤ \(\sqrt2(0.1+0.4)\approx0.707\)입니다. 곧 \(\mathbf{A}\mathbf{x}=(0.3,\ 0.7,\ 0.4,\ 0.6,\ 0.707)\)입니다.
+      <b>(나)</b> \(\langle\mathbf{A}\mathbf{x},\mathbf{d}\rangle=0.707\)입니다. \(\mathbf{A}^{\mathsf T}\mathbf{d}=(\sqrt2,0,0,\sqrt2)\)이므로 \(\langle\mathbf{x},\mathbf{A}^{\mathsf T}\mathbf{d}\rangle=\sqrt2(0.1+0.4)\approx0.707\)로 같습니다.</p>
+      <p><b>2번.</b> \(\mathbf{B}\mathbf{d}=(1,0,0,1)\)이므로 \(\langle\mathbf{x},\mathbf{B}\mathbf{d}\rangle=0.1+0.4=0.5\)입니다. 왼쪽은 \(0.707\)이므로 \(0.707\ne0.5\)이고, 짝이 맞지 않습니다.
+      광선 ⑤가 화소를 지나는 길이를 순투영에서는 \(\sqrt2\)로, 역투영에서는 1로 서로 다르게 쓴 것이 원인입니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>대각선 광선이 화소 하나를 지나는 길이를 1로 쓰는 것입니다. 한 변이 1인 정사각형의 대각선 길이는 \(\sqrt2\)입니다.</li>
+        <li>역투영을 열이 아니라 행 기준으로 읽는 것입니다. \((\mathbf{A}^{\mathsf T}\mathbf{d})_j\)는 화소 \(j\)의 열(\(\mathbf{A}\)의 \(j\)번째 열)과 \(\mathbf{d}\)의 내적입니다.</li>
+        <li>수반 점검에서 \(\langle\mathbf{x},\mathbf{B}\mathbf{d}\rangle\)와 \(\langle\mathbf{B}\mathbf{x},\mathbf{d}\rangle\)를 혼동하는 것입니다. 비교할 쪽은 \(\langle\mathbf{A}\mathbf{x},\mathbf{d}\rangle\)와 \(\langle\mathbf{x},\mathbf{B}\mathbf{d}\rangle\)입니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="day2.html"><span>다음 장</span>2일차 — 한 광선씩, 또는 한꺼번에: ART·SIRT·SART</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>

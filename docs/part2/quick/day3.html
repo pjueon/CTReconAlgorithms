@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ko" data-chapter="day3">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3일차 · 언제 멈출까? 목적함수, 불량조건, 반 수렴 — CT 재구성 2편 빠르게 보기</title>
+<script src="../../assets/theme.js"></script><link rel="stylesheet" href="../../assets/base.css">
+<link rel="stylesheet" href="../../assets/katex/katex.min.css">
+<link rel="stylesheet" href="../../assets/math.css">
+<link rel="stylesheet" href="../../assets/book.css">
+</head>
+<body>
+
+<main id="book"><div class="inner">
+
+<!-- ─────────────────────────────────────────── 페이지 1 -->
+<section class="screen" data-title="무엇을 맞추려는 걸까: 목적함수">
+  <p class="kicker">3일차 · 페이지 1</p>
+  <h1>언제 멈출까? 목적함수, 불량조건, 반 수렴</h1>
+
+  <p class="lead">2일차의 ART·SIRT·SART는 반복할수록 식에 더 잘 맞는 영상을 만듭니다. 그렇다면 반복을 끝없이 계속하면 좋을까요?
+  측정값에 잡음이 있으면 그렇지 않습니다. 오늘은 그 이유를 세 단계로 봅니다. 반복이 줄이려는 양인 목적함수(페이지 1), 측정이 보지 못하는 방향인 영공간(페이지 2), 작은 잡음을 크게 키우는 불량조건(페이지 3)을 본 뒤,
+  이 셋이 합쳐져 나타나는 반 수렴과 멈추는 방법을 봅니다(페이지 4).</p>
+
+  <h3>잡음이 있으면 식이 모두 맞지 않습니다</h3>
+
+  <p>1편 빠르게 보기는 잡음이 없는 측정값을 가정했습니다. 실제 검출기에 닿는 X선 광자는 수가 유한해서 측정값에 잡음이 섞이고, 두꺼운 곳을 지난 광선일수록 광자가 적어 잡음이 상대적으로 큽니다(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>).
+  잡음이 섞이면 \(\mathbf{A}\mathbf{x}=\mathbf{b}\)를 정확히 만족하는 \(\mathbf{x}\)가 없는 경우가 흔합니다.</p>
+
+  <p>1일차의 \(2\times2\) 예에서 광선 ①의 측정값에만 0.02의 잡음이 섞여 \(\mathbf{b}=(0.72,\ 0.40,\ 0.30,\ 0.80,\ 0.707)\)이 되었다고 합시다.
+  광선 ①, ②의 합은 \(0.72+0.40=1.12\), 광선 ③, ④의 합은 \(0.30+0.80=1.10\)입니다. 그런데 어떤 영상이든 ①+②와 ③+④는 네 화소의 합으로 같아야 하므로(두 쌍 모두 같은 화소 네 개를 한 번씩 지납니다) 이 네 측정값을 모두 만족하는 영상은 존재하지 않습니다.</p>
+
+  <p>식으로 쓰면 다음과 같습니다. \(\mathbf{A}\)의 행은 광선 ①~⑤, 열은 화소 1~4이고, \(\mathbf{b}\)의 성분은 광선 ①~⑤의 측정값입니다.</p>
+
+  <p style="text-align:center">\[\mathbf{A}=\begin{pmatrix}1&1&0&0\\0&0&1&1\\1&0&1&0\\0&1&0&1\\\sqrt2&0&0&\sqrt2\end{pmatrix},\qquad \mathbf{b}=\begin{pmatrix}0.72\\0.40\\0.30\\0.80\\0.707\end{pmatrix}\]</p>
+
+  <h3>틀린 정도를 재는 함수</h3>
+
+  <p>정확히 맞출 수 없으면 틀린 정도가 가장 작은 영상을 고릅니다. 틀린 정도는 잔차 \(\mathbf{b}-\mathbf{A}\mathbf{x}\)의 성분을 제곱해 더한 값으로 잽니다.
+  이처럼 알고리즘이 줄이려는 함수를 목적함수(<span class="term" data-term="objective">Objective Function</span>)라 하고, 이 목적함수를 최소로 하는 \(\mathbf{x}\)를 구하는 것을 최소제곱(<span class="term" data-term="lsq">Least Squares</span>)이라고 합니다.</p>
+
+  <p style="text-align:center">\[J(\mathbf{x})=\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert^{2}=\sum_i\bigl(b_i-(\mathbf{A}\mathbf{x})_i\bigr)^{2},\qquad \hat{\mathbf{x}}=\arg\min_{\mathbf{x}}J(\mathbf{x})\]</p>
+
+  <p>위의 잡음 있는 \(\mathbf{b}\)로 계산하면 최소제곱 해는 \(\hat{\mathbf{x}}\approx(0.205,\ 0.510,\ 0.100,\ 0.295)\)이고, 이때 잔차는 \((−0.005,\ −0.005,\ 0.005,\ 0.005,\ 0)\)(\(\mathbf{A}\hat{\mathbf{x}}-\mathbf{b}\))입니다. 틀린 정도는 \(J(\hat{\mathbf{x}})=1.0\times10^{-4}\)입니다.
+  이번에는 참값 \(\mathbf{x}_{\text{true}}=(0.2,0.5,0.1,0.3)\)를 넣어 봅니다. 광선 ①의 예측값이 0.7이고 측정값이 0.72이므로 \(J(\mathbf{x}_{\text{true}})\approx0.02^2=4.0\times10^{-4}\)입니다.</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th></th><th>영상</th><th>\(J\) (데이터에 맞는 정도)</th><th>참값까지의 거리</th></tr>
+      <tr><td>최소제곱 해 \(\hat{\mathbf{x}}\)</td><td>(0.205, 0.510, 0.100, 0.295)</td><td>\(1.0\times10^{-4}\) (더 작음)</td><td>0.012</td></tr>
+      <tr><td>참값 \(\mathbf{x}_{\text{true}}\)</td><td>(0.2, 0.5, 0.1, 0.3)</td><td>\(4.0\times10^{-4}\)</td><td>0</td></tr>
+    </table>
+  </div>
+
+  <p>데이터에 더 잘 맞는 쪽은 참값이 아니라 \(\hat{\mathbf{x}}\)입니다. 데이터에 담긴 잡음까지 맞추려 들면 \(J\)는 줄어도 참값에서는 멀어집니다. 이 점이 오늘 내내 반복되는 주제입니다.</p>
+
+  <h3>반복법은 목적함수를 줄이는 과정입니다</h3>
+
+  <p>\(J\)가 가장 가파르게 커지는 방향(기울기)은 \(2\mathbf{A}^{\mathsf T}(\mathbf{A}\mathbf{x}-\mathbf{b})\)이고, 여기에 1일차의 역투영 \(\mathbf{A}^{\mathsf T}\)가 나옵니다.
+  이 반대 방향으로 내려가는 걸음은 \(\mathbf{x}\leftarrow\mathbf{x}+\tau\,\mathbf{A}^{\mathsf T}(\mathbf{b}-\mathbf{A}\mathbf{x})\)입니다. 곧 "잔차를 역투영해 영상에 더하기"이고, 2일차의 SIRT는 여기에 크기 보정(\(r_i\), \(c_j\))을 끼운 것입니다.
+  ART와 SART도 \(J\)를 줄이는 방향으로 움직입니다. 그래서 반복 횟수를 늘리면 \(J\), 곧 데이터와의 잔차가 줄어드는 경향이 있습니다(\(\tau\)가 크거나 잡음이 있으면 작은 범위에서 오르내리기도 합니다). 문제는 그것이 참값에 가까워지는 것과 같지 않다는 점입니다.</p>
+
+  <details class="fold">
+    <summary>최소제곱 해가 만족하는 식</summary>
+    <div class="fold-body">
+      <p>\(J\)가 최소인 점에서는 기울기가 0이므로 \(\mathbf{A}^{\mathsf T}(\mathbf{A}\hat{\mathbf{x}}-\mathbf{b})=\mathbf{0}\), 곧 정규방정식(Normal Equations) \(\mathbf{A}^{\mathsf T}\mathbf{A}\hat{\mathbf{x}}=\mathbf{A}^{\mathsf T}\mathbf{b}\)를 만족합니다.
+      뜻으로 읽으면, 최소제곱 해에서는 잔차를 역투영한 영상이 0입니다. 더 고칠 방향이 남지 않았다는 뜻입니다.</p>
+      <p>페이지 1의 \(\hat{\mathbf{x}}\)에서 잔차 \(\mathbf{A}\hat{\mathbf{x}}-\mathbf{b}=(-0.005,\ -0.005,\ 0.005,\ 0.005,\ 0)\)을 역투영하면, 화소 1은 광선 ①③⑤에서 \(-0.005+0.005+0=0\), 화소 2는 ①④에서 \(-0.005+0.005=0\), 화소 3은 ②③에서 \(-0.005+0.005=0\), 화소 4는 ②④⑤에서 \(-0.005+0.005+0=0\)으로 네 화소 모두 0입니다.</p>
+    </div>
+  </details>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch03.html#s4">2편 3장 페이지 4</a>: 최소제곱과 정규방정식(잔차가 열공간과 수직이라는 설명)</li>
+      <li><a href="../detail/ch03.html#s7">2편 3장 페이지 7</a>, <a href="../detail/ch03.html#s8">8</a>: 기울기와 최소제곱의 기울기</li>
+      <li><a href="../detail/ch02.html#s7">2편 2장 페이지 7(심화)</a>: SIRT가 가중 최소제곱의 경사하강법이라는 설명</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 2 -->
+<section class="screen" data-title="영공간: 측정이 보지 못하는 방향">
+  <p class="kicker">3일차 · 페이지 2</p>
+  <h2>측정이 보지 못하는 방향: 랭크와 영공간</h2>
+
+  <p><a href="../../part1/quick/day1.html#s3">1편 1일차 페이지 3</a>에서 가로·세로 광선만으로는 같은 데이터를 주는 서로 다른 배치가 남는다고 했습니다. 이 현상을 행렬의 말로 정확히 하면 영공간입니다.
+  1일차의 \(2\times2\) 예에서 대각선 광선 ⑤를 빼고 광선 ①~④만 썼다고 합시다.</p>
+
+  <h3>랭크: 새 정보를 주는 식의 수</h3>
+
+  <p>광선 ①과 ②의 행을 더하면 \((1,1,1,1)\)이고, 광선 ③과 ④의 행을 더해도 \((1,1,1,1)\)입니다. 곧 ① + ② − ③ − ④ = 0이어서 네 식 가운데 하나는 나머지 셋에서 저절로 나옵니다. 새 정보를 주는 식은 세 개뿐입니다.
+  이 개수, 곧 서로 독립인 행의 최대 개수를 랭크(<span class="term" data-term="rank">Rank</span>)라고 합니다. 광선 ①~④의 행렬은 미지수가 4개인데 랭크가 3입니다.</p>
+
+  <h3>영공간: 더해도 측정값이 변하지 않는 영상</h3>
+
+  <p>랭크가 미지수의 수보다 작으면 \(\mathbf{A}\mathbf{z}=\mathbf{0}\)을 만족하는 \(\mathbf{z}\ne\mathbf{0}\)이 있습니다. 이런 \(\mathbf{z}\) 전체를 영공간(<span class="term" data-term="nullspace">Null Space</span>)이라고 합니다.
+  광선 ①~④에서는 \(\mathbf{z}=(1,-1,-1,1)\)이 그런 방향입니다. 화소 1, 4를 올리고 화소 2, 3을 같은 만큼 내리면 가로 광선도 세로 광선도 합이 변하지 않습니다.
+  아래 슬라이더로 참값에 \(t\,\mathbf{z}\)를 더하면서 광선마다의 예측값을 확인해 보세요. 화소 값이 음수가 되지 않는 범위(\(-0.2\le t\le0.1\))만 움직입니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 300" role="img" aria-label="참값 영상에 영공간 방향 (+1, −1, −1, +1)의 t배를 더했을 때의 화소 값과, 광선 ①~⑤의 예측값 막대. 광선 ①~④의 막대는 변하지 않고 광선 ⑤의 막대만 움직인다.">
+      <g id="p2d3a-cells"></g>
+      <g id="p2d3a-bars"></g>
+      <g id="p2d3a-txt" class="svg-fg" font-size="12.5"></g>
+    </svg>
+    <figcaption>왼쪽은 영상 \(\mathbf{x}_{\text{true}}+t\,\mathbf{z}\)의 화소 값(화소 번호는 왼쪽 위가 1, 오른쪽 위가 2, 왼쪽 아래가 3, 오른쪽 아래가 4)이고, 오른쪽 막대는 광선 ①~⑤의 예측값입니다. 짧은 가로선이 측정값 \(b_i\)입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem 1rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="p2d3a-ui">
+    <label for="p2d3a-t">더하는 양 t</label>
+    <input id="p2d3a-t" type="range" min="-0.2" max="0.1" step="0.05" value="0.1" style="width:11rem">
+    <b id="p2d3a-tval">0.10</b>
+    <span>쓰는 광선</span>
+    <button type="button" data-use="4">①~④</button>
+    <button type="button" data-use="5">①~⑤</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="p2d3a-note"></p>
+
+<script>
+(function () {
+  var S2 = Math.SQRT2;
+  var A = [[1, 1, 0, 0], [0, 0, 1, 1], [1, 0, 1, 0], [0, 1, 0, 1], [S2, 0, 0, S2]];
+  var X0 = [0.2, 0.5, 0.1, 0.3], Z = [1, -1, -1, 1], B = [0.7, 0.4, 0.3, 0.8, 0.7071067811865476];
+  var NAMES = ['①', '②', '③', '④', '⑤'];
+  var tEl = document.getElementById('p2d3a-t'), tVal = document.getElementById('p2d3a-tval'),
+      cells = document.getElementById('p2d3a-cells'), bars = document.getElementById('p2d3a-bars'),
+      txt = document.getElementById('p2d3a-txt'), note = document.getElementById('p2d3a-note'),
+      ui = document.getElementById('p2d3a-ui');
+  var use = 5;
+  function render() {
+    var t = Math.round(tEl.value * 100) / 100, x = X0.map(function (v, j) { return v + t * Z[j]; });
+    var h = '', i, j, y, a, J = 0, bh, val;
+    for (j = 0; j < 4; j++) {
+      var cx = 30 + (j % 2) * 70, cy = 50 + Math.floor(j / 2) * 70;
+      h += '<rect x="' + cx + '" y="' + cy + '" width="70" height="70" class="svg-line" stroke-width="1.2" fill-opacity="' + (Z[j] > 0 ? 0.16 : 0.06) + '" style="fill:var(--accent)"/>';
+      h += '<text x="' + (cx + 35) + '" y="' + (cy + 42) + '" text-anchor="middle" font-size="16" font-weight="700" class="svg-fg">' + x[j].toFixed(2) + '</text>';
+      h += '<text x="' + (cx + 5) + '" y="' + (cy + 14) + '" font-size="10" class="svg-muted">화소 ' + (j + 1) + '</text>';
+    }
+    h += '<text x="30" y="36" font-size="12" font-weight="700" class="svg-fg">영상 x_true + t·z</text>';
+    cells.innerHTML = h;
+    var b = '', BASE = 250, SC = 170;
+    b += '<path d="M230 ' + BASE + ' H620" class="svg-line" stroke-width="1"/>';
+    for (i = 0; i < 5; i++) {
+      val = 0; for (j = 0; j < 4; j++) val += A[i][j] * x[j];
+      var on = i < use, bx = 250 + i * 76;
+      bh = Math.max(0, val) * SC;
+      b += '<rect x="' + bx + '" y="' + (BASE - bh).toFixed(1) + '" width="40" height="' + bh.toFixed(1) + '" style="fill:var(' + (i === 4 ? '--accent' : '--muted') + ')" fill-opacity="' + (on ? 0.75 : 0.25) + '"/>';
+      b += '<path d="M' + (bx - 6) + ' ' + (BASE - B[i] * SC).toFixed(1) + ' H' + (bx + 46) + '" stroke-width="2" style="stroke:var(--warn)"/>';
+      b += '<text x="' + (bx + 20) + '" y="' + (BASE - bh - 6).toFixed(1) + '" text-anchor="middle" font-size="11.5" font-weight="700" class="' + (on ? 'svg-fg' : 'svg-muted') + '">' + val.toFixed(3) + '</text>';
+      b += '<text x="' + (bx + 20) + '" y="270" text-anchor="middle" font-size="13" class="svg-fg">' + NAMES[i] + '</text>';
+      if (on) { var d = val - B[i]; J += d * d; }
+    }
+    b += '<text x="230" y="30" font-size="12" font-weight="700" class="svg-fg">광선별 예측값 (Ax)ᵢ</text>';
+    if (use === 4) b += '<text x="620" y="290" text-anchor="end" font-size="10.5" class="svg-muted">광선 ⑤는 쓰지 않음(흐리게 표시)</text>';
+    bars.innerHTML = b;
+    txt.innerHTML = '<text x="30" y="215" font-weight="700">J = ' + (J < 5e-9 ? '0' : J.toFixed(4)) + '</text><text x="30" y="235" class="svg-muted" font-size="11">쓰는 광선만의 잔차 제곱합</text>';
+    tVal.textContent = t.toFixed(2);
+    note.textContent = 't = ' + t.toFixed(2) + ' · 광선 ' + (use === 4 ? '①~④' : '①~⑤') + ' 사용 · J = ' + (J < 5e-9 ? '0' : J.toFixed(4)) + (use === 4 ? ' (t에 상관없이 0)' : (t === 0 ? ' (참값)' : ' (광선 ⑤가 어긋남을 알아챔)'));
+    Array.prototype.forEach.call(ui.querySelectorAll('button'), function (bt) { var on = +bt.getAttribute('data-use') === use; bt.setAttribute('aria-pressed', on); bt.style.fontWeight = on ? 700 : 400; bt.style.outline = on ? '2px solid var(--accent)' : ''; });
+  }
+  tEl.addEventListener('input', render);
+  ui.addEventListener('click', function (e) { var bt = e.target.closest('button[data-use]'); if (bt) { use = +bt.getAttribute('data-use'); render(); } });
+  render();
+})();
+</script>
+
+  <p>광선 ①~④만 쓰면 \(t\)가 얼마이든 \(J=0\)이어서 참값과 \(t=0.1\)의 영상 \((0.3,0.4,0,0.4)\)를 구별할 수 없습니다. 광선 ⑤를 더하면 ⑤의 예측값이 \(\sqrt2\)·(화소 1 + 화소 4)이고 \(\mathbf{z}\)를 더하면 이 합이 \(2t\)만큼 늘어나서, \(\mathbf{A}\mathbf{z}\)의 ⑤번째 성분이 \(2\sqrt2\ne0\)이 됩니다.
+  \(\mathbf{z}\)는 더 이상 영공간에 남지 못하고, 랭크가 4로 올라 영상이 하나로 정해집니다. 방향을 늘리면 같은 데이터를 주는 영상이 줄어든다는 1편의 설명이 이것입니다.</p>
+
+  <h3>반복법은 영공간으로 새지 않습니다</h3>
+
+  <p>0에서 시작한 ART는 갱신마다 행 방향 \(\mathbf{a}_i\)로만 움직입니다. 행은 영공간의 방향과 수직이므로 영공간 성분은 처음부터 끝까지 0으로 남습니다.
+  광선 ①~④만으로 ART를 한 바퀴 돌리면 \((0.225,\ 0.475,\ 0.075,\ 0.325)\)에 도착하는데(2일차 페이지 2의 표에서 광선 ④ 뒤의 값), 이 점은 네 식을 모두 만족하면서 \(\mathbf{x}_{\text{true}}\)에 영공간 방향을 \(0.025\)만큼 더한 점, 곧 영공간 성분이 없는 가장 짧은 해입니다.
+  데이터가 알려 주지 않는 방향은 반복법이 임의로 정하지 않고 0으로 둡니다. 이 방향을 어떻게 채울지는 4일차의 정규화가 다룹니다.</p>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch03.html#s3">2편 3장 페이지 3</a>: 랭크, 영공간, 열공간과 위 그림의 원본</li>
+      <li><a href="../detail/ch01.html#s8">2편 1장 페이지 8</a>: 불완전한 데이터와 영공간의 첫 소개</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 3 -->
+<section class="screen" data-title="불량조건: 작은 잡음을 크게 키우는 문제">
+  <p class="kicker">3일차 · 페이지 3</p>
+  <h2>거의 나란한 광선과 불량조건</h2>
+
+  <p>영공간은 어떤 방향의 정보가 전혀 없는 극단의 경우입니다. 현실에서 더 흔한 것은 정보가 아주 약한 방향이 있는 경우입니다. 두 광선이 거의 같은 방향을 겨냥하는 가장 작은 예로 봅니다.</p>
+
+  <h3>측정값이 0.35%만 변해도</h3>
+
+  <p>미지수가 두 개이고 광선 두 개가 \(\mathbf{a}_1=(1,1)\), \(\mathbf{a}_2=(1,1.01)\)로 거의 나란합니다. 측정값이 \(\mathbf{b}=(2,\ 2.01)\)이면 풀이는 \(\mathbf{x}=(1,1)\)입니다.
+  이제 \(b_2\)에 오차 \(\varepsilon\)이 섞여 \(2.01+\varepsilon\)이 되었다고 합시다. 풀이는 \(\mathbf{x}=(1-100\varepsilon,\ 1+100\varepsilon)\)로 오차가 100배가 되어 옮겨 갑니다.
+  슬라이더를 움직여 보세요.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 270" role="img" aria-label="거의 나란한 두 광선의 풀이. 측정값 b2에 오차 ε을 더하면 풀이가 (1,1)에서 직선을 따라 (1−100ε, 1+100ε)로 옮겨 간다.">
+      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M50 40 V230"/><path d="M50 210 H330"/></g>
+      <g class="svg-muted" font-size="10.5"><text x="320" y="226">x₁</text><text x="56" y="38">x₂</text></g>
+      <path id="p2d3b-seg" fill="none" stroke-width="1.6" stroke-dasharray="5 3" style="stroke:var(--muted)"/>
+      <circle id="p2d3b-p0" r="5" class="svg-fg"/>
+      <circle id="p2d3b-p1" r="6" style="fill:var(--accent)"/>
+      <g class="svg-fg" font-size="12" font-weight="700"><text id="p2d3b-l0">참값 (1, 1)</text></g>
+      <g id="p2d3b-txt" class="svg-fg" font-size="12.5"></g>
+    </svg>
+    <figcaption>검은 점은 오차가 없을 때의 풀이 \((1,1)\), 파란 점은 \(b_2\)에 \(\varepsilon\)이 섞였을 때의 풀이입니다. 점선은 \(\varepsilon\)이 바뀔 때 풀이가 움직이는 자리입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem 1rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="p2d3b-e">\(b_2\)의 오차 \(\varepsilon\)</label>
+    <input id="p2d3b-e" type="range" min="0" max="0.02" step="0.001" value="0.01" style="width:11rem">
+    <b id="p2d3b-eval">0.010</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="p2d3b-note"></p>
+
+<script>
+(function () {
+  var eEl = document.getElementById('p2d3b-e'), eVal = document.getElementById('p2d3b-eval'),
+      seg = document.getElementById('p2d3b-seg'), p0 = document.getElementById('p2d3b-p0'), p1 = document.getElementById('p2d3b-p1'),
+      l0 = document.getElementById('p2d3b-l0'), txt = document.getElementById('p2d3b-txt'), note = document.getElementById('p2d3b-note');
+  function PX(x) { return 50 + (x + 1.2) * 100; }
+  function PY(y) { return 210 - (y - 0.4) * 62; }
+  var NB = Math.sqrt(2 * 2 + 2.01 * 2.01), NX = Math.SQRT2;
+  p0.setAttribute('cx', PX(1)); p0.setAttribute('cy', PY(1));
+  l0.setAttribute('x', PX(1) + 8); l0.setAttribute('y', PY(1) + 4);
+  seg.setAttribute('d', 'M' + PX(1) + ' ' + PY(1) + ' L' + PX(1 - 2) + ' ' + PY(1 + 2));
+  function render() {
+    var e = Math.round(eEl.value * 1000) / 1000, x1 = 1 - 100 * e, x2 = 1 + 100 * e;
+    p1.setAttribute('cx', PX(x1)); p1.setAttribute('cy', PY(x2));
+    var rb = e / NB, rx = Math.hypot(x1 - 1, x2 - 1) / NX;
+    eVal.textContent = e.toFixed(3);
+    txt.innerHTML = '<text x="360" y="70" font-weight="700">풀이 x = (' + x1.toFixed(2) + ', ' + x2.toFixed(2) + ')</text>' +
+      '<text x="360" y="110" class="svg-muted">측정값의 상대 변화 ‖Δb‖/‖b‖ = ' + (rb * 100).toFixed(2) + '%</text>' +
+      '<text x="360" y="136" class="svg-muted">풀이의 상대 변화 ‖Δx‖/‖x‖ = ' + (rx * 100).toFixed(0) + '%</text>' +
+      '<text x="360" y="172" font-weight="700">' + (e > 0 ? '증폭 약 ' + (rx / rb).toFixed(0) + '배' : '오차 없음') + '</text>' +
+      '<text x="360" y="198" class="svg-muted" font-size="11">증폭은 조건수 κ ≈ 402를 넘지 않음</text>';
+    note.textContent = 'ε = ' + e.toFixed(3) + ' → 풀이 (' + x1.toFixed(2) + ', ' + x2.toFixed(2) + ') · 측정값 ' + (rb * 100).toFixed(2) + '% 변화, 풀이 ' + (rx * 100).toFixed(0) + '% 변화';
+  }
+  eEl.addEventListener('input', render);
+  render();
+})();
+</script>
+
+  <p>\(\varepsilon=0.01\)이면 \(b_2\)는 0.5% 바뀌고, 측정값 벡터 전체로는 0.35% 바뀌었을 뿐인데 풀이는 \((1,1)\)에서 \((0,2)\)로 옮겨 가 상대 오차가 100%입니다.
+  두 광선이 거의 같은 직선을 가리켜서, 두 식의 차이(거의 0)가 잡음에 크게 흔들리고 그 흔들림이 그대로 풀이에 옮겨지기 때문입니다.</p>
+
+  <h3>특이값과 조건수</h3>
+
+  <p>행렬 \(\mathbf{A}\)가 어떤 방향의 벡터를 몇 배로 늘리는지를 방향마다 재는 수가 특이값(<span class="term" data-term="singval">Singular Value</span>) \(\sigma\)입니다. 이 예의 행렬은 가장 많이 늘리는 방향의 배수가 \(\sigma_{\max}\approx2.005\), 가장 적게 늘리는 방향의 배수가 \(\sigma_{\min}\approx0.00499\)입니다.
+  거꾸로 풀 때는 잡음이 \(1/\sigma\)배로 커지므로, 가장 약한 방향의 잡음이 \(1/0.00499\approx200\)배로 커집니다. 이 비율 \(\sigma_{\max}/\sigma_{\min}\)을 조건수(<span class="term" data-term="condnum">Condition Number</span>) \(\kappa\)라고 합니다.</p>
+
+  <p style="text-align:center">\[\kappa(\mathbf{A})=\frac{\sigma_{\max}}{\sigma_{\min}},\qquad \frac{\lVert\Delta\mathbf{x}\rVert}{\lVert\mathbf{x}\rVert}\ \le\ \kappa(\mathbf{A})\,\frac{\lVert\Delta\mathbf{b}\rVert}{\lVert\mathbf{b}\rVert}\]</p>
+
+  <p>오른쪽 부등식이 \(\kappa\)의 뜻입니다. 측정값의 상대 오차가 풀이에서 최대 \(\kappa\)배까지 커질 수 있습니다. 이 예에서 \(\kappa\approx402\)이고 슬라이더에서 본 증폭은 약 284배로 그 상한 안에 있습니다.
+  \(\kappa\)가 큰 문제를 불량조건(<span class="term" data-term="illcond">Ill-conditioned</span>)이라고 합니다. 특이값은 행렬에 따라 정해지는 값이고 계산 방법(특이값분해, Singular Value Decomposition)은 본편에서 다룹니다.</p>
+
+  <p>특이값은 단위 원(길이 1인 벡터 전체)이 \(\mathbf{A}\)를 곱해서 변하는 타원의 축 길이로도 볼 수 있습니다. \(\kappa\)가 1이면 원 그대로이고, \(\kappa\)가 클수록 납작한 타원이 됩니다. 슬라이더로 확인해 보세요.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 270" role="img" aria-label="왼쪽은 단위 원과 방향 v1, v2, 오른쪽은 행렬 A가 그 원을 보낸 타원과 축 sigma1 u1, sigma2 u2. 원 위의 점 하나와 그 상이 표시된다.">
+      <g class="svg-line" stroke-width="1" opacity=".45">
+        <path d="M10 135 H290"/><path d="M150 10 V260"/><path d="M340 135 H630"/><path d="M485 10 V260"/>
+      </g>
+      <g class="svg-muted" font-size="11" text-anchor="middle"><text x="150" y="266">x 공간</text><text x="485" y="266">Ax 공간</text><text x="315" y="128">A →</text></g>
+      <circle id="p2d3c-circ" cx="150" cy="135" r="32" fill="none" stroke-width="1.6" style="stroke:var(--fg)"/>
+      <path id="p2d3c-v" fill="none" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <ellipse id="p2d3c-ell" cx="485" cy="135" fill="none" stroke-width="1.6" style="stroke:var(--fg)"/>
+      <path id="p2d3c-u" fill="none" stroke-width="2.2" style="stroke:var(--accent)"/>
+      <circle id="p2d3c-p" r="4" class="svg-fg"/>
+      <circle id="p2d3c-q" r="4" class="svg-fg"/>
+      <g class="svg-fg" font-size="11.5" font-weight="700">
+        <text id="p2d3c-tv1">v₁</text><text id="p2d3c-tv2">v₂</text><text id="p2d3c-tu1">σ₁u₁</text><text id="p2d3c-tu2">σ₂u₂</text>
+      </g>
+    </svg>
+    <figcaption>왼쪽은 길이가 \(1\)인 \(\mathbf{x}\)의 원, 오른쪽은 \(\mathbf{A}\)를 곱한 결과인 타원입니다. 원 위의 점과 그 상(像)이 짝으로 표시됩니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="p2d3c-k">조건수 \(\kappa\)</label>
+    <input id="p2d3c-k" type="range" min="1" max="20" step="1" value="4" style="width:12rem">
+    <b id="p2d3c-k-val">4</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="p2d3c-note"></p>
+
+<script>
+(function () {
+  var TH_V = 28 * Math.PI / 180, TH_U = -22 * Math.PI / 180, PHI = 62 * Math.PI / 180, S = 32;
+  var CX1 = 150, CX2 = 485, CY = 135;
+  function map(kappa, x, y) {          // A = U diag(s1, s2) V^T, 한 점의 상
+    var s1 = Math.sqrt(kappa), s2 = 1 / s1;
+    var c = Math.cos(TH_V), s = Math.sin(TH_V);
+    var a = c * x + s * y, b = -s * x + c * y;
+    a *= s1; b *= s2;
+    c = Math.cos(TH_U); s = Math.sin(TH_U);
+    return [c * a - s * b, s * a + c * b];
+  }
+  var kEl = document.getElementById('p2d3c-k'), kVal = document.getElementById('p2d3c-k-val'), note = document.getElementById('p2d3c-note');
+  var ell = document.getElementById('p2d3c-ell'), vPath = document.getElementById('p2d3c-v'), uPath = document.getElementById('p2d3c-u');
+  var pEl = document.getElementById('p2d3c-p'), qEl = document.getElementById('p2d3c-q');
+  function T(id, x, y) { var e = document.getElementById(id); e.setAttribute('x', x.toFixed(1)); e.setAttribute('y', y.toFixed(1)); }
+  function draw() {
+    var kappa = +kEl.value, s1 = Math.sqrt(kappa), s2 = 1 / s1;
+    ell.setAttribute('rx', (s1 * S).toFixed(1)); ell.setAttribute('ry', (s2 * S).toFixed(1));
+    ell.setAttribute('transform', 'rotate(' + (-TH_U * 180 / Math.PI).toFixed(1) + ' ' + CX2 + ' ' + CY + ')');
+    var v1 = [Math.cos(TH_V), Math.sin(TH_V)], v2 = [-Math.sin(TH_V), Math.cos(TH_V)];
+    var u1 = [Math.cos(TH_U), Math.sin(TH_U)], u2 = [-Math.sin(TH_U), Math.cos(TH_U)];
+    var L = 1.25 * S;
+    vPath.setAttribute('d', 'M' + (CX1 - L * v1[0]).toFixed(1) + ' ' + (CY + L * v1[1]).toFixed(1) + 'L' + (CX1 + L * v1[0]).toFixed(1) + ' ' + (CY - L * v1[1]).toFixed(1) +
+      'M' + (CX1 - L * v2[0]).toFixed(1) + ' ' + (CY + L * v2[1]).toFixed(1) + 'L' + (CX1 + L * v2[0]).toFixed(1) + ' ' + (CY - L * v2[1]).toFixed(1));
+    uPath.setAttribute('d', 'M' + CX2 + ' ' + CY + 'L' + (CX2 + s1 * S * u1[0]).toFixed(1) + ' ' + (CY - s1 * S * u1[1]).toFixed(1) +
+      'M' + CX2 + ' ' + CY + 'L' + (CX2 + s2 * S * u2[0]).toFixed(1) + ' ' + (CY - s2 * S * u2[1]).toFixed(1));
+    T('p2d3c-tv1', CX1 + L * v1[0] + 3, CY - L * v1[1] - 3);
+    T('p2d3c-tv2', CX1 + L * v2[0] - 6, CY - L * v2[1] - 4);
+    T('p2d3c-tu1', CX2 + s1 * S * u1[0] + 4, CY - s1 * S * u1[1] - 4);
+    T('p2d3c-tu2', CX2 + s2 * S * u2[0] - 14, CY - s2 * S * u2[1] - 8);
+    var ang = 118 * Math.PI / 180, px = Math.cos(ang), py = Math.sin(ang), q = map(kappa, px, py);
+    pEl.setAttribute('cx', (CX1 + S * px).toFixed(1)); pEl.setAttribute('cy', (CY - S * py).toFixed(1));
+    qEl.setAttribute('cx', (CX2 + S * q[0]).toFixed(1)); qEl.setAttribute('cy', (CY - S * q[1]).toFixed(1));
+    kVal.textContent = kappa;
+    note.textContent = 'σ₁ = ' + s1.toFixed(3) + ' · σ₂ = ' + s2.toFixed(3) + ' · κ = σ₁/σ₂ = ' + (s1 / s2).toFixed(1);
+  }
+  kEl.addEventListener('input', draw);
+  draw();
+})();
+</script>
+
+  <p>\(\kappa=1\)이면 타원이 원과 같고 방향마다 같은 비율로 늘어납니다. \(\kappa\)가 커질수록 한 방향으로는 크게 늘리고 다른 방향으로는 거의 늘리지 않습니다. 측정값 쪽에서 짧은 축 방향으로 작은 잡음이 섞이면, 거꾸로 풀 때 그 잡음이 \(1/\sigma_{\min}\)배로 커집니다.</p>
+
+  <h3>우리가 본 행렬들의 조건수</h3>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>광선 구성</th><th>특이값</th><th>조건수 \(\kappa\)</th></tr>
+      <tr><td>2×2 예의 ①~⑤</td><td>2.613, 1.414, 1.414, 1.082</td><td>\(1+\sqrt2\approx2.41\) (좋음)</td></tr>
+      <tr><td>2×2 예의 ①~④ (페이지 2)</td><td>2, 1.414, 1.414, 0</td><td>\(\sigma_{\min}=0\): 영공간이 있어 정의할 수 없음(무한대)</td></tr>
+      <tr><td>거의 나란한 두 광선 (이 페이지)</td><td>2.005, 0.00499</td><td>\(\approx402\) (불량조건)</td></tr>
+    </table>
+  </div>
+
+  <p>광선이 많다고 \(\kappa\)가 작아지는 것은 아닙니다. 서로 다른 방향의 광선이 고르게 있어야 합니다. 수백×수백 화소에 수천 개의 광선을 쓰는 실제 CT의 시스템 행렬에는 거의 같은 방향을 겨냥하는 광선이 훨씬 많아서 조건수가 이 작은 예보다 훨씬 큽니다.
+  그런 문제에서 \(J\)를 끝까지 줄이면 가장 약한 방향의 잡음까지 증폭되어 들어오며, 이것이 다음 페이지의 반 수렴입니다.</p>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch01.html#s8">2편 1장 페이지 8</a>: 거의 나란한 두 광선의 그림(위 예의 원본)</li>
+      <li><a href="../detail/ch03.html#s5">2편 3장 페이지 5</a>: 고유값, 특이값분해, 원과 타원 위젯</li>
+      <li><a href="../detail/ch03.html#s6">2편 3장 페이지 6</a>: 조건수 계산과 잡음 증폭 부등식</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 4 -->
+<section class="screen" data-title="반 수렴과 조기 종료">
+  <p class="kicker">3일차 · 페이지 4</p>
+  <h2>반 수렴: 오차가 줄다가 다시 커집니다</h2>
+
+  <p>페이지 1~3을 합치면 이렇게 됩니다. 반복은 \(J\)를 줄이고, 잡음이 있는 데이터에서 \(J\)를 아주 작게 만드는 영상은 가장 약한 방향의 잡음까지 맞춘 영상입니다. 반복이 길어지면 그쪽으로 끌려갑니다.</p>
+
+  <h3>두 광선짜리 확대 모형</h3>
+
+  <p>페이지 3의 두 광선 예로 이 과정을 직접 봅니다. 참값은 \((1,1)\), 측정값은 잡음이 섞인 \(\mathbf{b}=(2,\ 2.02)\)입니다. 이 데이터를 정확히 만족하는 풀이는 \((0,2)\)이므로 참값에서 1.41 떨어져 있습니다.
+  \(\mathbf{x}^{(0)}=\mathbf{0}\)에서 페이지 1의 내려가는 걸음 \(\mathbf{x}\leftarrow\mathbf{x}+\tau\mathbf{A}^{\mathsf T}(\mathbf{b}-\mathbf{A}\mathbf{x})\)를 \(\tau=1/\sigma_{\max}^{2}\approx0.249\)로 되풀이합니다. 슬라이더는 반복 횟수 \(k\)를 로그 눈금으로 고릅니다.
+  이 모형은 일부러 극단적으로 잡은 것입니다. 실제 CT의 곡선은 이렇게 가파르지 않습니다.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 640 290" role="img" aria-label="왼쪽은 두 광선 예의 풀이 평면에서 반복이 (0,0)에서 출발해 참값 (1,1) 근처에 머물다가 데이터를 정확히 만족하는 풀이 (0,2)로 옮겨 가는 경로. 오른쪽은 반복 횟수에 따른 참값까지의 거리와 데이터 잔차.">
+      <defs><clipPath id="p2d3t-clip"><rect x="40" y="20" width="240" height="250"/></clipPath></defs>
+      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M40 250 H280"/><path d="M110 20 V270"/></g>
+      <g class="svg-muted" font-size="10.5"><text x="262" y="246">x₁</text><text x="92" y="32">x₂</text></g>
+      <path id="p2d3t-line" fill="none" stroke-width="1.2" stroke-dasharray="3 3" style="stroke:var(--muted)"/>
+      <path id="p2d3t-path" fill="none" stroke-width="1.6" style="stroke:var(--accent)"/>
+      <circle id="p2d3t-true" r="5" class="svg-fg"/>
+      <circle id="p2d3t-ls" r="5" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <circle id="p2d3t-cur" r="5.5" style="fill:var(--accent)"/>
+      <g class="svg-fg" font-size="11.5" font-weight="700"><text id="p2d3t-lt">참값 (1, 1)</text></g>
+      <g font-size="11.5" font-weight="700" style="fill:var(--warn)"><text id="p2d3t-ll">정확히 맞추는 풀이 (0, 2)</text></g>
+      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M340 250 H620"/><path d="M340 20 V250"/></g>
+      <g id="p2d3t-ticks" class="svg-muted" font-size="10"></g>
+      <path id="p2d3t-errc" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <path id="p2d3t-resc" fill="none" stroke-width="2" stroke-dasharray="5 3" style="stroke:var(--muted)"/>
+      <circle id="p2d3t-ec" r="4.5" style="fill:var(--accent)"/>
+      <circle id="p2d3t-rc" r="4.5" class="svg-fg" fill-opacity=".6"/>
+      <g font-size="11" font-weight="700"><text x="350" y="40" style="fill:var(--accent)">참값까지의 거리(실선)</text><text x="350" y="58" class="svg-muted">데이터 잔차 ‖Ax − b‖(점선)</text></g>
+    </svg>
+    <figcaption>왼쪽은 풀이 평면에서 반복이 지나는 길입니다. 오른쪽은 반복 횟수 \(k\)(가로, 로그 눈금)에 따른 참값까지의 거리(실선)와 데이터 잔차(점선)이며, 세로축도 로그 눈금입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.6rem 1rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="p2d3t-k">반복 횟수 k</label>
+    <input id="p2d3t-k" type="range" min="0" max="20" step="1" value="1" style="width:13rem">
+    <b id="p2d3t-kval">1</b>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="p2d3t-note"></p>
+
+<script>
+(function () {
+  var A = [[1, 1], [1, 1.01]], b = [2, 2.02];
+  var tr = 4.0201, det = 0.0001, lam = (tr + Math.sqrt(tr * tr - 4 * det)) / 2, tau = 1 / lam;
+  var K = [0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000];
+  var P = [], x0 = 0, x1 = 0, ci = 0, k, r0, r1;
+  for (k = 0; k <= 2000000; k++) {
+    r0 = b[0] - (A[0][0] * x0 + A[0][1] * x1); r1 = b[1] - (A[1][0] * x0 + A[1][1] * x1);
+    if (k === K[ci]) { P.push({ k: k, x: x0, y: x1, err: Math.hypot(x0 - 1, x1 - 1), res: Math.hypot(r0, r1) }); ci++; }
+    x0 += tau * (A[0][0] * r0 + A[1][0] * r1); x1 += tau * (A[0][1] * r0 + A[1][1] * r1);
+  }
+  window.p2d3tData = P;
+  function PX(x) { return 110 + x * 100; }
+  function PY(y) { return 250 - y * 100; }
+  function QX(kk) { return 340 + Math.log(Math.max(kk, 1)) / Math.LN10 / 6.4 * 280; }
+  function QY(v) { return 250 - (Math.log(v) / Math.LN10 + 7.7) / 8 * 230; }
+  var el = function (id) { return document.getElementById(id); };
+  var path = P.map(function (p, i) { return (i ? 'L' : 'M') + PX(p.x).toFixed(1) + ' ' + PY(p.y).toFixed(1); }).join('');
+  el('p2d3t-path').setAttribute('d', path);
+  el('p2d3t-path').setAttribute('clip-path', 'url(#p2d3t-clip)');
+  el('p2d3t-line').setAttribute('d', 'M' + PX(-0.3) + ' ' + PY(2.3) + ' L' + PX(1.7) + ' ' + PY(0.3));
+  el('p2d3t-true').setAttribute('cx', PX(1)); el('p2d3t-true').setAttribute('cy', PY(1));
+  el('p2d3t-ls').setAttribute('cx', PX(0)); el('p2d3t-ls').setAttribute('cy', PY(2));
+  el('p2d3t-lt').setAttribute('x', PX(1) + 8); el('p2d3t-lt').setAttribute('y', PY(1) + 16);
+  el('p2d3t-ll').setAttribute('x', PX(0) + 8); el('p2d3t-ll').setAttribute('y', PY(2) - 8);
+  var pe = P.filter(function (p) { return p.k >= 1; });
+  el('p2d3t-errc').setAttribute('d', pe.map(function (p, i) { return (i ? 'L' : 'M') + QX(p.k).toFixed(1) + ' ' + QY(p.err).toFixed(1); }).join(''));
+  el('p2d3t-resc').setAttribute('d', pe.map(function (p, i) { return (i ? 'L' : 'M') + QX(p.k).toFixed(1) + ' ' + QY(p.res).toFixed(1); }).join(''));
+  var tk = '', e;
+  [0, 2, 4, 6].forEach(function (e) { tk += '<text x="' + QX(Math.pow(10, e)).toFixed(1) + '" y="266" text-anchor="middle">10' + ['⁰', '', '²', '', '⁴', '', '⁶'][e] + '</text>'; });
+  [0, -2, -4, -6].forEach(function (e) { tk += '<text x="334" y="' + (QY(Math.pow(10, e)) + 3.5).toFixed(1) + '" text-anchor="end">10' + (e < 0 ? '⁻' : '') + ({0: '⁰', 2: '²', 4: '⁴', 6: '⁶'})[Math.abs(e)] + '</text>'; });
+  tk += '<text x="620" y="280" text-anchor="end">반복 횟수 k</text>';
+  el('p2d3t-ticks').innerHTML = tk;
+  var kEl = el('p2d3t-k');
+  function f(v) { return v >= 0.01 ? v.toFixed(3) : v.toExponential(1); }
+  function render() {
+    var p = P[+kEl.value];
+    el('p2d3t-cur').setAttribute('cx', PX(p.x).toFixed(1)); el('p2d3t-cur').setAttribute('cy', PY(p.y).toFixed(1));
+    if (p.k >= 1) {
+      el('p2d3t-ec').setAttribute('cx', QX(p.k).toFixed(1)); el('p2d3t-ec').setAttribute('cy', QY(p.err).toFixed(1));
+      el('p2d3t-rc').setAttribute('cx', QX(p.k).toFixed(1)); el('p2d3t-rc').setAttribute('cy', QY(p.res).toFixed(1));
+      el('p2d3t-ec').setAttribute('visibility', 'visible'); el('p2d3t-rc').setAttribute('visibility', 'visible');
+    } else { el('p2d3t-ec').setAttribute('visibility', 'hidden'); el('p2d3t-rc').setAttribute('visibility', 'hidden'); }
+    el('p2d3t-kval').textContent = p.k.toLocaleString('en-US');
+    el('p2d3t-note').textContent = 'k = ' + p.k.toLocaleString('en-US') + ' · 추정 (' + p.x.toFixed(4) + ', ' + p.y.toFixed(4) + ') · 참값까지 거리 ' + f(p.err) + ' · 데이터 잔차 ' + f(p.res);
+  }
+  kEl.addEventListener('input', render);
+  render();
+})();
+</script>
+
+  <p>반복 1번 만에 \((1.0000,\ 1.0050)\)이 되어 참값까지 거리가 0.005입니다. 100번까지 돌려도 0.0057에 머물다가, \(10^4\)번에서 0.088, \(10^5\)번에서 0.65, \(10^6\)번에서 1.41로 멀어져 결국 데이터를 정확히 만족하는 풀이 \((0,2)\)에 도착합니다.
+  데이터 잔차는 이 내내 줄어듭니다(\(7\times10^{-3}\)에서 약 \(1.4\times10^{-5}\)까지). 곧 데이터에는 점점 더 잘 맞지만 참값에서는 멀어지는 것입니다.</p>
+
+  <p>이유는 두 방향의 수렴 속도 차이입니다. 강한 방향(특이값이 큰 쪽)은 한 번에 거의 다 맞춥니다. 약한 방향(특이값 \(\sigma_{\min}\approx0.005\))은 한 번에 \(\tau\sigma_{\min}^2\approx6\times10^{-6}\)의 비율밖에 맞추지 못해, 다 맞추는 데 \(10^{5}\)번 이상이 걸립니다.
+  그런데 측정값에 섞인 잡음 0.01은 두 방향에 반씩 들어가고, 강한 방향의 잡음은 거의 증폭되지 않지만(약 \(1/2\)배) 약한 방향의 잡음은 200배로 증폭되어 풀이에 들어옵니다(\(0.0071\times200\approx1.41\)이 위의 거리입니다). 반복 초반은 강한 방향(신호)을, 후반은 약한 방향(잡음이 증폭되는 쪽)을 맞추는 구간입니다.
+  이처럼 오차가 줄다가 어느 지점을 지나 다시 커지는 현상을 반 수렴(<span class="term" data-term="semiconv">Semiconvergence</span>)이라고 합니다.</p>
+
+  <h3>작은 Shepp-Logan 예제에서</h3>
+
+  <p>2일차 페이지 4의 예제(\(48\times48\) 화소, 각도 40개, 광선마다 잡음 포함)에서 ART(\(\tau=1\))의 오차(rmse, 화소별 오차를 제곱해 평균한 뒤 제곱근을 취한 값)를 한 바퀴 수에 따라 그린 것입니다. 단추를 눌러 해당 바퀴에서의 오차와 데이터 잔차를 읽어 보세요.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 660 230" role="img" aria-label="ART 반복 횟수에 따른 참값과의 오차(rmse) 곡선. 26번째 반복에 불일치 원칙이 멈추는 자리, 41번째 반복에 실제 최저 오차 자리가 점선으로 표시된다">
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)">
+        <path d="M60 190 H610"/><path d="M60 30 V190"/>
+      </g>
+      <path id="p2d3d-line" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <path id="p2d3d-disc" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--warn)"/>
+      <path id="p2d3d-min" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--fg)"/>
+      <circle id="p2d3d-mark" r="4.5" style="fill:var(--accent)"/>
+      <g font-size="10" class="svg-muted">
+        <text x="610" y="206" text-anchor="end">반복 수(1~150)</text>
+        <text x="55" y="26" text-anchor="end">오차</text>
+      </g>
+      <g font-size="9.5" class="svg-muted" id="p2d3d-labels"></g>
+    </svg>
+    <figcaption>세로축은 참값과의 오차(rmse, 아래로 갈수록 작음)입니다. 주황 점선은 불일치 원칙이 멈추는 26번째 반복, 검은 점선은 실제 최저 오차인 41번째 반복입니다.</figcaption>
+  </figure>
+
+  <div style="display:flex;gap:.4rem;align-items:center;justify-content:center;font-size:.84rem;flex-wrap:wrap" id="p2d3d-ui">
+    <span>반복 수</span>
+    <button type="button" data-it="1">1</button>
+    <button type="button" data-it="5">5</button>
+    <button type="button" data-it="10">10</button>
+    <button type="button" data-it="20">20</button>
+    <button type="button" data-it="26">26(불일치 정지)</button>
+    <button type="button" data-it="41">41(최저 오차)</button>
+    <button type="button" data-it="60">60</button>
+    <button type="button" data-it="100">100</button>
+    <button type="button" data-it="150">150</button>
+  </div>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="p2d3d-note"></p>
+
+<script>
+window.art2 = (function () {
+  var D2R = Math.PI / 180;
+  var SL = [
+    ['a', 0, 0, 0.92, 0.69, 90, 2.0], ['b', 0, -0.0184, 0.874, 0.6624, 90, -0.98],
+    ['c', 0.22, 0, 0.31, 0.11, 72, -0.02], ['d', -0.22, 0, 0.41, 0.16, 108, -0.02],
+    ['e', 0, 0.35, 0.25, 0.21, 90, 0.01], ['f', 0, 0.1, 0.046, 0.046, 0, 0.01],
+    ['g', 0, -0.1, 0.046, 0.046, 0, 0.01], ['h', -0.08, -0.605, 0.046, 0.023, 0, 0.01],
+    ['i', 0, -0.605, 0.023, 0.023, 0, 0.01], ['j', 0.06, -0.605, 0.046, 0.023, 90, 0.01]
+  ];
+  function ellMu(x, y) {
+    var v = 0, i, e, c, s, u, w;
+    for (i = 0; i < SL.length; i++) {
+      e = SL[i]; c = Math.cos(e[5] * D2R); s = Math.sin(e[5] * D2R);
+      u = (x - e[1]) * c + (y - e[2]) * s; w = -(x - e[1]) * s + (y - e[2]) * c;
+      if (u * u / (e[3] * e[3]) + w * w / (e[4] * e[4]) <= 1) v += e[6];
+    }
+    return v;
+  }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gaussian(rng) {
+    var u1 = Math.max(rng(), 1e-12), u2 = rng();
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  }
+  function buildGrid(N, half) {
+    var cell = 2 * half / N, xs = new Float64Array(N * N), ys = new Float64Array(N * N), ix, iy;
+    for (iy = 0; iy < N; iy++) for (ix = 0; ix < N; ix++) {
+      xs[iy * N + ix] = -half + (ix + 0.5) * cell;
+      ys[iy * N + ix] = half - (iy + 0.5) * cell;
+    }
+    return { N: N, half: half, cell: cell, xs: xs, ys: ys };
+  }
+  function buildSystemMatrix(grid, angles, dets) {
+    var N = grid.N, half = grid.half, cell = grid.cell;
+    var rows = [], k, n, theta, s, c, sn, p0x, p0y, dx, dy;
+    var lines = [], li;
+    for (li = 0; li <= N; li++) lines.push(-half + li * cell);
+    for (k = 0; k < angles.length; k++) {
+      theta = angles[k]; c = Math.cos(theta); sn = Math.sin(theta);
+      for (n = 0; n < dets.length; n++) {
+        s = dets[n]; p0x = s * c; p0y = s * sn; dx = -sn; dy = c;
+        var txlo, txhi, tylo, tyhi, tmin, tmax, ts, li2, t, x, y, ix, iy, idx, skip = false;
+        if (Math.abs(dx) > 1e-12) { txlo = (-half - p0x) / dx; txhi = (half - p0x) / dx; if (txlo > txhi) { t = txlo; txlo = txhi; txhi = t; } }
+        else { if (p0x < -half || p0x > half) skip = true; txlo = -1e9; txhi = 1e9; }
+        if (!skip) {
+          if (Math.abs(dy) > 1e-12) { tylo = (-half - p0y) / dy; tyhi = (half - p0y) / dy; if (tylo > tyhi) { t = tylo; tylo = tyhi; tyhi = t; } }
+          else { if (p0y < -half || p0y > half) skip = true; tylo = -1e9; tyhi = 1e9; }
+        }
+        if (skip) { rows.push({ cols: [], vals: [] }); continue; }
+        tmin = Math.max(txlo, tylo); tmax = Math.min(txhi, tyhi);
+        if (tmin >= tmax - 1e-12) { rows.push({ cols: [], vals: [] }); continue; }
+        ts = [tmin, tmax];
+        for (li2 = 1; li2 < N; li2++) {
+          var xk = lines[li2], yk = lines[li2];
+          if (Math.abs(dx) > 1e-12) { t = (xk - p0x) / dx; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+          if (Math.abs(dy) > 1e-12) { t = (yk - p0y) / dy; if (t > tmin + 1e-12 && t < tmax - 1e-12) ts.push(t); }
+        }
+        ts.sort(function (a, b) { return a - b; });
+        var cols = [], vals = [], map = {};
+        for (li2 = 0; li2 < ts.length - 1; li2++) {
+          var ta = ts[li2], tb = ts[li2 + 1], len = tb - ta;
+          if (len <= 1e-12) continue;
+          var tm = (ta + tb) / 2;
+          x = p0x + tm * dx; y = p0y + tm * dy;
+          ix = Math.floor((x + half) / cell); iy = Math.floor((half - y) / cell);
+          if (ix < 0 || ix >= N || iy < 0 || iy >= N) continue;
+          idx = iy * N + ix;
+          if (map.hasOwnProperty(idx)) { vals[map[idx]] += len; } else { map[idx] = cols.length; cols.push(idx); vals.push(len); }
+        }
+        rows.push({ cols: cols, vals: vals });
+      }
+    }
+    var M = rows.length, Npix = N * N, i, j, r, Ri = new Float64Array(M), Ri2 = new Float64Array(M), Cj = new Float64Array(Npix);
+    for (i = 0; i < M; i++) {
+      r = rows[i]; var sum = 0, sum2 = 0;
+      for (j = 0; j < r.cols.length; j++) { sum += r.vals[j]; sum2 += r.vals[j] * r.vals[j]; Cj[r.cols[j]] += r.vals[j]; }
+      Ri[i] = sum; Ri2[i] = sum2;
+    }
+    return { rows: rows, M: M, Npix: Npix, Ri: Ri, Ri2: Ri2, Cj: Cj };
+  }
+  function forward(sysA, x) {
+    var M = sysA.M, rows = sysA.rows, b = new Float64Array(M), i, j, r, s;
+    for (i = 0; i < M; i++) { r = rows[i]; s = 0; for (j = 0; j < r.cols.length; j++) s += r.vals[j] * x[r.cols[j]]; b[i] = s; }
+    return b;
+  }
+  function artSweep(sysA, x, b, order, tau) {
+    var rows = sysA.rows, Ri2 = sysA.Ri2, k, i, r, j, pred, resid, factor;
+    for (k = 0; k < order.length; k++) {
+      i = order[k]; r = rows[i]; if (Ri2[i] <= 1e-12) continue;
+      pred = 0; for (j = 0; j < r.cols.length; j++) pred += r.vals[j] * x[r.cols[j]];
+      resid = b[i] - pred; factor = tau * resid / Ri2[i];
+      for (j = 0; j < r.cols.length; j++) x[r.cols[j]] += factor * r.vals[j];
+    }
+  }
+  function sirtSweep(sysA, x, b, tau) {
+    var rows = sysA.rows, M = sysA.M, Ri = sysA.Ri, Cj = sysA.Cj, Npix = sysA.Npix, i, j, r, pred, resid;
+    var delta = new Float64Array(Npix);
+    for (i = 0; i < M; i++) {
+      if (Ri[i] <= 1e-12) continue;
+      r = rows[i]; pred = 0; for (j = 0; j < r.cols.length; j++) pred += r.vals[j] * x[r.cols[j]];
+      resid = (b[i] - pred) / Ri[i];
+      for (j = 0; j < r.cols.length; j++) delta[r.cols[j]] += r.vals[j] * resid;
+    }
+    for (j = 0; j < Npix; j++) if (Cj[j] > 1e-12) x[j] += tau * delta[j] / Cj[j];
+  }
+  function rmseFn(x, xt) {
+    var i, s = 0; for (i = 0; i < x.length; i++) { var d = x[i] - xt[i]; s += d * d; }
+    return Math.sqrt(s / x.length);
+  }
+  function resNorm(sysA, x, b) {
+    var bp = forward(sysA, x), i, s = 0;
+    for (i = 0; i < b.length; i++) { var d = b[i] - bp[i]; s += d * d; }
+    return Math.sqrt(s);
+  }
+  function image(N, arr, lo, hi) {
+    var cv = document.createElement('canvas'), ctx, im, i, g;
+    cv.width = N; cv.height = N; ctx = cv.getContext('2d'); im = ctx.createImageData(N, N);
+    for (i = 0; i < N * N; i++) {
+      g = Math.round(255 * Math.max(0, Math.min(1, (arr[i] - lo) / (hi - lo))));
+      im.data[4 * i] = im.data[4 * i + 1] = im.data[4 * i + 2] = g; im.data[4 * i + 3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+    return cv.toDataURL('image/png');
+  }
+
+  var N = 48, half = 1.0, grid = buildGrid(N, half);
+  var K = 40, Ns = 61, angles = [], dets = [], i;
+  for (i = 0; i < K; i++) angles.push(i * Math.PI / K);
+  var ds = 2.9 / (Ns - 1); for (i = 0; i < Ns; i++) dets.push(-1.45 + i * ds);
+  var sysA = buildSystemMatrix(grid, angles, dets);
+  var xTrue = new Float64Array(N * N);
+  for (i = 0; i < N * N; i++) xTrue[i] = ellMu(grid.xs[i], grid.ys[i]);
+  var bTrue = forward(sysA, xTrue);
+  var N0 = 1e5, rng = mulberry32(20261101);
+  var sigma = new Float64Array(bTrue.length), bNoisy = new Float64Array(bTrue.length);
+  for (i = 0; i < bTrue.length; i++) { sigma[i] = Math.exp(bTrue[i] / 2) / Math.sqrt(N0); bNoisy[i] = bTrue[i] + gaussian(rng) * sigma[i]; }
+  var expectedNoiseNorm = Math.sqrt(sigma.reduce(function (s, v) { return s + v * v; }, 0));
+  var order = []; for (i = 0; i < sysA.M; i++) order.push(i);
+
+  function runFull(method, maxIter, checkpoints) {
+    var x = new Float64Array(sysA.Npix), curve = [], snaps = {}, it, cpSet = {};
+    checkpoints.forEach(function (c) { cpSet[c] = true; });
+    for (it = 1; it <= maxIter; it++) {
+      if (method === 'art') artSweep(sysA, x, bNoisy, order, 1.0);
+      else sirtSweep(sysA, x, bNoisy, 1.0);
+      curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: resNorm(sysA, x, bNoisy) });
+      if (cpSet[it]) snaps[it] = x.slice();
+    }
+    return { checkpoints: checkpoints, curve: curve, snaps: snaps };
+  }
+
+  function sartSweep(x, b, tau) {
+    var rows = sysA.rows, Ri = sysA.Ri, Npix = sysA.Npix, K = sysA.M / Ns, k, n, i, j, r, pred, resid, delta, cth;
+    for (k = 0; k < K; k++) {
+      delta = new Float64Array(Npix); cth = new Float64Array(Npix);
+      for (n = 0; n < Ns; n++) {
+        i = k * Ns + n; if (Ri[i] <= 1e-12) continue;
+        r = rows[i]; pred = 0; for (j = 0; j < r.cols.length; j++) pred += r.vals[j] * x[r.cols[j]];
+        resid = (b[i] - pred) / Ri[i];
+        for (j = 0; j < r.cols.length; j++) { delta[r.cols[j]] += r.vals[j] * resid; cth[r.cols[j]] += r.vals[j]; }
+      }
+      for (j = 0; j < Npix; j++) if (cth[j] > 1e-12) x[j] += tau * delta[j] / cth[j];
+    }
+  }
+  function runSart(tau, maxIter) {
+    var x = new Float64Array(sysA.Npix), curve = [], it;
+    for (it = 1; it <= maxIter; it++) { sartSweep(x, bNoisy, tau); curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: resNorm(sysA, x, bNoisy) }); }
+    return { tau: tau, curve: curve };
+  }
+
+  return {
+    N: N, sysA: sysA, 
+    xTrue: xTrue, expectedNoiseNorm: expectedNoiseNorm, image: image,
+    artRun: runFull('art', 150, [1, 5, 10, 20, 26, 41, 60, 100, 150])
+  };
+})();
+
+(function () {
+  var A2 = window.art2, curve = A2.artRun.curve, line = document.getElementById('p2d3d-line'),
+      discL = document.getElementById('p2d3d-disc'), minL = document.getElementById('p2d3d-min'),
+      mark = document.getElementById('p2d3d-mark'), note = document.getElementById('p2d3d-note'),
+      ui = document.getElementById('p2d3d-ui'), labels = document.getElementById('p2d3d-labels');
+  var n = curve.length, i, minV = Infinity, maxV = -Infinity;
+  for (i = 0; i < n; i++) { if (curve[i].rmse < minV) minV = curve[i].rmse; if (curve[i].rmse > maxV) maxV = curve[i].rmse; }
+  var pad = (maxV - minV) * 0.08;
+  function X(it) { return 60 + (it - 1) / (n - 1) * 550; }
+  function Y(v) { return 190 - (v - (minV - pad)) / (maxV - minV + 2 * pad) * 160; }
+  var d = ''; for (i = 0; i < n; i++) d += (i ? 'L' : 'M') + X(curve[i].it).toFixed(1) + ' ' + Y(curve[i].rmse).toFixed(1);
+  line.setAttribute('d', d);
+  discL.setAttribute('d', 'M' + X(26).toFixed(1) + ' 30 V190');
+  minL.setAttribute('d', 'M' + X(41).toFixed(1) + ' 30 V190');
+  labels.innerHTML = '<text x="' + X(26).toFixed(1) + '" y="24" text-anchor="middle">26</text><text x="' + X(41).toFixed(1) + '" y="206" text-anchor="middle">41</text>';
+  function setIter(it) {
+    var c = curve[it - 1];
+    mark.setAttribute('cx', X(it).toFixed(1)); mark.setAttribute('cy', Y(c.rmse).toFixed(1));
+    note.textContent = '반복 ' + it + '회 · 참값 오차(rmse) ' + c.rmse.toFixed(4) + ' · 데이터 잔차 ' + c.resid.toFixed(4) + '(기대 잡음 크기 ' + A2.expectedNoiseNorm.toFixed(3) + ')';
+  }
+  ui.addEventListener('click', function (e) { var t = e.target.closest('button[data-it]'); if (t) setIter(+t.getAttribute('data-it')); });
+  setIter(41);
+})();
+</script>
+
+  <p>오차(rmse)는 41바퀴에서 최저 0.1384에 이르고 150바퀴에서는 0.157로 다시 올라갑니다. 데이터 잔차는 같은 동안 0.228에서 0.190으로 계속 줄었습니다. 영상으로는 차이가 눈에 띄지 않을 만큼 완만하므로(이 예제는 각도 수가 많지 않습니다) 곡선이 더 믿을 만한 증거입니다.</p>
+
+  <h3>멈추는 시점: 불일치 원칙</h3>
+
+  <p>실제로는 참값을 모르니 오차 곡선을 그릴 수 없습니다. 대신 측정 잡음의 평균적인 크기를 알고 있다면, 데이터 잔차가 그 크기와 비슷해지는 반복에서 멈추는 방법이 있습니다. 데이터가 잡음 크기만큼 틀리는 것은 당연하므로 그보다 더 맞추려 들 이유가 없다는 생각입니다.
+  이를 불일치 원칙(<span class="term" data-term="discrepancy">Discrepancy Principle</span>)이라고 합니다.</p>
+
+  <p style="text-align:center">\[\lVert\mathbf{A}\mathbf{x}^{(k)}-\mathbf{b}\rVert\ \le\ \sqrt{\textstyle\sum_i\sigma_i^{2}}\quad(\sigma_i:\ \text{광선 }i\text{의 잡음 표준편차})\]</p>
+
+  <p>이 예제에서 잡음의 기대 크기는 \(\sqrt{\sum_i\sigma_i^2}\approx0.258\)이고, ART의 잔차가 처음 이 값 아래로 내려가는 곳은 26바퀴(오차 0.1402)입니다. 실제 최저 지점 41바퀴(0.1384)보다 조금 이르지만, 반 수렴이 본격적으로 나빠지기 전에 안전하게 멈춥니다.</p>
+
+  <div class="box warn">
+    <p class="box-t">바퀴 수를 외우지 마세요</p>
+    <p>"26바퀴", "41바퀴"는 이 예제의 값입니다. 같은 데이터에서 SIRT는 150바퀴에서도 아직 오차가 줄고 있었고(2일차 페이지 4의 표), SART(\(\tau=0.5\))는 27바퀴가 최저였습니다. 최적의 멈춤 시점은 방법, 완화 인자, 영상 크기, 잡음 수준에 따라 다릅니다.
+    잡음 크기를 모르면 불일치 원칙도 쓸 수 없으므로, 다른 멈춤 규칙(본편에서 다루지 않습니다)을 쓰거나 아래의 방법으로 넘어갑니다.</p>
+  </div>
+
+  <p>멈추는 시점을 정하는 것은 일종의 정규화(Regularization)입니다. 약한 방향의 잡음이 들어오기 전에 반복을 끊어 그 증폭을 막기 때문입니다. 그런데 반복 횟수는 손잡이로 쓰기가 불편합니다. 방법마다 값이 다르고 조금 바꿔도 결과가 달라집니다.
+  4일차에서는 "약한 방향을 어떻게 채울지"를 식에 직접 넣는 정규화를 봅니다.</p>
+
+  <div class="box note">
+    <p class="box-t">2편 자세히 보기에서 더 보기</p>
+    <ul>
+      <li><a href="../detail/ch02.html#s8">2편 2장 페이지 8</a>: 반 수렴 곡선, 불일치 원칙, 반복 횟수에 따른 재구성 영상</li>
+      <li><a href="../detail/ch03.html#s11">2편 3장 페이지 11</a>: 경사하강법이 조건수가 큰 문제에서 지그재그로 느려지는 이유</li>
+      <li><a href="../detail/ch04.html#s1">2편 4장 페이지 1</a>: 조기 종료와 정규화(4일차에서 이어집니다)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────── 페이지 5 (마지막 페이지) -->
+<section class="screen" data-title="요약 · 퀴즈 · 직접 해보기">
+  <p class="kicker">3일차 · 페이지 5</p>
+  <h2>3일차 마무리: 요약·퀴즈·직접 해보기</h2>
+
+  <div class="summary">
+    <h3>핵심 요약</h3>
+    <ol>
+      <li>측정값에 잡음이 있으면 \(\mathbf{A}\mathbf{x}=\mathbf{b}\)를 정확히 만족하는 \(\mathbf{x}\)가 없을 수 있습니다. 그래서 목적함수 \(J(\mathbf{x})=\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert^2\)를 줄이는 영상을 찾고, 반복법은 이 \(J\)를 줄이는 과정입니다. 단 \(J\)가 작다고 참값에 가까운 것은 아닙니다.</li>
+      <li>랭크가 미지수의 수보다 작으면 영공간이 있어, 영상에 그 방향을 얼마를 더해도 측정값이 변하지 않습니다. 광선 ①~④만 쓴 \(2\times2\) 예의 영공간은 \((1,-1,-1,1)\)이고, 광선 ⑤를 더하면 사라집니다.</li>
+      <li>조건수 \(\kappa=\sigma_{\max}/\sigma_{\min}\)가 큰 문제(불량조건)에서는 측정값의 작은 상대 오차가 풀이에서 최대 \(\kappa\)배로 커집니다. 거의 같은 방향의 광선이 많을수록 \(\kappa\)가 커집니다.</li>
+      <li>반복은 강한 방향(신호)을 먼저, 약한 방향(잡음이 증폭되는 쪽)을 나중에 맞추므로, 잡음이 있으면 참값과의 오차가 줄다가 다시 커지고(반 수렴) 데이터 잔차는 계속 줄어듭니다. 잡음 크기를 알면 불일치 원칙으로 멈출 시점을 정할 수 있습니다.</li>
+    </ol>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">광선 ①~④만 쓴 \(2\times2\) 예에서 \(\mathbf{x}=(0.2,0.5,0.1,0.3)\)과 \(\mathbf{x}'=(0.3,0.4,0,0.4)\)가 구별되지 않는 이유는 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 이 데이터는 잡음이 없는 이상적인 값입니다. 잡음이 없어도 두 영상은 광선 ①~④의 측정값이 같습니다.">측정값에 잡음이 섞여서 두 영상의 차이가 가려지기 때문입니다.</li>
+      <li data-why="틀립니다. 조건수가 큰 것이 아니라 최소 특이값이 정확히 0 입니다. 잡음이 없어도 구별이 불가능한 것이 영공간의 특징입니다.">조건수가 커서 작은 오차가 크게 증폭되기 때문입니다.</li>
+      <li data-why="맞습니다. 두 영상의 차이 (0.1, −0.1, −0.1, 0.1) 은 영공간 방향 (1, −1, −1, 1) 의 0.1배이고, A 를 곱하면 0 이어서 광선 ①~④의 값이 같습니다.">두 영상의 차이가 영공간 방향이어서 광선 ①~④의 측정값이 완전히 같기 때문입니다.</li>
+      <li data-why="틀립니다. 광선 수가 네 개인 것이 원인이 아니라, 네 식 가운데 하나가 나머지에서 저절로 나와서 독립인 식이 세 개뿐이라는 점이 원인입니다.">광선이 네 개뿐이어서 항상 구별할 수 없습니다.</li>
+    </ol>
+    <div class="explain">
+      <p>광선 ⑤를 더하면 \(\mathbf{A}\)의 \(\mathbf{z}=(1,-1,-1,1)\)에 대한 값이 0이 아니게 되어(⑤번째 성분이 \(2\sqrt2\)) 두 영상이 구별됩니다. 이처럼 필요한 것은 광선 수가 아니라 서로 다른 방향의 정보입니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">\(\kappa\approx402\)인 행렬로 \(\mathbf{A}\mathbf{x}=\mathbf{b}\)를 풀 때, 측정값의 상대 오차가 0.1%이면 풀이의 상대 오차는 어떻게 될까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 상대 오차가 항상 0.1% 로 유지된다는 보장은 없고, 조건수가 큰 문제에서는 오차가 커질 수 있습니다.">항상 0.1%로 유지된다.</li>
+      <li data-why="맞습니다. 부등식 ‖Δx‖/‖x‖ ≤ κ‖Δb‖/‖b‖ 에 따라 최악의 경우 402 × 0.1% ≈ 40% 까지 커질 수 있습니다. 상한이므로 실제로는 이보다 작을 수 있습니다.">최악의 경우 약 40%까지 커질 수 있다.</li>
+      <li data-why="틀립니다. 조건수는 오차를 줄여 주지 않습니다. 조건수가 큰 것은 작은 오차가 크게 증폭될 수 있다는 뜻입니다.">조건수가 크면 오차가 오히려 줄어든다.</li>
+      <li data-why="틀립니다. 풀이의 상대 오차는 측정값의 상대 오차에 조건수를 곱한 값까지 가능하며, 그 곱이 상한입니다.">조건수와 상관없이 정확히 0.1%의 402분의 1이 된다.</li>
+    </ol>
+    <div class="explain">
+      <p>이 부등식은 오차가 가장 불리한 방향으로 섞였을 때의 상한입니다. 페이지 3의 예에서는 증폭이 약 284배로 상한 402배 안에 있었습니다.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">잡음이 있는 데이터에서 ART를 150바퀴 돌리는 동안 데이터 잔차는 계속 줄었는데 참값과의 오차는 41바퀴 이후 다시 커졌습니다. 이것이 모순이 아닌 이유는 무엇일까요?</p>
+    <ol class="options">
+      <li data-why="틀립니다. 알고리즘이 틀린 것이 아닙니다. 데이터 잔차를 줄이는 것은 알고리즘이 제대로 하는 일입니다.">알고리즘에 오류가 있기 때문에 두 값이 서로 다르게 움직입니다.</li>
+      <li data-why="틀립니다. 두 값은 서로 다른 양입니다. 잔차는 측정값과의 차이이고 오차는 참값과의 차이이며, 참값은 측정값과 다릅니다.">잔차와 오차는 같은 값을 다른 단위로 잰 것입니다.</li>
+      <li data-why="틀립니다. 완화 인자를 키워도 이 현상은 사라지지 않고 오히려 더 일찍 나타납니다.">완화 인자를 키우면 두 값이 같은 방향으로 움직입니다.</li>
+      <li data-why="맞습니다. 잔차는 측정값에 얼마나 맞는지를, 오차는 참값에 얼마나 가까운지를 잽니다. 측정값에는 잡음이 있으므로 측정값에 더 맞는 것이 참값에서 더 먼 것일 수 있습니다.">잔차는 잡음이 섞인 측정값과의 차이이고 오차는 참값과의 차이여서, 측정값에 더 맞출수록 잡음까지 맞추어 참값에서 멀어질 수 있습니다.</li>
+    </ol>
+    <div class="explain">
+      <p>그래서 참값을 모를 때는 잔차만으로 멈출 시점을 가늠해야 하고, 불일치 원칙은 "잔차가 잡음 크기와 비슷해지면 멈춘다"는 규칙입니다.</p>
+    </div>
+  </div>
+
+  <div class="box note">
+    <h3>직접 해보기</h3>
+    <ol>
+      <li>페이지 1의 잡음 있는 측정값 \(\mathbf{b}=(0.72,\ 0.40,\ 0.30,\ 0.80,\ 0.707)\)와 참값 \(\mathbf{x}_{\text{true}}=(0.2,0.5,0.1,0.3)\)에서 \(\mathbf{A}\mathbf{x}_{\text{true}}\)와 잔차를 광선마다 구하고 \(J(\mathbf{x}_{\text{true}})\)를 계산하세요. 광선 ①~④가 모든 식을 동시에 만족할 수 없는 이유를 \(b_1+b_2\)와 \(b_3+b_4\)로 설명하세요.</li>
+      <li>페이지 3의 두 광선 예에서 \(b_2\)가 \(2.01\) 대신 \(2.03\)으로 측정되었다고 합시다. 풀이 \(\mathbf{x}\)를 구하고, 측정값의 상대 변화와 풀이의 상대 변화(\(\lVert\Delta\mathbf{x}\rVert/\lVert\mathbf{x}\rVert\))를 비교해 증폭 배수를 구하세요. 이 배수는 \(\kappa\approx402\) 이하인가요?</li>
+      <li>페이지 4의 두 광선 모형에서 반복 1번과 \(10^6\)번의 풀이 중 어느 쪽이 데이터 잔차가 작고, 어느 쪽이 참값에 가까운지 말하고, 이 결과가 실제 CT 재구성에서 "반복을 몇 번 돌릴까"에 주는 시사점을 한 문장으로 쓰세요.</li>
+    </ol>
+  </div>
+
+  <details class="fold answer">
+    <summary>모범답안과 흔한 실수</summary>
+    <div class="fold-body">
+      <p><b>1번.</b> \(\mathbf{A}\mathbf{x}_{\text{true}}=(0.7,\ 0.4,\ 0.3,\ 0.8,\ 0.707)\)이므로 \(\mathbf{b}-\mathbf{A}\mathbf{x}_{\text{true}}=(0.02,\ 0,\ 0,\ 0,\ 0)\)(광선 ⑤는 \(10^{-4}\) 수준의 반올림 차이)이고 \(J(\mathbf{x}_{\text{true}})\approx0.02^2=4\times10^{-4}\)입니다.
+      어떤 영상이든 광선 ①+②(위 두 화소 + 아래 두 화소)와 ③+④(왼쪽 두 화소 + 오른쪽 두 화소)는 모두 네 화소 전체의 합이어서 \(b_1+b_2=b_3+b_4\)여야 합니다. 그런데 \(0.72+0.40=1.12\), \(0.30+0.80=1.10\)으로 달라서 네 식을 모두 만족하는 영상이 없습니다.</p>
+      <p><b>2번.</b> \(\mathbf{b}=(2,2.03)\)이면 \(\varepsilon=0.02\)이므로 \(\mathbf{x}=(1-2,\ 1+2)=(-1,\ 3)\)입니다. 측정값의 상대 변화는 \(0.02/\lVert(2,2.01)\rVert=0.02/2.836\approx0.71\%\), 풀이의 상대 변화는 \(\lVert(-2,2)\rVert/\lVert(1,1)\rVert=2.83/1.41=200\%\)입니다.
+      증폭은 \(200/0.71\approx284\)배로 \(\kappa\approx402\) 이하입니다.</p>
+      <p><b>3번.</b> 반복 1번의 풀이 \((1.0000,\ 1.0050)\)은 참값까지 거리 0.005로 가깝지만 데이터 잔차는 \(7\times10^{-3}\)입니다. \(10^6\)번의 풀이는 데이터 잔차가 \(1.4\times10^{-5}\)로 훨씬 작지만 참값까지 거리가 1.41입니다.
+      곧 데이터에 더 잘 맞는 쪽이 참값에서는 더 멀고, 잡음이 있는 실제 재구성에서는 데이터 잔차가 잡음 크기 정도에서 반복을 멈추거나 정규화를 써야 합니다.</p>
+      <p><b>흔한 실수.</b></p>
+      <ul>
+        <li>잔차 \(\mathbf{b}-\mathbf{A}\mathbf{x}\)(측정값과의 차이)와 오차 \(\mathbf{x}-\mathbf{x}_{\text{true}}\)(참값과의 차이)를 같은 것으로 보는 것입니다. 실제에서는 참값을 모르므로 오차는 알 수 없고 잔차만 계산할 수 있습니다.</li>
+        <li>조건수의 부등식을 등식으로 읽는 것입니다. \(\kappa\)배는 최악의 경우의 상한이고 증폭은 오차가 섞인 방향에 따라 달라집니다.</li>
+        <li>반 수렴을 "반복이 수렴하지 않는다"는 뜻으로 읽는 것입니다. 반복은 계속 데이터에 수렴해 가며, 그 수렴 지점이 참값과 다르다는 것이 문제입니다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <div class="chapter-end">
+    <a href="index.html"><span>돌아가기</span>표지와 목차</a>
+    <a href="day4.html"><span>다음 장</span>4일차 — 데이터가 모자라거나 잡음이 있으면: 정규화와 TV</a>
+  </div>
+</section>
+
+</div></main>
+
+<script src="../../assets/katex/katex.min.js"></script>
+<script src="../../assets/katex/auto-render.min.js"></script>
+<script src="../../assets/math.js"></script>
+<script src="config.js"></script>
+<script src="../../assets/book.js"></script>
+</body>
+</html>
