@@ -1,8 +1,8 @@
 /* 1편(해석적 재구성편) 교재 설정 — assets/book.js가 읽는다. 장 HTML보다 먼저 불러온다.
-   - book: 이 편의 목차. 모든 페이지가 공유하는 단일 진실 원천. 커리큘럼의 screens/hours를 옮겨 적는다.
+   - book: 이 편의 목차. 모든 페이지가 공유하는 단일 진실 원천. screens는 장의 페이지 수, hours는 예상 학습 시간이다.
      ready:true인 장만 링크가 되고 "이어서 읽기" 대상이 된다. 집필 전 장은 ready를 빼 두면 목차에 회색으로 남는다.
    - terms: 본문의 <span class="term" data-term="키">낱말</span> 이 이 표에서 뜻을 찾는다.
-     표에 없는 키를 쓰면 툴팁이 조용히 안 나온다. _smoke 항목은 authoring/_smoke.html이 참조하므로 지우지 않는다.
+     표에 없는 키를 쓰면 툴팁이 조용히 안 나온다.
    - storePrefix: 진도 저장 키 접두어. file:// 에서는 로컬 페이지가 저장소를 공유하므로 편마다 다르게 둔다. */
 window.BOOK_CONFIG = {
   title: 'CT 재구성 알고리즘1 - 해석적 재구성편',
@@ -27,7 +27,6 @@ window.BOOK_CONFIG = {
     { id: 'ch15', num: '15장', title: '1편 돌아보기', part: 'VI. 마무리', screens: 2, hours: 0.4, ready: true }
   ],
   terms: {
-    _smoke: '스모크 점검용 항목 — 이 줄은 지우지 않는다.',
     pixel: '화소(Pixel). 영상을 이루는 가장 작은 네모 칸. CT 영상에서는 칸마다 숫자 하나(감쇠계수 또는 CT 넘버)가 들어 있다.',
     mu: '감쇠계수(Attenuation Coefficient, μ). 선형 감쇠계수(Linear Attenuation Coefficient)라고도 한다. 물질 속에서 단위 길이당 광자가 줄어드는 비율이며 단위는 cm⁻¹. 밀도와 대체로 비례하지만 같지 않고 X선 에너지에 따라 달라진다.',
     phantom: '팬텀(Phantom). 영상 시스템을 시험하려고 만든 모형. 이 책의 기준 영상은 타원 여러 개로 머리 단면을 흉내 낸 Shepp-Logan 팬텀이다.',

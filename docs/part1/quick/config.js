@@ -16,7 +16,6 @@ window.BOOK_CONFIG = {
     { id: 'day7', num: '7일차', title: '팬빔 FBP를 계산하고 1주 돌아보기', part: '팬빔', screens: 5, hours: 0.9, ready: true }
   ],
   terms: {
-    _smoke: '런타임 점검용 항목. 지우지 않는다.',
     pixel: '화소(Pixel). 영상을 이루는 가장 작은 네모 칸. CT 영상에서는 칸마다 숫자 하나(감쇠계수)가 들어 있다.',
     mu: '감쇠계수(Attenuation Coefficient, μ). 물질 속에서 단위 길이당 광자가 줄어드는 비율이며 단위는 cm⁻¹. CT 영상은 위치마다의 μ 를 나타낸다.',
     recon: '재구성(Reconstruction). 투영값(측정 데이터)에서 영상을 구하는 문제와 그 절차 전체. 역투영 한 단계와 다르다.',
