@@ -429,28 +429,49 @@
 
   <p>페이지 3의 두 광선 예로 이 과정을 직접 봅니다. 참값은 \((1,1)\), 측정값은 잡음이 섞인 \(\mathbf{b}=(2,\ 2.02)\)입니다. 이 데이터를 정확히 만족하는 풀이는 \((0,2)\)이므로 참값에서 1.41 떨어져 있습니다.
   \(\mathbf{x}^{(0)}=\mathbf{0}\)에서 페이지 1의 내려가는 걸음 \(\mathbf{x}\leftarrow\mathbf{x}+\tau\mathbf{A}^{\mathsf T}(\mathbf{b}-\mathbf{A}\mathbf{x})\)를 \(\tau=1/\sigma_{\max}^{2}\approx0.249\)로 되풀이합니다. 슬라이더는 반복 횟수 \(k\)를 로그 눈금으로 고릅니다.
-  왼쪽 그림에는 이 측정값으로 그린 두 광선의 직선도 함께 그렸습니다. 두 직선은 거의 겹쳐 가느다란 띠를 이루고, 두 직선의 교점 \((0,2)\)가 데이터를 정확히 맞추는 풀이입니다. 참값 \((1,1)\)도 이 띠 안에 있습니다.
   이 모형은 일부러 극단적으로 잡은 것입니다. 실제 CT의 곡선은 이렇게 가파르지 않습니다.</p>
+
+  <div class="box note">
+    <p class="box-t">그림 읽는 법</p>
+    <ul>
+      <li><b>왼쪽 그림의 점 하나는 영상 하나</b>입니다. 미지수가 \(x_1, x_2\) 두 개이므로 평면의 한 점이 영상 하나를 뜻합니다.</li>
+      <li><b>파랑·주황 직선</b>은 광선 1, 2의 식입니다. 서로 거의 겹쳐서 회색 띠처럼 보입니다. 두 직선의 교점 \((0,2)\)(주황 고리)가 데이터를 정확히 맞추는 점이고, 참값 \((1,1)\)(회색 고리)도 이 띠 안에 있습니다.</li>
+      <li><b>초록 선</b>은 직선의 식이 아니라 <b>반복할 때마다 추정 영상이 옮겨 간 길</b>입니다. 슬라이더로 \(k\)를 올리면 현재 추정(검은 점)이 이 길을 따라 움직입니다.</li>
+      <li><b>오른쪽 그래프</b>는 같은 \(k\)에서 참값까지의 거리(실선)와 데이터 잔차(점선)입니다. 슬라이더를 움직여 왼쪽 점과 오른쪽 그래프를 함께 보세요.</li>
+    </ul>
+  </div>
 
   <figure class="fig">
     <svg viewBox="0 0 640 330" role="img" aria-label="왼쪽은 두 광선 예의 풀이 평면. 거의 겹친 두 광선의 직선이 가느다란 띠를 이루고, 반복은 (0,0)에서 출발해 한 번 만에 띠 위의 참값 (1,1) 근처로 내려온 뒤 아주 오래 걸려 띠를 따라 두 직선의 교점 (0,2)로 미끄러진다. 아래 막대는 강한 방향과 약한 방향을 맞춘 정도. 오른쪽은 반복 횟수에 따른 참값까지의 거리와 데이터 잔차.">
       <defs><clipPath id="p2d3t-clip"><rect x="40" y="20" width="240" height="250"/></clipPath></defs>
-      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M40 250 H280"/><path d="M110 20 V270"/></g>
-      <g class="svg-muted" font-size="10.5"><text x="262" y="246">x₁</text><text x="96" y="150">x₂</text></g>
+      <g id="p2d3t-axes"><g class="svg-line" stroke-width="1" opacity=".5"><path d="M40 250 H280"/><path d="M110 20 V270"/></g>
+      <g class="svg-muted" font-size="10.5"><text x="262" y="246">x₁</text><text x="96" y="150">x₂</text></g></g>
       <g clip-path="url(#p2d3t-clip)">
         <path id="p2d3t-band" fill="none" stroke-width="16" stroke-linecap="round" opacity=".13" style="stroke:var(--fg)"/>
         <path id="p2d3t-r1" fill="none" stroke-width="1.4" style="stroke:var(--accent)"/>
         <path id="p2d3t-r2" fill="none" stroke-width="1.4" style="stroke:var(--warn)"/>
-        <path id="p2d3t-path" stroke-width="1.8" style="fill:none;stroke:var(--fg)"/>
+        <path id="p2d3t-path" stroke-width="2.6" stroke-linejoin="round" style="fill:none;stroke:var(--good)"/>
+        <g id="p2d3t-dots" style="fill:var(--good)"></g>
+        <g id="p2d3t-arrs"><polygon points="210,150 205.1,162 198,155" style="fill:var(--good)"/>
+        <path d="M200 150 L119 69" fill="none" stroke-width="2" stroke-dasharray="5 4" style="stroke:var(--good)"/>
+        <polygon points="113,63 125,68 118,75" style="fill:var(--good)"/></g>
       </g>
       <circle id="p2d3t-true" r="6" fill="none" stroke-width="1.5" style="stroke:var(--muted)"/>
       <circle id="p2d3t-ls" r="5" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
       <circle id="p2d3t-cur" r="5.5" class="svg-fg"/>
       <g class="svg-fg" font-size="11" font-weight="700"><text id="p2d3t-lt">참값 (1, 1)</text></g>
-      <g font-size="11" font-weight="700" style="fill:var(--warn)"><text x="118" y="34">두 직선의 교점 (0, 2)</text><text x="118" y="47" font-weight="400">= 데이터를 정확히 맞추는 풀이</text></g>
-      <g class="svg-fg" font-size="10.5">
-        <text x="162" y="214">① 첫 걸음:</text><text x="162" y="227">띠로 내려옴</text>
-        <text x="174" y="86">② 아주 오래 걸려</text><text x="174" y="99">띠를 따라 미끄러짐</text>
+      <g id="p2d3t-lsl" font-size="11" font-weight="700" style="fill:var(--warn)"><text x="118" y="34">두 직선의 교점 (0, 2)</text><text x="118" y="47" font-weight="400">= 데이터를 정확히 맞추는 풀이</text></g>
+      <g id="p2d3t-leg"><g font-size="10.5" paint-order="stroke" stroke-width="3" stroke-linejoin="round" style="stroke:var(--bg)">
+        <g style="fill:var(--accent)"><text x="64" y="184">광선 1의 직선</text></g>
+        <g style="fill:var(--warn)"><text x="64" y="199">광선 2의 직선</text></g>
+        <g style="fill:var(--good)"><text x="64" y="214">반복의 자취</text></g>
+        <g class="svg-fg"><text x="64" y="229">현재 추정(점)</text></g>
+      </g>
+      <g stroke-width="2.6" fill="none"><path d="M44 181H60" style="stroke:var(--accent)"/><path d="M44 196H60" style="stroke:var(--warn)"/><path d="M44 211H60" style="stroke:var(--good)"/></g>
+      <circle cx="52" cy="226" r="4" class="svg-fg"/></g>
+      <g id="p2d3t-stl" class="svg-fg" font-size="10.5">
+        <text x="162" y="214" font-weight="700">① 첫 걸음: 띠 안으로</text><text x="162" y="227">(강한 방향을 한 번에)</text>
+        <text x="172" y="86" font-weight="700">② 아주 오래 걸려 띠를 따라</text><text x="172" y="99">(약한 방향, 잡음이 커지는 쪽)</text>
       </g>
       <g class="svg-fg" font-size="10.5">
         <text x="40" y="298">강한 방향 맞춘 정도</text><text x="40" y="320">약한 방향 맞춘 정도</text>
@@ -460,6 +481,10 @@
       <rect x="150" y="310" width="116" height="12" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
       <rect id="p2d3t-bsr" x="150" y="288" height="12" style="fill:var(--accent)"/>
       <rect id="p2d3t-bwr" x="150" y="310" height="12" style="fill:var(--warn)"/>
+      <g id="p2d3t-zl" visibility="hidden" font-size="11" font-weight="700" paint-order="stroke" stroke-width="4" stroke-linejoin="round" style="stroke:var(--bg)">
+        <text id="p2d3t-zl1" text-anchor="end" style="fill:var(--accent)">광선 1</text><text id="p2d3t-zl2" text-anchor="start" style="fill:var(--warn)">광선 2</text>
+        <text id="p2d3t-zlt" x="44" y="16" class="svg-fg"></text>
+      </g>
       <rect id="p2d3t-ph2" y="20" height="230" opacity=".1" style="fill:var(--warn)"/>
       <g class="svg-line" stroke-width="1" opacity=".5"><path d="M340 250 H620"/><path d="M340 20 V250"/></g>
       <g id="p2d3t-ticks" class="svg-muted" font-size="10"></g>
@@ -470,15 +495,18 @@
       <circle id="p2d3t-rc" r="4.5" class="svg-fg" fill-opacity=".6"/>
       <g font-size="11" font-weight="700"><text x="350" y="40" style="fill:var(--accent)">참값까지의 거리(실선)</text><text x="350" y="58" class="svg-muted">데이터 잔차 ‖Ax − b‖(점선)</text></g>
       <g class="svg-fg" font-size="10.5"><text id="p2d3t-kl" y="16" text-anchor="middle"></text><text id="p2d3t-ph2l" y="240" text-anchor="middle">② 구간</text></g>
+      <rect id="p2d3t-hit" x="40" y="20" width="240" height="250" fill="transparent" style="cursor:zoom-in"/>
     </svg>
-    <figcaption>왼쪽은 풀이 평면입니다. 파란 실선은 광선 1의 직선 \(x_1+x_2=2\), 주황 실선은 광선 2의 직선 \(x_1+1.01\,x_2=2.02\)이며, 두 직선이 거의 겹쳐 회색의 가느다란 띠를 이룹니다. 검은 선은 반복이 지나는 길이고 검은 점(어두운 화면에서는 흰 점)이 현재 추정입니다. 아래 두 막대는 강한 방향(특이값이 큰 쪽)과 약한 방향(특이값이 작은 쪽)을 각각 얼마나 맞췄는지 나타냅니다. 오른쪽은 반복 횟수 \(k\)(가로, 로그 눈금)에 따른 참값까지의 거리(실선)와 데이터 잔차(점선)이며, 세로축도 로그 눈금입니다. 세로 점선이 왼쪽 그림의 현재 \(k\)이고, 옅게 칠한 곳이 왼쪽의 ② 구간입니다.</figcaption>
+    <figcaption>왼쪽은 풀이 평면입니다. 파란 실선은 광선 1의 직선 \(x_1+x_2=2\), 주황 실선은 광선 2의 직선 \(x_1+1.01\,x_2=2.02\)이며, 두 직선이 거의 겹쳐 회색의 가느다란 띠를 이룹니다. 초록 선은 반복이 지나온 자취(추정값이 움직인 길)일 뿐 직선의 식이 아니며, 작은 초록 점은 슬라이더가 고르는 \(k\)마다의 추정값입니다. 검은 점(어두운 화면에서는 흰 점)이 현재 추정입니다. 아래 두 막대는 강한 방향(특이값이 큰 쪽)과 약한 방향(특이값이 작은 쪽)을 각각 얼마나 맞췄는지 나타냅니다. 오른쪽은 반복 횟수 \(k\)(가로, 로그 눈금)에 따른 참값까지의 거리(실선)와 데이터 잔차(점선)이며, 세로축도 로그 눈금입니다. 세로 점선이 왼쪽 그림의 현재 \(k\)이고, 옅게 칠한 곳이 왼쪽의 ② 구간입니다.</figcaption>
   </figure>
 
   <div style="display:flex;gap:.6rem 1rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
     <label for="p2d3t-k">반복 횟수 k</label>
     <input id="p2d3t-k" type="range" min="0" max="20" step="1" value="1" style="width:13rem">
     <b id="p2d3t-kval">1</b>
+    <button type="button" id="p2d3t-zoom" aria-pressed="false">🔍 띠 확대</button>
   </div>
+  <p style="text-align:center;font-size:.82rem;color:var(--muted);margin:.3rem 0 0">왼쪽 그림의 띠를 직접 클릭해도 그 자리가 20배로 확대됩니다. 확대한 뒤에는 마우스로 끌어서 옮길 수 있고, 끌지 않고 클릭하면 원래대로 돌아옵니다.</p>
   <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="p2d3t-note"></p>
 
 <script>
@@ -493,18 +521,75 @@
     x0 += tau * (A[0][0] * r0 + A[1][0] * r1); x1 += tau * (A[0][1] * r0 + A[1][1] * r1);
   }
   window.p2d3tData = P;
-  function PX(x) { return 110 + x * 100; }
-  function PY(y) { return 250 - y * 100; }
+  var V = { cx: 0.5, cy: 1.05, S: 100 }, zoomed = false, ZS = 2000;   // 기본 뷰: 110 + 100x, 250 − 100y 와 같음
+  function PX(x) { return 160 + (x - V.cx) * V.S; }
+  function PY(y) { return 145 - (y - V.cy) * V.S; }
+  function inView(x, y) { var a = PX(x), b = PY(y); return a > 46 && a < 274 && b > 26 && b < 264; }
   function QX(kk) { return 340 + Math.log(Math.max(kk, 1)) / Math.LN10 / 6.4 * 280; }
   function QY(v) { return 250 - (Math.log(v) / Math.LN10 + 7.7) / 8 * 230; }
   var el = function (id) { return document.getElementById(id); };
-  function line(c, r) { return 'M' + PX(-0.7) + ' ' + PY((r + 0.7) / c).toFixed(1) + ' L' + PX(1.7) + ' ' + PY((r - 1.7) / c).toFixed(1); }
-  var path = P.map(function (p, i) { return (i ? 'L' : 'M') + PX(p.x).toFixed(1) + ' ' + PY(p.y).toFixed(1); }).join('');
-  el('p2d3t-path').setAttribute('d', path);
-  el('p2d3t-band').setAttribute('d', line(1, 2)); el('p2d3t-r1').setAttribute('d', line(1, 2)); el('p2d3t-r2').setAttribute('d', line(1.01, 2.02));
-  el('p2d3t-true').setAttribute('cx', PX(1)); el('p2d3t-true').setAttribute('cy', PY(1));
-  el('p2d3t-ls').setAttribute('cx', PX(0)); el('p2d3t-ls').setAttribute('cy', PY(2));
-  el('p2d3t-lt').setAttribute('x', PX(1) + 10); el('p2d3t-lt').setAttribute('y', PY(1) + 4);
+  function line(c, r) { var h = 220 / V.S, lo = V.cx - h, hi = V.cx + h; return 'M' + PX(lo).toFixed(1) + ' ' + PY((r - lo) / c).toFixed(1) + ' L' + PX(hi).toFixed(1) + ' ' + PY((r - hi) / c).toFixed(1); }
+  var curP = P[1];
+  function drawLeft() {
+    el('p2d3t-path').setAttribute('d', P.map(function (p, i) { return (i ? 'L' : 'M') + PX(p.x).toFixed(1) + ' ' + PY(p.y).toFixed(1); }).join(''));
+    el('p2d3t-dots').innerHTML = P.map(function (p) { return '<circle cx="' + PX(p.x).toFixed(1) + '" cy="' + PY(p.y).toFixed(1) + '" r="' + (zoomed ? 3.4 : 2.8) + '"/>'; }).join('');
+    el('p2d3t-band').setAttribute('d', line(1, 2)); el('p2d3t-r1').setAttribute('d', line(1, 2)); el('p2d3t-r2').setAttribute('d', line(1.01, 2.02));
+    el('p2d3t-band').setAttribute('visibility', zoomed ? 'hidden' : 'visible');
+    ['p2d3t-r1', 'p2d3t-r2'].forEach(function (id) { el(id).setAttribute('stroke-width', zoomed ? 2.4 : 1.4); });
+    var vt = inView(1, 1), vl = inView(0, 2);
+    el('p2d3t-true').setAttribute('cx', PX(1)); el('p2d3t-true').setAttribute('cy', PY(1)); el('p2d3t-true').setAttribute('visibility', vt ? 'visible' : 'hidden');
+    el('p2d3t-ls').setAttribute('cx', PX(0)); el('p2d3t-ls').setAttribute('cy', PY(2)); el('p2d3t-ls').setAttribute('visibility', vl ? 'visible' : 'hidden');
+    el('p2d3t-lt').setAttribute('x', PX(1) + 10); el('p2d3t-lt').setAttribute('y', PY(1) + (zoomed ? -10 : 4));
+    el('p2d3t-leg').setAttribute('transform', zoomed ? 'translate(122 -146)' : ''); el('p2d3t-lt').setAttribute('visibility', vt ? 'visible' : 'hidden');
+    ['p2d3t-axes', 'p2d3t-arrs', 'p2d3t-lsl', 'p2d3t-stl'].forEach(function (id) { el(id).setAttribute('visibility', zoomed ? 'hidden' : 'visible'); });
+    el('p2d3t-zl').setAttribute('visibility', zoomed ? 'visible' : 'hidden');
+    if (zoomed) {
+      var yy = V.cy + 28 / V.S;                            // 위쪽에서 두 직선의 이름표를 붙일 높이
+      el('p2d3t-zl1').setAttribute('x', (PX(2 - yy) - 7).toFixed(1)); el('p2d3t-zl1').setAttribute('y', PY(yy).toFixed(1));
+      el('p2d3t-zl2').setAttribute('x', (PX(2.02 - 1.01 * yy) + 7).toFixed(1)); el('p2d3t-zl2').setAttribute('y', PY(yy).toFixed(1));
+      el('p2d3t-zlt').textContent = '확대 ×20 · 중심 (' + V.cx.toFixed(3) + ', ' + V.cy.toFixed(3) + ')';
+    }
+    el('p2d3t-hit').style.cursor = zoomed ? 'grab' : 'zoom-in';
+    el('p2d3t-zoom').textContent = zoomed ? '🔍 원래대로' : '🔍 띠 확대';
+    el('p2d3t-zoom').setAttribute('aria-pressed', zoomed);
+    setCur();
+  }
+  function setCur() {
+    var c = el('p2d3t-cur');
+    c.setAttribute('cx', PX(curP.x).toFixed(1)); c.setAttribute('cy', PY(curP.y).toFixed(1));
+    c.setAttribute('visibility', inView(curP.x, curP.y) ? 'visible' : 'hidden');
+  }
+  function setZoom(on, x, y) {
+    zoomed = on;
+    V = on ? { cx: x, cy: y, S: ZS } : { cx: 0.5, cy: 1.05, S: 100 };
+    drawLeft();
+  }
+  el('p2d3t-zoom').addEventListener('click', function () { setZoom(!zoomed, 1, 1); });
+  var hit = el('p2d3t-hit'), drag = null;
+  function svgPt(ev) { var svg = hit.ownerSVGElement, pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+  hit.style.touchAction = 'none';
+  hit.addEventListener('pointerdown', function (ev) {
+    var m = svgPt(ev); drag = { x: m.x, y: m.y, moved: false };
+    try { hit.setPointerCapture(ev.pointerId); } catch (e) {}
+  });
+  hit.addEventListener('pointermove', function (ev) {
+    if (!drag || !zoomed) return;
+    var m = svgPt(ev), dx = m.x - drag.x, dy = m.y - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;         // 4px 미만은 클릭으로 본다
+    drag.moved = true; hit.style.cursor = 'grabbing';
+    V.cx = Math.max(-0.3, Math.min(1.5, V.cx - dx / V.S)); V.cy = Math.max(0.5, Math.min(2.3, V.cy + dy / V.S));
+    drag.x = m.x; drag.y = m.y; drawLeft(); hit.style.cursor = 'grabbing';
+  });
+  hit.addEventListener('pointerup', function (ev) {
+    var d = drag; drag = null;
+    if (d && d.moved) { hit.style.cursor = 'grab'; return; }     // 끌었으면 이동만
+    if (zoomed) { setZoom(false); return; }
+    var m = svgPt(ev), dx = V.cx + (m.x - 160) / V.S, dy = V.cy - (m.y - 145) / V.S;
+    var t = (dx + dy - 2) / 2, x = Math.max(-0.2, Math.min(1.4, dx - t));   // 클릭한 곳에서 가장 가까운 띠 위의 점
+    setZoom(true, x, 2 - x);
+  });
+  hit.addEventListener('pointercancel', function () { drag = null; });
+  drawLeft();
   el('p2d3t-ph2').setAttribute('x', QX(1e4).toFixed(1)); el('p2d3t-ph2').setAttribute('width', (QX(1e6) - QX(1e4)).toFixed(1));
   el('p2d3t-ph2l').setAttribute('x', ((QX(1e4) + QX(1e6)) / 2).toFixed(1));
   var pe = P.filter(function (p) { return p.k >= 1; });
@@ -521,7 +606,7 @@
   function render() {
     var p = P[+kEl.value], ks = p.k.toLocaleString('en-US');
     var fs = 1 - Math.pow(Math.max(0, 1 - tau * lam), p.k), fw = 1 - Math.pow(1 - tau * lmin, p.k);
-    el('p2d3t-cur').setAttribute('cx', PX(p.x).toFixed(1)); el('p2d3t-cur').setAttribute('cy', PY(p.y).toFixed(1));
+    curP = p; setCur();
     el('p2d3t-bsr').setAttribute('width', (116 * fs).toFixed(1)); el('p2d3t-bwr').setAttribute('width', (116 * fw).toFixed(1));
     el('p2d3t-bs').textContent = pct(fs); el('p2d3t-bw').textContent = pct(fw);
     var vis = p.k >= 1 ? 'visible' : 'hidden';
@@ -534,7 +619,8 @@
     }
     el('p2d3t-kval').textContent = ks;
     var e1 = p.x + p.y, e2 = p.x + 1.01 * p.y;
-    el('p2d3t-note').innerHTML = 'k = ' + ks + ' · 추정 (' + p.x.toFixed(4) + ', ' + p.y.toFixed(4) + ') · 참값까지 거리 ' + f(p.err) + ' · 데이터 잔차 ' + f(p.res) +
+    var stage = p.k === 0 ? '출발점 (0, 0)' : (p.k < 1e4 ? '① 끝난 상태: 띠 안의 참값 근처' : (p.k < 2e6 ? '② 진행 중: 띠를 따라 (0, 2) 쪽으로 미끄러지는 중' : '도착: 데이터를 정확히 맞추는 풀이 (0, 2)'));
+    el('p2d3t-note').innerHTML = '<b>' + stage + '</b><br>k = ' + ks + ' · 추정 (' + p.x.toFixed(4) + ', ' + p.y.toFixed(4) + ') · 참값까지 거리 ' + f(p.err) + ' · 데이터 잔차 ' + f(p.res) +
       '<br>광선 1: x₁ + x₂ = ' + e1.toFixed(4) + ' (측정 2) · 광선 2: x₁ + 1.01 x₂ = ' + e2.toFixed(4) + ' (측정 2.02)' +
       '<br>두 식의 차이(광선 2 − 광선 1) 0.01 x₂ = ' + (e2 - e1).toFixed(4) + ' · 잡음 없는 값 0.01 → 측정 0.02 (차이 0.01이 잡음 몫)';
   }
