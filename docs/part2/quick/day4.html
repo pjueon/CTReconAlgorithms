@@ -30,7 +30,7 @@
 
   <p>입력의 오차를 풀이에서 최대 몇 배로 키우는지는 행렬의 조건수(Condition Number)로 나타냅니다. 조건수는 가장 큰 특이값(Singular Value)과 가장 작은 특이값의 비입니다. 3일차에서 본 대로 이 행렬은 특이값이 약 \(2.005\)와 \(0.005\)라서 조건수가 약 \(402\)이고, 상대 오차가 최악의 경우 \(402\)배까지 증폭될 수 있습니다. 광선이 서로 비슷한 방향을 많이 지나는 CT 시스템 행렬(각도가 모자랄 때 등)에서도 같은 일이 일어납니다.</p>
 
-  <p>아래 위젯에서 두 번째 측정값에 섞인 잡음 \(\varepsilon\)(\(b_2 = 2.01+\varepsilon\))을 움직이면 주황 점(풀이)이 어떻게 옮겨 가는지 볼 수 있습니다. \(\varepsilon=\pm0.010\)은 측정값의 \(\pm0.5\%\)입니다. 파란 점은 잡음이 없을 때(\(b_2 = 2.010\))의 풀이입니다. 아래 슬라이더로 정규화 강도 \(\lambda\)를 올리면 두 점이 어떻게 달라지는지도 볼 수 있습니다. \(\lambda\)는 뒤에서 정의합니다.</p>
+  <p>아래 위젯은 두 광선의 식을 \((x_1,x_2)\) 평면의 직선 두 개로 그리고, 풀이를 그 교점으로 보여 줍니다. 두 번째 측정값에 섞인 잡음 \(\varepsilon\)(\(b_2 = 2.01+\varepsilon\))을 움직이면 광선 2의 직선(주황 실선)이 조금 밀리고 검은 점(풀이, 어두운 화면에서는 흰 점)이 멀리 옮겨 갑니다. \(\varepsilon=\pm0.010\)은 측정값의 \(\pm0.5\%\)입니다. 초록 점은 잡음이 없을 때(\(b_2 = 2.010\))의 풀이입니다. 아래 슬라이더로 정규화 강도 \(\lambda\)를 올리면 두 점이 어떻게 달라지는지도 볼 수 있습니다. \(\lambda\)는 뒤에서 정의합니다.</p>
 
   <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
     <label for="d4-b">두 번째 측정값의 잡음 \(\varepsilon\) (\(b_2=2.01+\varepsilon\))</label>
@@ -44,7 +44,8 @@
   </div>
 
   <figure class="fig">
-    <svg viewBox="0 0 640 300" role="img" aria-label="x1 과 x2 평면에서 b2 와 정규화 강도에 따라 풀이 두 점이 움직이는 모습">
+    <svg viewBox="0 0 640 300" role="img" aria-label="x1, x2 평면에 거의 나란한 두 광선의 직선과 풀이. 잡음이 섞이면 교점이 직선을 따라 멀리 옮겨 가고, 정규화 강도를 올리면 풀이가 원점에 가까운 쪽으로 끌려온다. 흐린 곡선은 정규화 강도를 0에서 무한대로 키울 때 풀이가 지나는 길이다.">
+      <defs><clipPath id="d4-clip"><rect x="40" y="15" width="270" height="270"/></clipPath></defs>
       <rect x="40" y="15" width="270" height="270" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
       <g class="svg-line" stroke-width=".6" opacity=".6">
         <path d="M40 262.5 H310 M40 150 H310 M40 37.5 H310"/>
@@ -54,45 +55,76 @@
         <text x="62.5" y="298">0</text><text x="175" y="298">1</text><text x="287.5" y="298">2</text>
         <text x="34" y="266" text-anchor="end">0</text><text x="34" y="154" text-anchor="end">1</text><text x="34" y="41" text-anchor="end">2</text>
       </g>
-      <g font-size="11" class="svg-fg"><text x="300" y="296" text-anchor="end">x₁</text><text x="48" y="28">x₂</text></g>
+      <g font-size="11" class="svg-fg"><text x="316" y="289">x₁</text><text x="14" y="24">x₂</text></g>
+      <g clip-path="url(#d4-clip)">
+        <path id="d4-tr2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".16" style="fill:none;stroke:var(--fg)"/>
+        <path id="d4-r1" fill="none" stroke-width="1.8" style="stroke:var(--accent)"/>
+        <path id="d4-r0" fill="none" stroke-width="1.5" stroke-dasharray="6 4" opacity=".55" style="stroke:var(--warn)"/>
+        <path id="d4-r2" fill="none" stroke-width="1.8" style="stroke:var(--warn)"/>
+        <path id="d4-tr1" stroke-width="2.5" opacity=".35" style="fill:none;stroke:var(--good)"/>
+        <g id="d4-tk" class="svg-fg"></g>
+        <path id="d4-o2" stroke-width="1" stroke-dasharray="3 3" style="fill:none;stroke:var(--muted)"/>
+      </g>
+      <circle cx="62.5" cy="262.5" r="3.5" style="fill:var(--muted)"/>
+      <text x="68" y="278" font-size="10.5" class="svg-muted">원점 (0, 0)</text>
       <circle id="d4-ring" r="9" fill="none" stroke-width="1.4" style="stroke:var(--muted)"/>
-      <circle id="d4-p1" r="5.5" style="fill:var(--accent)"/>
-      <circle id="d4-p2" r="5.5" style="fill:var(--warn)"/>
+      <circle id="d4-p1" r="5" style="fill:var(--good)"/>
+      <circle id="d4-p2" r="5.5" class="svg-fg"/>
       <g font-size="11.5" class="svg-fg">
-        <text x="340" y="40" font-weight="700">풀이 (x₁, x₂)</text>
-        <circle cx="348" cy="62" r="5" style="fill:var(--accent)"/><text x="360" y="66">b = (2, 2.010)</text>
-        <circle cx="348" cy="112" r="5" style="fill:var(--warn)"/><text x="360" y="116">b = (2, 2.01 + ε)</text>
-        <circle cx="348" cy="162" r="7" fill="none" stroke-width="1.4" style="stroke:var(--muted)"/><text x="360" y="166">참값 (1, 1)</text>
+        <circle cx="348" cy="36" r="5.5" class="svg-fg"/><text x="360" y="40">풀이: b = (2, 2.01 + ε)</text>
+        <circle cx="348" cy="58" r="5" style="fill:var(--good)"/><text x="360" y="62">풀이: b = (2, 2.010) (잡음 없음)</text>
+        <circle cx="348" cy="80" r="7" fill="none" stroke-width="1.4" style="stroke:var(--muted)"/><text x="360" y="84">참값 (1, 1)</text>
+        <path d="M338 106 H358" stroke-width="1.8" style="stroke:var(--accent)"/><text x="364" y="110">광선 1: x₁ + x₂ = 2</text>
+        <path d="M338 128 H358" stroke-width="1.8" style="stroke:var(--warn)"/><text x="364" y="132">광선 2: x₁ + 1.01 x₂ = 2.01 + ε</text>
+        <path d="M338 150 H358" stroke-width="1.5" stroke-dasharray="6 4" opacity=".55" style="stroke:var(--warn)"/><text x="364" y="154">광선 2 (ε = 0)</text>
+        <path d="M338 172 H358" stroke-width="9" opacity=".16" style="stroke:var(--fg)"/><text x="364" y="176">검은 점이 지나는 길 (λ: 0 → ∞, 끝은 원점)</text>
+        <path d="M338 192 H358" stroke-width="2.5" opacity=".35" style="stroke:var(--good)"/><text x="364" y="196">초록 점이 지나는 길 (λ: 0 → ∞)</text>
+        <circle cx="348" cy="212" r="2.5" class="svg-fg"/><text x="364" y="216">검은 점의 길 위 λ = 10⁻⁴, 10⁻³, 0.01, 0.1, 1</text>
+        <path d="M338 230 H358" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--muted)"/><text x="364" y="234">원점까지 거리 ‖x‖</text>
       </g>
-      <g font-size="11" class="svg-muted">
-        <text x="360" y="84" id="d4-t1"></text>
-        <text x="360" y="134" id="d4-t2"></text>
-      </g>
+      <g font-size="11" class="svg-muted"><text x="340" y="262" id="d4-t1"></text><text x="340" y="280" id="d4-t2"></text></g>
     </svg>
-    <figcaption>가로축이 \(x_1\), 세로축이 \(x_2\)입니다. 회색 고리가 참값 \((1,1)\)입니다. \(\lambda = 0\)에서 잡음 \(\varepsilon\)을 \(0\)에서 \(0.010\)으로 바꾸면(\(b_2\)가 \(2.010\)에서 \(2.020\)으로) 주황 점이 \((1,1)\)에서 \((0,2)\)까지 움직입니다.</figcaption>
+    <figcaption>가로축이 \(x_1\), 세로축이 \(x_2\)입니다. \(\lambda = 0\)이면 풀이는 두 직선의 교점이므로, \(\varepsilon\)을 \(0\)에서 \(0.010\)으로 바꾸면(\(b_2\)가 \(2.010\)에서 \(2.020\)으로) 검은 점이 \((1,1)\)에서 \((0,2)\)까지 움직입니다. \(\lambda\)를 올리면 검은 점이 거의 겹친 두 직선을 따라 원점에 가까운 쪽인 \((1,1)\) 근처로 끌려오고, 더 올리면 두 점이 함께 원점 쪽으로 끌려갑니다.</figcaption>
   </figure>
+  <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="d4-note"></p>
 
   <script>
   (function () {
     var LAMS = [0, 0.0001, 0.001, 0.01, 0.1, 1];
     var sb = document.getElementById('d4-b'), sl = document.getElementById('d4-l');
+    function el(id) { return document.getElementById(id); }
     function tik(b2, lam) {          // (AᵀA + λI) x = Aᵀ b,  A = [[1,1],[1,1.01]], b = (2, b2)
       var a11 = 2 + lam, a12 = 2.01, a22 = 2.0201 + lam, r1 = 2 + b2, r2 = 2 + 1.01 * b2, det = a11 * a22 - a12 * a12;
       return [(r1 * a22 - a12 * r2) / det, (a11 * r2 - a12 * r1) / det];
     }
     function X(v) { return 40 + (v + 0.2) * 112.5; }
     function Y(v) { return 285 - (v + 0.2) * 112.5; }
+    function line(c, r) { return 'M' + X(-0.2) + ' ' + Y((r + 0.2) / c).toFixed(1) + 'L' + X(2.2) + ' ' + Y((r - 2.2) / c).toFixed(1); }
+    function trail(b2) {             // λ = 0, 10⁻⁶ … 10⁴
+      var d = '', i, q;
+      for (i = -1; i <= 200; i++) { q = tik(b2, i < 0 ? 0 : Math.pow(10, -6 + i / 20)); d += (i < 0 ? 'M' : 'L') + X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1); }
+      return d;
+    }
+    el('d4-r1').setAttribute('d', line(1, 2)); el('d4-r0').setAttribute('d', line(1.01, 2.01));
+    el('d4-tr1').setAttribute('d', trail(2.01));
+    el('d4-ring').setAttribute('cx', X(1)); el('d4-ring').setAttribute('cy', Y(1));
+    function f4(v) { var s = v.toFixed(4); return s === '-0.0000' ? '0.0000' : s.replace('-', '−'); }
+    function g(v) { return v < 1e-12 ? '0' : v >= 0.01 ? v.toFixed(4) : v.toExponential(1); }
     function render() {
       var eps = +sb.value / 1000, b2 = 2.01 + eps, lam = LAMS[+sl.value], p1 = tik(2.01, lam), p2 = tik(b2, lam);
-      document.getElementById('d4-bv').textContent = (eps >= 0 ? '+' : '−') + Math.abs(eps).toFixed(3);
-      document.getElementById('d4-lv').textContent = lam;
-      var r = document.getElementById('d4-ring'), c1 = document.getElementById('d4-p1'), c2 = document.getElementById('d4-p2');
-      r.setAttribute('cx', X(1)); r.setAttribute('cy', Y(1));
-      c1.setAttribute('cx', X(p1[0]).toFixed(1)); c1.setAttribute('cy', Y(p1[1]).toFixed(1));
-      c2.setAttribute('cx', X(p2[0]).toFixed(1)); c2.setAttribute('cy', Y(p2[1]).toFixed(1));
-      function f4(v) { var s = v.toFixed(4); return s === '-0.0000' ? '0.0000' : s; }
-      document.getElementById('d4-t1').textContent = '(' + f4(p1[0]) + ', ' + f4(p1[1]) + ')';
-      document.getElementById('d4-t2').textContent = '(' + f4(p2[0]) + ', ' + f4(p2[1]) + ')';
+      el('d4-bv').textContent = (eps >= 0 ? '+' : '−') + Math.abs(eps).toFixed(3);
+      el('d4-lv').textContent = lam;
+      el('d4-r2').setAttribute('d', line(1.01, b2)); el('d4-tr2').setAttribute('d', trail(b2));
+      el('d4-tk').innerHTML = LAMS.slice(1).map(function (l) { var q = tik(b2, l); return '<circle r="2.5" cx="' + X(q[0]).toFixed(1) + '" cy="' + Y(q[1]).toFixed(1) + '"/>'; }).join('');
+      el('d4-o2').setAttribute('d', 'M' + X(0) + ' ' + Y(0) + 'L' + X(p2[0]).toFixed(1) + ' ' + Y(p2[1]).toFixed(1));
+      el('d4-p1').setAttribute('cx', X(p1[0]).toFixed(1)); el('d4-p1').setAttribute('cy', Y(p1[1]).toFixed(1));
+      el('d4-p2').setAttribute('cx', X(p2[0]).toFixed(1)); el('d4-p2').setAttribute('cy', Y(p2[1]).toFixed(1));
+      el('d4-t1').textContent = '검은 점 (' + f4(p2[0]) + ', ' + f4(p2[1]) + ')';
+      el('d4-t2').textContent = '초록 점 (' + f4(p1[0]) + ', ' + f4(p1[1]) + ')';
+      var r1 = p2[0] + p2[1] - 2, r2 = p2[0] + 1.01 * p2[1] - b2, mis = r1 * r1 + r2 * r2, reg = lam * (p2[0] * p2[0] + p2[1] * p2[1]);
+      el('d4-note').innerHTML = '광선 1: x₁ + x₂ = 2 · 광선 2: x₁ + 1.01 x₂ = 2.010 ' + (eps < 0 ? '−' : '+') + ' ' + Math.abs(eps).toFixed(3) + ' = ' + b2.toFixed(3) +
+        '<br>λ = ' + lam + ' · 검은 점 (' + f4(p2[0]) + ', ' + f4(p2[1]) + '), 참값까지 거리 ' + Math.hypot(p2[0] - 1, p2[1] - 1).toFixed(4) +
+        '<br>데이터 어긋남 ‖Ax − b‖² = ' + g(mis) + ' · 벌점 λ‖x‖² = ' + g(reg) + ' · 합 J = ' + g(mis + reg);
     }
     sb.addEventListener('input', render); sl.addEventListener('input', render); render();
   })();
@@ -116,6 +148,8 @@
   </div>
 
   <p>\(\lambda = 0.001\)이면 두 측정값의 풀이가 모두 참값 \((1,1)\) 근처에 머뭅니다. 증폭이 거의 사라진 것입니다. 그러나 \(\lambda = 1\)에서는 올바른 데이터의 풀이도 \((0.80,\ 0.80)\)으로 참값에서 \(20\%\) 밀려납니다. \(\lambda\)가 커질수록 안정되지만 풀이가 참값에서 멀어지는 오차(편향, Bias)가 커집니다. 슬라이더로 직접 확인해 보세요.</p>
+
+  <p>위 그림으로 보면 이렇습니다. 두 직선이 거의 겹쳐 있으므로, 두 직선 근처의 가느다란 띠 위에서는 어느 점이든 데이터 어긋남 \(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert^2\)이 거의 같게 작습니다. 그래서 작은 \(\lambda\)의 벌점 \(\lambda\lVert\mathbf{x}\rVert^2\)만으로도 풀이가 띠 위에서 원점에 가장 가까운 점 쪽으로 옮겨 가는데, 그 점이 \((1,1)\) 근처입니다. 잡음 때문에 띠를 따라 멀리 미끄러지던 풀이가 이렇게 \((1,1)\) 근처로 돌아옵니다. \(\lambda\)를 더 키워 큰 특이값의 제곱(약 \(4\))에 가까워지면 띠를 가로지르는 방향까지 눌려, 풀이가 띠를 벗어나 원점 쪽으로 끌려갑니다. 이것이 편향입니다.</p>
 
   <details class="fold">
     <summary>작은 \(\lambda\)로 증폭만 누를 수 있는 이유</summary>

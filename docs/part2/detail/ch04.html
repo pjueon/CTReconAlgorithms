@@ -54,84 +54,107 @@
   비슷한 방향을 많이 겨냥할수록(각도가 모자라거나 화소가 너무 잘게 나뉠수록) 조건수가 커지고, <a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>의
   측정 잡음 \(\sigma_p\)이 재구성에서 크게 증폭됩니다.</p>
 
-  <p>거의 나란한 두 직선의 교점이 얼마나 쉽게 미끄러지는지 직접 움직여 봅니다. 두 광선의 식은 직선 \(x_1+x_2=2\)(파랑)와 \(x_1+1.01\,x_2=b_2\)(주황)입니다. 잡음이 없으면 \(b_2=2.01\)이고, 두 번째 측정값에 잡음 \(\varepsilon\)이 섞이면 \(b_2=2.01+\varepsilon\)이 됩니다. 슬라이더로 \(\varepsilon\)을 \(\pm0.010\)(측정값의 \(\pm0.5\%\)) 안에서 조금씩 바꾸면 교점(풀이)이 어떻게 움직이는지 보세요.</p>
+  <p>거의 나란한 두 직선의 교점이 얼마나 쉽게 미끄러지는지 직접 움직여 봅니다. 두 광선의 식은 직선 \(x_1+x_2=2\)(파랑)와 \(x_1+1.01\,x_2=b_2\)(주황)입니다. 잡음이 없으면 \(b_2=2.01\)이고, 두 번째 측정값에 잡음 \(\varepsilon\)이 섞이면 \(b_2=2.01+\varepsilon\)이 됩니다. 첫째 슬라이더로 \(\varepsilon\)을 \(\pm0.010\)(측정값의 \(\pm0.5\%\)) 안에서 조금씩 바꾸면 주황 직선이 조금 밀리고 교점(풀이)이 멀리 미끄러집니다.
+  그림의 오른쪽은 참값 \((1,1)\) 근처를 약 40배 확대한 것입니다. 둘째 슬라이더는 광선 2의 둘째 계수를 \(1.01\)에서 \(2\)까지 바꿉니다. 계수가 커지면 두 직선이 뚜렷하게 엇갈려 같은 \(\varepsilon\)에도 교점이 조금만 움직입니다. 계수를 바꿔도 참값이 \((1,1)\)로 남도록 잡음 없는 \(b_2\)는 \(1+(\text{둘째 계수})\)로 둡니다.</p>
 
-  <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
-    <label for="w1-b">두 번째 측정값의 잡음 \(\varepsilon\) (\(b_2=2.01+\varepsilon\))</label>
-    <input id="w1-b" type="range" min="-10" max="10" step="1" value="0" style="width:14rem">
-    <b id="w1-bval">+0.000</b>
+  <div style="display:flex;gap:.6rem 1rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
+    <label for="w1-e">두 번째 측정값의 잡음 \(\varepsilon\)</label>
+    <input id="w1-e" type="range" min="-0.01" max="0.01" step="0.001" value="0" style="width:11rem">
+    <b id="w1-eval">+0.000</b>
   </div>
-
+  <div style="display:flex;gap:.6rem 1rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap;margin-top:.4rem">
+    <label for="w1-c">광선 2의 방향 \(\mathbf{a}_2\)</label>
+    <input id="w1-c" type="range" min="0" max="6" step="1" value="0" style="width:11rem">
+    <b id="w1-cval">(1, 1.010)</b>
+  </div>
   <figure class="fig">
-    <svg viewBox="0 0 700 280" role="img" aria-label="왼쪽은 거의 나란한 두 직선과 그 교점, 오른쪽은 주황 직선에서 파랑 직선을 뺀 세로 간격을 100배 확대한 그림. 잡음 슬라이더를 움직이면 교점이 직선을 따라 크게 이동한다" style="max-width:44rem">
-      <defs><clipPath id="w1-clip"><rect x="40" y="14" width="360" height="252"/></clipPath></defs>
-      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M40 266 H400"/><path d="M40 14 V266"/></g>
-      <g clip-path="url(#w1-clip)">
-        <path id="w1-l1" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
-        <path id="w1-l2" fill="none" stroke-width="2" stroke-dasharray="7 4" style="stroke:var(--warn)"/>
+    <svg viewBox="0 0 640 300" role="img" aria-label="왼쪽은 두 광선의 직선과 교점, 오른쪽은 참값 (1,1) 근처를 확대한 그림. 측정값 b2에 오차 ε을 더하면 광선 2의 직선이 조금 밀리고 교점이 직선을 따라 멀리 옮겨 간다.">
+      <defs>
+        <clipPath id="w1-cm"><rect x="40" y="30" width="280" height="240"/></clipPath>
+        <clipPath id="w1-cz"><rect x="380" y="30" width="240" height="240"/></clipPath>
+      </defs>
+      <rect x="40" y="30" width="280" height="240" fill="none" stroke-width="1" style="stroke:var(--rule)"/>
+      <rect x="380" y="30" width="240" height="240" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M40 242 H320"/><path d="M124 30 V270"/></g>
+      <g class="svg-muted" font-size="10" text-anchor="middle">
+        <text x="124" y="284">0</text><text x="180" y="284">1</text><text x="236" y="284">2</text><text x="292" y="284">3</text>
+        <text x="34" y="245" text-anchor="end">0</text><text x="34" y="189" text-anchor="end">1</text><text x="34" y="133" text-anchor="end">2</text><text x="34" y="77" text-anchor="end">3</text>
       </g>
-      <path id="w1-v1" fill="none" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--muted)"/>
-      <path id="w1-v2" fill="none" stroke-width="1" stroke-dasharray="3 3" style="stroke:var(--muted)"/>
-      <circle id="w1-true" r="6" fill="none" stroke-width="1.5" style="stroke:var(--muted)"/>
-      <circle id="w1-pt" r="5" style="fill:var(--fg)"/>
-      <g class="svg-line" stroke-width="1" opacity=".5"><path d="M450 160 H680"/></g>
-      <path id="w1-gap" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
-      <circle id="w1-gpt" r="5" style="fill:var(--fg)"/>
-      <g font-size="10.5" class="svg-muted">
-        <text x="396" y="260" text-anchor="end">x₁</text><text x="46" y="26">x₂</text>
-        <text id="w1-truelab" text-anchor="start">참값 (1, 1)</text>
-        <text x="450" y="26">주황 직선 − 파랑 직선의 세로 간격(100배 확대)</text>
-        <text x="450" y="40">간격이 0인 곳(곡선이 가로축과 만나는 곳)이 교점</text>
-        <text x="680" y="194" text-anchor="end">x₁</text><text x="446" y="164" text-anchor="end">0</text>
-        <text id="w1-x1a" text-anchor="middle"></text><text id="w1-x1b" text-anchor="middle"></text>
+      <g class="svg-fg" font-size="11"><text x="316" y="296" text-anchor="end">x₁</text><text x="130" y="44">x₂</text></g>
+      <g class="svg-fg" font-size="11.5" font-weight="700"><text x="40" y="20">풀이 평면 전체</text><text x="380" y="20">참값 (1, 1) 근처 약 40배 확대</text></g>
+      <path id="w1-box" fill="none" stroke-width="1" stroke-dasharray="3 4" opacity=".7" style="stroke:var(--muted)"/>
+      <g clip-path="url(#w1-cm)">
+        <path id="w1-m1" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+        <path id="w1-m0" fill="none" stroke-width="1.6" stroke-dasharray="6 4" opacity=".55" style="stroke:var(--warn)"/>
+        <path id="w1-m2" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      </g>
+      <g clip-path="url(#w1-cz)">
+        <path id="w1-z1" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+        <path id="w1-z0" fill="none" stroke-width="1.6" stroke-dasharray="6 4" opacity=".55" style="stroke:var(--warn)"/>
+        <path id="w1-z2" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      </g>
+      <circle id="w1-mt" r="6" fill="none" stroke-width="1.5" style="stroke:var(--muted)"/>
+      <circle id="w1-mp" r="5" class="svg-fg"/>
+      <circle cx="500" cy="150" r="6" fill="none" stroke-width="1.5" style="stroke:var(--muted)"/>
+      <circle id="w1-zp" r="5" class="svg-fg"/>
+      <path id="w1-za" fill="none" stroke-width="2" class="svg-fg" style="stroke:var(--fg)"/>
+      <g class="svg-fg" font-size="11">
+        <text id="w1-mtl" text-anchor="end">참값 (1, 1)</text><text id="w1-mpl" font-weight="700">교점</text>
+        <text x="492" y="170" text-anchor="end">참값 (1, 1)</text>
+        <text id="w1-zal" font-weight="700" paint-order="stroke" stroke-width="4" stroke-linejoin="round" style="stroke:var(--bg)"></text>
       </g>
     </svg>
-    <figcaption>왼쪽: 검은 점이 현재 풀이(두 직선의 교점), 회색 고리가 잡음이 없을 때(\(\varepsilon=0\))의 풀이 \((1,1)\)입니다. 두 직선은 기울기가 \(-1\)과 \(-1/1.01\)로 거의 같아서 겹쳐 보입니다. 오른쪽: 같은 \(x_1\)에서 주황 직선의 \(x_2\)에서 파랑 직선의 \(x_2\)를 뺀 값을 \(100\)배 확대해 그린 것입니다. 두 직선이 만나는 곳에서 이 값이 \(0\)이 되므로, 곡선이 가로축과 만나는 \(x_1\)이 왼쪽 교점의 \(x_1\)과 같습니다(두 그림의 세로 점선). 잡음이 조금만 섞여도 이 간격 곡선이 위아래로 평행 이동해, 가로축과 만나는 자리가 크게 옮겨 갑니다.</figcaption>
+    <figcaption>파란 선은 광선 1의 직선 \(x_1+x_2=2\), 주황 실선은 오차가 섞인 광선 2의 직선, 주황 점선은 \(\varepsilon=0\)일 때의 광선 2입니다. 검은 점(어두운 화면에서는 흰 점)이 교점(풀이), 회색 고리가 참값 \((1,1)\)입니다. 오른쪽은 왼쪽의 참값 \((1,1)\) 고리 부근을 확대한 것입니다(두 그림을 잇는 점선). 계수가 \(1.01\)이면 왼쪽 그림에서 세 직선이 겹쳐 보이고, 오른쪽 확대에서도 파란 선과 주황 점선은 겹친 채 주황 실선만 조금 밀려 있습니다.</figcaption>
   </figure>
+
   <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w1-note"></p>
 
-  <p>잡음이 \(\varepsilon=0.001\)(측정값의 \(0.05\%\))만 섞여도 교점의 각 성분이 \(0.1\)씩 움직입니다. 조건수가 큰 문제에서 데이터의 작은 오차가 이렇게 증폭됩니다.</p>
+  <p>잡음이 \(\varepsilon=0.001\)(측정값의 \(0.05\%\))만 섞여도 교점의 각 성분이 \(0.1\)씩 움직입니다(둘째 계수 \(1.01\)). 조건수가 큰 문제에서 데이터의 작은 오차가 이렇게 증폭됩니다. 둘째 계수를 \(2\)로 올리면 같은 잡음에 교점은 \(0.001\)씩만 움직입니다.</p>
+
 
 <script>
 (function () {
-  var bIn = document.getElementById('w1-b'), bVal = document.getElementById('w1-bval'),
-      l1 = document.getElementById('w1-l1'), l2 = document.getElementById('w1-l2'),
-      pt = document.getElementById('w1-pt'), tr = document.getElementById('w1-true'),
-      trLab = document.getElementById('w1-truelab'), note = document.getElementById('w1-note'),
-      gap = document.getElementById('w1-gap'), gpt = document.getElementById('w1-gpt');
-  function X(x1) { return 40 + (x1 + 1) * 80; }
-  function Y(x2) { return 266 - (x2 + 0.5) * 63; }
-  function GX(x1) { return 450 + (x1 + 1) / 4.2 * 230; }
-  function GY(v) { return 160 - v * 24; }
-  function line(f) {
-    var d = '', i, x1;
-    for (i = 0; i <= 40; i++) { x1 = -1 + 4 * i / 40; d += (i ? 'L' : 'M') + X(x1).toFixed(1) + ' ' + Y(f(x1)).toFixed(1); }
-    return d;
+  var CS = [1.01, 1.02, 1.05, 1.1, 1.2, 1.5, 2];     // 광선 2의 둘째 계수
+  var el = function (id) { return document.getElementById(id); };
+  var eEl = el('w1-e'), cEl = el('w1-c');
+  function MX(x) { return 124 + x * 56; }             // 전체 그림: 1 단위 = 56px
+  function MY(y) { return 242 - y * 56; }
+  var H = 0.05, ZS = 120 / H;                          // 확대 그림: (1,1) 중심, 반폭 0.05
+  function ZX(x) { return 500 + (x - 1) * ZS; }
+  function ZY(y) { return 150 - (y - 1) * ZS; }
+  function line(c, r, FX, FY, lo, hi) {               // 직선 x1 + c x2 = r
+    return 'M' + FX(lo).toFixed(1) + ' ' + FY((r - lo) / c).toFixed(1) + 'L' + FX(hi).toFixed(1) + ' ' + FY((r - hi) / c).toFixed(1);
   }
-  l1.setAttribute('d', line(function (x1) { return 2 - x1; }));
-  tr.setAttribute('cx', X(1).toFixed(1)); tr.setAttribute('cy', Y(1).toFixed(1));
-  trLab.setAttribute('x', (X(1) + 10).toFixed(1)); trLab.setAttribute('y', (Y(1) + 4).toFixed(1));
-  function z3(v) { return (Math.abs(v) < 5e-4 ? 0 : v).toFixed(3); }
-  function solve(b2) { var x2 = (b2 - 2) / 0.01; return [2 - x2, x2]; }
-  function draw() {
-    var eps = +bIn.value / 1000, b2 = 2.01 + eps, s = solve(b2), ref = solve(2.01);
-    bVal.textContent = (eps >= 0 ? '+' : '−') + Math.abs(eps).toFixed(3);
-    l2.setAttribute('d', line(function (x1) { return (b2 - x1) / 1.01; }));
-    pt.setAttribute('cx', X(s[0]).toFixed(1)); pt.setAttribute('cy', Y(s[1]).toFixed(1));
-    var d = '', i, x1;
-    for (i = 0; i <= 40; i++) { x1 = -1 + 4.2 * i / 40; d += (i ? 'L' : 'M') + GX(x1).toFixed(1) + ' ' + GY(100 * (b2 - 2.02 + 0.01 * x1) / 1.01).toFixed(1); }
-    gap.setAttribute('d', d);
-    gpt.setAttribute('cx', GX(s[0]).toFixed(1)); gpt.setAttribute('cy', GY(0).toFixed(1));
-    document.getElementById('w1-v1').setAttribute('d', 'M' + X(s[0]).toFixed(1) + ' ' + Y(s[1]).toFixed(1) + ' V266');
-    document.getElementById('w1-v2').setAttribute('d', 'M' + GX(s[0]).toFixed(1) + ' 60 V180');
-    var xa = document.getElementById('w1-x1a'), xb = document.getElementById('w1-x1b'), lab = 'x₁ = ' + z3(s[0]);
-    xa.textContent = lab; xa.setAttribute('x', X(s[0]).toFixed(1)); xa.setAttribute('y', 278);
-    xb.textContent = lab; xb.setAttribute('x', GX(s[0]).toFixed(1)); xb.setAttribute('y', 194);
-    var db = Math.abs(b2 - 2.01) / 2.01 * 100, dx = Math.hypot(s[0] - ref[0], s[1] - ref[1]) / Math.hypot(ref[0], ref[1]) * 100;
-    note.textContent = '잡음 ε = ' + bVal.textContent + ' (b₂ = ' + b2.toFixed(3) + ') · 풀이 x = (' + z3(s[0]) + ', ' + z3(s[1]) + ') · 측정값 변화 ' + db.toFixed(2) + '% → 풀이 변화 ' + dx.toFixed(1) + '%';
+  function set(id, a) { var e = el(id); for (var k in a) e.setAttribute(k, a[k]); }
+  set('w1-mt', { cx: MX(1), cy: MY(1) }); set('w1-mtl', { x: MX(1) - 9, y: MY(1) + 16 });
+  set('w1-box', { d: 'M' + (MX(1) + 7) + ' ' + (MY(1) - 4) + 'L380 30M' + (MX(1) + 7) + ' ' + (MY(1) + 4) + 'L380 270' });   // 참값 고리에서 확대 창으로 가는 지시선
+  set('w1-m1', { d: line(1, 2, MX, MY, -1.5, 3.5) }); set('w1-z1', { d: line(1, 2, ZX, ZY, 0.9, 1.1) });
+  function sg(v, n) { return (v < 0 ? '−' : '+') + ' ' + Math.abs(v).toFixed(n); }
+  function f3(v) { var s = v.toFixed(3); return s === '-0.000' ? '0.000' : s.replace('-', '−'); }
+  function render() {
+    var e = Math.round(eEl.value * 1000) / 1000 + 0, c = CS[+cEl.value], d = c - 1, b0 = 1 + c, b2 = b0 + e;
+    var x1 = 1 - e / d, x2 = 1 + e / d;
+    el('w1-eval').textContent = (e < 0 ? '−' : '+') + Math.abs(e).toFixed(3); el('w1-cval').textContent = '(1, ' + c.toFixed(3) + ')';
+    set('w1-m0', { d: line(c, b0, MX, MY, -1.5, 3.5) }); set('w1-m2', { d: line(c, b2, MX, MY, -1.5, 3.5) });
+    set('w1-z0', { d: line(c, b0, ZX, ZY, 0.9, 1.1) }); set('w1-z2', { d: line(c, b2, ZX, ZY, 0.9, 1.1) });
+    set('w1-mp', { cx: MX(x1).toFixed(1), cy: MY(x2).toFixed(1) });
+    set('w1-mpl', { x: (MX(x1) + 9).toFixed(1), y: (MY(x2) - 8).toFixed(1) });
+    var inZ = Math.abs(x1 - 1) < H * 0.96 && Math.abs(x2 - 1) < H * 0.96, zp = el('w1-zp'), za = el('w1-za'), zl = el('w1-zal');
+    zp.setAttribute('visibility', inZ ? 'visible' : 'hidden');
+    if (inZ) { set('w1-zp', { cx: ZX(x1).toFixed(1), cy: ZY(x2).toFixed(1) }); za.setAttribute('d', ''); zl.textContent = ''; }
+    else {                                             // 교점이 확대 범위 밖: 광선 1을 따라 그 방향으로 화살표
+      var s = e > 0 ? 1 : -1, tx = ZX(1 - s * H * 0.93), ty = ZY(1 + s * H * 0.93), ux = s * 0.7071, uy = s * 0.7071;
+      za.setAttribute('d', 'M' + (tx + 26 * ux) + ' ' + (ty + 26 * uy) + 'L' + tx + ' ' + ty + 'M' + (tx + 9 * ux - 5 * uy) + ' ' + (ty + 9 * uy + 5 * ux) + 'L' + tx + ' ' + ty + 'L' + (tx + 9 * ux + 5 * uy) + ' ' + (ty + 9 * uy - 5 * ux));
+      zl.textContent = '교점은 확대 범위 밖 (' + f3(x1) + ', ' + f3(x2) + ')';
+      set('w1-zal', s > 0 ? { x: (tx + 24).toFixed(1), y: (ty + 5).toFixed(1), 'text-anchor': 'start' } : { x: (tx - 24).toFixed(1), y: (ty + 3).toFixed(1), 'text-anchor': 'end' });
+    }
+    var nb = Math.hypot(2, b0), rb = Math.abs(e) / nb * 100, rb2 = Math.abs(e) / b0 * 100, rx = Math.abs(e) / d * 100, tr = 3 + c * c, s2 = (tr + Math.sqrt(tr * tr - 4 * d * d)) / 2;
+    el('w1-note').innerHTML = '광선 1: x₁ + x₂ = 2<br>광선 2: x₁ + ' + c.toFixed(3) + ' x₂ = ' + b0.toFixed(3) + ' ' + sg(e, 3) + ' = ' + b2.toFixed(3) +
+      '<br><b>교점(풀이) x = (' + f3(x1) + ', ' + f3(x2) + ')</b> · 참값 (1, 1)<br>측정값 변화 ‖Δb‖/‖b‖ = ' + rb.toFixed(2) + '% (b₂만 ' + rb2.toFixed(2) + '%) → 풀이 변화 ‖Δx‖/‖x‖ = ' + (rx >= 10 ? rx.toFixed(0) : rx.toFixed(1)) + '%' +
+      '<br>' + (e !== 0 ? '증폭 약 ' + (rx / rb).toFixed(rx / rb >= 10 ? 0 : 1) + '배' : '오차 없음') + ' · 조건수 κ ≈ ' + (s2 / d).toFixed(s2 / d >= 100 ? 0 : 1);
   }
-  bIn.addEventListener('input', draw);
-  draw();
+  eEl.addEventListener('input', render); cEl.addEventListener('input', render);
+  render();
 })();
 </script>
 
@@ -184,7 +207,8 @@
   <p>\(\lambda=0.001\)이면 두 경우 모두 참값 \((1,1)\)에서 크게 벗어나지 않습니다 — 올바른 데이터의 풀이는 거의 그대로이고, 틀어진 데이터의
   풀이도 \((0,2)\)처럼 멀리 뛰지 않습니다. 이것이 정규화의 효과입니다.</p>
 
-  <p>같은 계산을 \(\lambda\)를 연속으로 바꾸며 봅니다. 아래 평면의 점은 두 측정값 \(\mathbf{b}=(2,\ 2.01)\)(파랑)과 \((2,\ 2.02)\)(주황)에서 구한 풀이입니다. 두 곡선은 \(\lambda=0\)부터 \(1\)까지 풀이가 움직이는 자취입니다.</p>
+  <p>같은 계산을 \(\lambda\)를 연속으로 바꾸며 봅니다. 아래 평면의 점은 두 측정값 \(\mathbf{b}=(2,\ 2.01)\)(초록)과 \((2,\ 2.02)\)(검정, 어두운 화면에서는 흰색)에서 구한 풀이입니다. 두 곡선은 \(\lambda=0\)부터 \(1\)까지 풀이가 움직이는 자취입니다. 페이지 1처럼 두 광선의 직선도 함께 그렸습니다.
+  두 직선이 거의 겹쳐 있으므로, 두 직선 근처의 가느다란 띠 위에서는 어느 점이든 데이터 어긋남 \(\lVert\mathbf{A}\mathbf{x}-\mathbf{b}\rVert^2\)이 거의 같게 작습니다. 작은 \(\lambda\)의 벌점 \(\lambda\lVert\mathbf{x}\rVert^2\)은 그 띠 위에서 원점에 가장 가까운 점, 곧 \((1,1)\) 근처로 풀이를 옮깁니다. \(\lambda\)가 큰 특이값의 제곱(약 \(4\))에 가까워질 만큼 커지면 띠를 가로지르는 방향까지 눌려, 풀이가 띠를 벗어나 원점 쪽으로 끌려갑니다.</p>
 
   <div style="display:flex;gap:.7rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap">
     <label for="w2-l">정규화 강도 \(\lambda\)</label>
@@ -194,18 +218,29 @@
 
   <figure class="fig">
     <svg viewBox="0 0 420 290" role="img" aria-label="람다에 따라 두 측정값의 Tikhonov 풀이가 움직이는 자취. 람다가 0이면 두 풀이는 멀리 떨어져 있고 람다가 커지면 서로 가까워지지만 참값에서는 멀어진다" style="max-width:34rem;min-width:0">
+      <defs><clipPath id="w2-clip"><rect x="40" y="12" width="360" height="258"/></clipPath></defs>
       <g class="svg-line" stroke-width="1" opacity=".5"><path d="M40 270 H400"/><path d="M40 12 V270"/></g>
-      <path id="w2-p1" fill="none" stroke-width="1.6" style="stroke:var(--accent)" opacity=".7"/>
-      <path id="w2-p2" fill="none" stroke-width="1.6" style="stroke:var(--warn)" opacity=".7"/>
+      <g clip-path="url(#w2-clip)">
+        <path id="w2-r1" fill="none" stroke-width="1.6" style="stroke:var(--accent)"/>
+        <path id="w2-r0" fill="none" stroke-width="1.4" stroke-dasharray="6 4" opacity=".55" style="stroke:var(--warn)"/>
+        <path id="w2-r2" fill="none" stroke-width="1.6" style="stroke:var(--warn)"/>
+      </g>
+      <path id="w2-p1" stroke-width="2.2" opacity=".6" style="fill:none;stroke:var(--good)"/>
+      <path id="w2-p2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".16" style="fill:none;stroke:var(--fg)"/>
+      <path d="M78 248 L52 264 M52 264 l9 -1 M52 264 l3 -8" stroke-width="1.4" style="fill:none;stroke:var(--muted)"/>
       <circle id="w2-true" r="6" fill="none" stroke-width="1.5" style="stroke:var(--muted)"/>
-      <circle id="w2-d1" r="5" style="fill:var(--accent)"/>
-      <circle id="w2-d2" r="5" style="fill:var(--warn)"/>
+      <circle id="w2-d1" r="5" style="fill:var(--good)"/>
+      <circle id="w2-d2" r="5" class="svg-fg"/>
       <g font-size="10.5" class="svg-muted">
         <text x="396" y="264" text-anchor="end">x₁</text><text x="46" y="24">x₂</text>
         <text id="w2-truelab"></text>
+        <text x="84" y="250">원점 (0, 0) 쪽</text>
+        <text x="396" y="40" text-anchor="end">파랑: 광선 1, x₁ + x₂ = 2</text>
+        <text x="396" y="54" text-anchor="end">주황 실선: 광선 2, x₁ + 1.01 x₂ = 2.02</text>
+        <text x="396" y="68" text-anchor="end">주황 점선: 광선 2, x₁ + 1.01 x₂ = 2.01</text>
       </g>
     </svg>
-    <figcaption>회색 고리가 참값 \((1,1)\)입니다. \(\lambda=0\)에서 주황 점은 \((0,2)\)로 멀리 떨어져 있습니다. \(\lambda\)를 올리면 두 점이 서로 가까워지고(증폭이 줄어듭니다), 동시에 둘 다 참값에서 대각선 방향으로 멀어집니다(편향이 커집니다).</figcaption>
+    <figcaption>회색 고리가 참값 \((1,1)\)입니다. \(\lambda=0\)에서 초록 점은 파란 선과 주황 점선의 교점 \((1,1)\)이고, 검은 점은 파란 선과 주황 실선의 교점 \((0,2)\)로 멀리 떨어져 있습니다. 넓고 흐린 회색 선이 검은 점의 자취입니다. \(\lambda\)를 조금 올리면 검은 점이 거의 겹친 두 직선을 따라 \((1,1)\) 쪽으로 끌려옵니다. \(\lambda\)를 더 올리면 두 점이 서로 가까워지고(증폭이 줄어듭니다), 동시에 둘 다 참값에서 대각선 방향으로 멀어집니다(편향이 커집니다).</figcaption>
   </figure>
   <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w2-note"></p>
 
@@ -230,6 +265,10 @@
     return s;
   }
   p1.setAttribute('d', path(2.01)); p2.setAttribute('d', path(2.02));
+  function line(c, r) { return 'M' + X(-0.2) + ' ' + Y((r + 0.2) / c).toFixed(1) + 'L' + X(1.4) + ' ' + Y((r - 1.4) / c).toFixed(1); }
+  document.getElementById('w2-r1').setAttribute('d', line(1, 2));
+  document.getElementById('w2-r0').setAttribute('d', line(1.01, 2.01));
+  document.getElementById('w2-r2').setAttribute('d', line(1.01, 2.02));
   tr.setAttribute('cx', X(1).toFixed(1)); tr.setAttribute('cy', Y(1).toFixed(1));
   trLab.setAttribute('x', (X(1) + 10).toFixed(1)); trLab.setAttribute('y', (Y(1) - 8).toFixed(1)); trLab.textContent = '참값 (1, 1)';
   function draw() {

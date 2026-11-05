@@ -27,6 +27,12 @@
   <p>광선 \(i\)의 식 \(\mathbf{a}_i\cdot\mathbf{x}=b_i\)에서 \(\mathbf{a}_i\)는 \(\mathbf{A}\)의 \(i\)번째 행입니다. 화소가 둘뿐이면 이 식은 \((x_1,x_2)\) 평면 위의 직선 하나입니다. 화소가 \(n\)개이면 \(n\)차원 공간의 평면(초평면)이 됩니다.
   식이 여러 개이면 그 직선(평면)들이 모두 만나는 점이 연립방정식의 풀이입니다.</p>
 
+  <div class="box warn">
+    <p class="box-t">그림 속 직선과 실제 광선의 차이</p>
+    <p>오늘 보는 그림의 평면은 X선이 지나가는 실제 공간(검사 대상이 놓인 공간)이 아니라 미지수, 곧 화소 값들의 공간입니다. 축 하나가 화소 하나의 값이어서 화소가 2개면 평면, \(n\)개면 \(n\)차원 공간이 됩니다. 직선 하나는 그 광선의 측정값을 만족하는 화소 값 조합 전체입니다.</p>
+    <p>실제 광선은 <a href="day1.html#s2">1일차 페이지 2</a>의 격자 그림처럼 영상 위를 지나는 선으로 그리며, 이 그림의 직선과는 다른 대상입니다. 예를 들어 그 격자의 가로 광선 ①과 ②는 실제로는 나란하지만, 식은 \(x_1+x_2=b_1\), \(x_3+x_4=b_2\)이고 계수 벡터 \((1,1,0,0)\)과 \((0,0,1,1)\)의 내적이 0이어서 미지수 공간에서는 서로 수직인 두 평면이 됩니다. 그림 속 모양은 광선의 실제 방향·위치가 아니라 그 광선이 지나는 화소와 길이 \(a_{ij}\), 측정값 \(b_i\)로 정해집니다.</p>
+  </div>
+
   <p>식 하나만 정확히 맞추는 가장 쉬운 방법은 지금 추정한 점에서 그 직선으로 수선을 내려, 수선의 발로 옮기는 것입니다. 이 일을 사영(<span class="term" data-term="orthproj">Projection</span>)이라고 합니다.
   CT의 투영(X선으로 재는 일)과 이름이 비슷하지만 다른 뜻이어서, 이 코스에서는 이 기하학적 연산만 사영이라고 씁니다.
   직선 두 개에 번갈아 사영하면 어떻게 될까요? 사이각을 바꾸고 '한 걸음'을 눌러 보세요.</p>
@@ -476,18 +482,99 @@ window.K2W = function (P, mode0) {
 <script>K2W('q3', 'sirt');</script>
 
   <p>한 번 갱신하면 \(\mathbf{x}^{(1)}\approx(0.250,\ 0.375,\ 0.175,\ 0.279)\)입니다. 참값 \((0.2,0.5,0.1,0.3)\)과의 거리는 0.156으로, ART가 한 바퀴 뒤 도달한 0.035보다 멉니다.
-  모든 광선을 동시에 반영하는 대신 한 번의 갱신이 조심스러운 것입니다. 한 바퀴마다 참값까지의 거리를 비교하면 차이가 분명합니다.</p>
+  모든 광선을 동시에 반영하는 대신 한 번의 갱신이 조심스러운 것입니다. 한 바퀴마다 참값까지의 거리를 그래프로 비교하면 차이가 분명합니다(잡음 없음, \(\tau=1\), 세로축은 10의 거듭제곱 눈금).</p>
 
-  <div class="table-wrap">
-    <table>
-      <tr><th>한 바퀴 수</th><th>1</th><th>2</th><th>3</th><th>5</th><th>10</th><th>20</th></tr>
-      <tr><td>ART(\(\tau=1\))</td><td>\(3.5\times10^{-2}\)</td><td>\(1.8\times10^{-2}\)</td><td>\(8.8\times10^{-3}\)</td><td>\(2.2\times10^{-3}\)</td><td>\(6.9\times10^{-5}\)</td><td>\(6.7\times10^{-8}\)</td></tr>
-      <tr><td>SIRT(\(\tau=1\))</td><td>\(1.6\times10^{-1}\)</td><td>\(8.5\times10^{-2}\)</td><td>\(5.0\times10^{-2}\)</td><td>\(2.2\times10^{-2}\)</td><td>\(5.5\times10^{-3}\)</td><td>\(5.0\times10^{-4}\)</td></tr>
-    </table>
-  </div>
+  <figure class="fig">
+    <svg id="q3c-svg" viewBox="0 0 660 268" role="img" aria-label="2×2 예에서 ART와 SIRT의 바퀴 수별 참값까지의 거리. 가로축은 한 바퀴 수 0~25, 세로축은 거리의 상용로그. 거리 5×10⁻⁴ 기준선 아래로 ART는 8바퀴, SIRT는 21바퀴에 내려간다">
+      <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M70 224 H620"/><path d="M70 24 V224"/></g>
+      <g id="q3c-grid" fill="none" stroke-width="0.6" opacity=".35" style="stroke:var(--muted)"></g>
+      <path id="q3c-thr" fill="none" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <path id="q3c-sirt" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <path id="q3c-art" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
+      <g class="svg-muted" font-size="10" id="q3c-ticks"></g>
+      <g class="svg-muted" font-size="10"><text x="620" y="259" text-anchor="end">한 바퀴 수 (0~25)</text><text x="70" y="13" text-anchor="start">참값까지의 거리</text></g>
+      <g id="q3c-lab" font-size="11.5" class="svg-fg"></g>
+      <g id="q3c-hover" style="display:none">
+        <path id="q3c-vl" fill="none" stroke-width="1" style="stroke:var(--muted)"/>
+        <circle id="q3c-pa" r="4" style="fill:var(--accent);stroke:var(--bg);stroke-width:2"/>
+        <circle id="q3c-ps" r="4" style="fill:var(--warn);stroke:var(--bg);stroke-width:2"/>
+        <rect id="q3c-tb" width="150" height="54" rx="4" style="fill:var(--bg);stroke:var(--rule)"/>
+        <text id="q3c-tt" font-size="11" class="svg-fg"></text>
+      </g>
+      <rect id="q3c-hit" x="70" y="24" width="550" height="200" fill="transparent"/>
+    </svg>
+    <figcaption>파란 선이 ART, 주황 선이 SIRT입니다(선 끝에 이름을 적었습니다). 회색 점선은 거리 \(5\times10^{-4}\)입니다. 그래프 위에 마우스를 올리면 그 바퀴의 두 값을 보여 줍니다. 광선 ⑤의 측정값은 0.707로 반올림하지 않은 참값 \(0.7071\ldots\)를 썼습니다.</figcaption>
+  </figure>
+
+<script>
+(function () {
+  /* 페이지 2~3의 2×2 예(참값 (0.2,0.5,0.1,0.3), 잡음 없음)로 ART와 SIRT를 τ=1로 25바퀴 돌려 바퀴마다 참값까지의 거리를 구함 */
+  var R2 = Math.SQRT2, A = [[1, 1, 0, 0], [0, 0, 1, 1], [1, 0, 1, 0], [0, 1, 0, 1], [R2, 0, 0, R2]], T = [0.2, 0.5, 0.1, 0.3], NS = 25, LO = -9, HI = 0, THR = 5e-4;
+  function dot(a, x) { var s = 0; for (var j = 0; j < 4; j++) s += a[j] * x[j]; return s; }
+  var B = A.map(function (a) { return dot(a, T); }), C = [0, 0, 0, 0], j;
+  A.forEach(function (a) { for (j = 0; j < 4; j++) C[j] += a[j]; });
+  function dist(x) { var e = 0; for (var j = 0; j < 4; j++) e += (x[j] - T[j]) * (x[j] - T[j]); return Math.sqrt(e); }
+  var xa = [0, 0, 0, 0], xs = [0, 0, 0, 0], EA = [dist(xa)], ES = [dist(xs)], k;
+  for (k = 1; k <= NS; k++) {
+    A.forEach(function (a, i) { var f = (B[i] - dot(a, xa)) / dot(a, a); for (j = 0; j < 4; j++) xa[j] += f * a[j]; });
+    var del = [0, 0, 0, 0];
+    A.forEach(function (a, i) { var ri = a[0] + a[1] + a[2] + a[3], q = (B[i] - dot(a, xs)) / ri; for (j = 0; j < 4; j++) del[j] += a[j] * q; });
+    for (j = 0; j < 4; j++) xs[j] += del[j] / C[j];
+    EA.push(dist(xa)); ES.push(dist(xs));
+  }
+  function X(k) { return 70 + k / NS * 550; }
+  function Y(e) { var l = Math.log(Math.max(e, 1e-12)) / Math.LN10; l = Math.min(HI, Math.max(LO, l)); return 224 - (l - LO) / (HI - LO) * 200; }
+  function path(E) { var d = '', k; for (k = 0; k <= NS; k++) d += (k ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(E[k]).toFixed(1); return d; }
+  function $(id) { return document.getElementById('q3c-' + id); }
+  $('art').setAttribute('d', path(EA)); $('sirt').setAttribute('d', path(ES));
+  $('thr').setAttribute('d', 'M70 ' + Y(THR).toFixed(1) + ' H620');
+  var g = '', t = '', e, SUP = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+  for (e = LO; e <= HI; e += 3) { g += '<path d="M70 ' + Y(Math.pow(10, e)).toFixed(1) + ' H620"/>'; t += '<text x="64" y="' + (Y(Math.pow(10, e)) + 3.5).toFixed(1) + '" text-anchor="end">10' + (e < 0 ? '⁻' : '') + SUP[Math.abs(e)] + '</text>'; }
+  for (e = 0; e <= NS; e += 5) t += '<text x="' + X(e).toFixed(1) + '" y="238" text-anchor="middle">' + e + '</text>';
+  t += '<text x="616" y="' + (Y(THR) - 5).toFixed(1) + '" text-anchor="end">5×10⁻⁴</text>';
+  $('grid').innerHTML = g; $('ticks').innerHTML = t;
+  $('lab').innerHTML = '<text x="' + (X(NS) - 4) + '" y="' + (Y(EA[NS]) - 7).toFixed(1) + '" text-anchor="end">ART</text>' +
+    '<text x="' + (X(NS) - 4) + '" y="' + (Y(ES[NS]) + 15).toFixed(1) + '" text-anchor="end">SIRT</text>';
+  function f(v) { return v < 1e-2 ? v.toExponential(1).replace(/e-(\d)/, function (m, d) { return '×10⁻' + SUP[d]; }) : v.toFixed(3); }
+  var svg = $('svg'), hov = $('hover');
+  function show(ev) {
+    var pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+    var p = pt.matrixTransform(svg.getScreenCTM().inverse()), k = Math.round((p.x - 70) / 550 * NS);
+    k = Math.max(0, Math.min(NS, k)); var x = X(k);
+    hov.style.display = '';
+    $('vl').setAttribute('d', 'M' + x + ' 24 V224');
+    $('pa').setAttribute('cx', x); $('pa').setAttribute('cy', Y(EA[k]));
+    $('ps').setAttribute('cx', x); $('ps').setAttribute('cy', Y(ES[k]));
+    var bx = x + 160 > 640 ? x - 158 : x + 8;
+    $('tb').setAttribute('x', bx); $('tb').setAttribute('y', 30);
+    $('tt').innerHTML = '<tspan x="' + (bx + 8) + '" y="47" font-weight="700">' + k + '바퀴</tspan>' +
+      '<tspan x="' + (bx + 8) + '" y="63">ART ' + f(EA[k]) + '</tspan><tspan x="' + (bx + 8) + '" y="78">SIRT ' + f(ES[k]) + '</tspan>';
+  }
+  $('hit').addEventListener('pointermove', show);
+  $('hit').addEventListener('pointerleave', function () { hov.style.display = 'none'; });
+})();
+</script>
+
+  <details class="fold">
+    <summary>표로 보기: 바퀴 수별 참값까지의 거리</summary>
+    <div class="fold-body">
+      <div class="table-wrap">
+        <table>
+          <tr><th>한 바퀴 수</th><th>1</th><th>2</th><th>3</th><th>5</th><th>10</th><th>20</th></tr>
+          <tr><td>ART(\(\tau=1\))</td><td>\(3.5\times10^{-2}\)</td><td>\(1.8\times10^{-2}\)</td><td>\(8.8\times10^{-3}\)</td><td>\(2.2\times10^{-3}\)</td><td>\(6.9\times10^{-5}\)</td><td>\(6.7\times10^{-8}\)</td></tr>
+          <tr><td>SIRT(\(\tau=1\))</td><td>\(1.6\times10^{-1}\)</td><td>\(8.5\times10^{-2}\)</td><td>\(5.0\times10^{-2}\)</td><td>\(2.2\times10^{-2}\)</td><td>\(5.5\times10^{-3}\)</td><td>\(5.0\times10^{-4}\)</td></tr>
+        </table>
+      </div>
+    </div>
+  </details>
 
   <p>거리를 \(5\times10^{-4}\) 아래로 줄이는 데 ART는 8바퀴, SIRT는 21바퀴가 필요합니다. 한 바퀴의 계산량은 둘이 비슷하므로(광선을 한 번씩 모두 쓰므로), 이 예에서는 SIRT가 훨씬 많은 바퀴를 돌아야 합니다.
   대신 SIRT는 광선 순서가 결과에 영향을 주지 않고, 광선 여럿의 잡음이 평균으로 섞여 들어간다는 장점이 있습니다.</p>
+
+  <h3>잡음이 있을 때의 비교</h3>
+
+  <p>위 그래프는 잡음이 없는 데이터여서 반복할수록 두 방법 모두 참값에 계속 다가갑니다. 이것만 보면 ART만 쓰면 될 것 같지만, 측정값에 잡음이 있으면 오차가 어느 수준 아래로는 내려가지 않고 반복을 더 하면 다시 커지기도 합니다.
+  그때는 얼마나 빨리 내려가는지와 함께 가장 낮은 오차가 얼마인지, 그 뒤 얼마나 빨리 나빠지는지를 비교해야 합니다. 잡음이 섞인 실제 영상에서의 비교는 SART까지 본 뒤 페이지 4의 "작은 Shepp-Logan 예로 비교"에서 합니다.</p>
 
   <div class="box note">
     <p class="box-t">2편 자세히 보기에서 더 보기</p>
@@ -822,7 +909,7 @@ window.K3C = function (P) {
   <h3>작은 Shepp-Logan 예로 비교</h3>
 
   <p>실제 영상에서 세 방법을 비교해 봅니다. Shepp-Logan 팬텀(1편의 기준 영상)을 \(48\times48\) 화소, 각도 40개, 검출기 61개(광선 2,440개)로 만들고, 광선마다 잡음(두꺼운 곳을 지난 광선일수록 큼)을 더한 데이터입니다. 브라우저에서 바로 계산하도록 줄인 크기입니다.
-  아래는 한 바퀴 수에 따른 참값과의 오차(rmse, 화소별 오차를 제곱해 평균한 뒤 제곱근을 취한 값이며 작을수록 좋음)입니다. 가로축은 로그 눈금이고, ART와 SIRT는 \(\tau=1\), SART는 \(\tau=0.5\)와 \(\tau=1\) 두 가지입니다. 슬라이더로 바퀴 수를 고르면 그 시점의 오차를 읽을 수 있습니다.</p>
+  아래는 한 바퀴 수에 따른 참값과의 오차(rmse, 화소별 오차를 제곱해 평균한 뒤 제곱근을 취한 값이며 작을수록 좋음)입니다. 가로축은 1~1,000바퀴, 세로축은 rmse이고 둘 다 로그 눈금입니다. ART와 SIRT는 \(\tau=1\), SART는 \(\tau=0.5\)와 \(\tau=1\) 두 가지입니다. 페이지 2에서 본 것처럼 잡음이 있을 때는 \(\tau&lt;1\)을 쓰므로, 걸음을 줄인 ART(\(\tau=0.25\))도 함께 그렸습니다. 슬라이더로 바퀴 수를 고르거나 '바로 가기' 단추로 본문에 나오는 바퀴 수를 고르면 그 시점의 오차를 읽을 수 있습니다.</p>
 
 <script>
 window.art2 = (function () {
@@ -970,120 +1057,162 @@ window.art2 = (function () {
   var expectedNoiseNorm = Math.sqrt(sigma.reduce(function (s, v) { return s + v * v; }, 0));
   var order = []; for (i = 0; i < sysA.M; i++) order.push(i);
 
-  function runFull(method, maxIter, checkpoints) {
-    var x = new Float64Array(sysA.Npix), curve = [], snaps = {}, it, cpSet = {};
+  /* 데이터 잔차는 영상을 저장하는 마지막 바퀴(checkpoints의 끝)까지만 구한다. 그 뒤는 rmse만 */
+  function runFull(method, tau, maxIter, checkpoints) {
+    var x = new Float64Array(sysA.Npix), curve = [], snaps = {}, it, cpSet = {}, last = checkpoints.length ? checkpoints[checkpoints.length - 1] : 0;
     checkpoints.forEach(function (c) { cpSet[c] = true; });
     for (it = 1; it <= maxIter; it++) {
-      if (method === 'art') artSweep(sysA, x, bNoisy, order, 1.0);
-      else sirtSweep(sysA, x, bNoisy, 1.0);
-      curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: resNorm(sysA, x, bNoisy) });
+      if (method === 'art') artSweep(sysA, x, bNoisy, order, tau);
+      else sirtSweep(sysA, x, bNoisy, tau);
+      curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: it <= last ? resNorm(sysA, x, bNoisy) : null });
       if (cpSet[it]) snaps[it] = x.slice();
     }
     return { checkpoints: checkpoints, curve: curve, snaps: snaps };
   }
 
+  /* 각도 하나의 보정을 delta·cth에 모은 뒤, 그 각도의 광선이 지난 화소만 한 번씩 갱신하고 0으로 되돌린다 */
+  var delta = new Float64Array(sysA.Npix), cth = new Float64Array(sysA.Npix);
   function sartSweep(x, b, tau) {
-    var rows = sysA.rows, Ri = sysA.Ri, Npix = sysA.Npix, K = sysA.M / Ns, k, n, i, j, r, pred, resid, delta, cth;
+    var rows = sysA.rows, Ri = sysA.Ri, K = sysA.M / Ns, k, n, i, j, c, r, pred, resid;
     for (k = 0; k < K; k++) {
-      delta = new Float64Array(Npix); cth = new Float64Array(Npix);
       for (n = 0; n < Ns; n++) {
         i = k * Ns + n; if (Ri[i] <= 1e-12) continue;
         r = rows[i]; pred = 0; for (j = 0; j < r.cols.length; j++) pred += r.vals[j] * x[r.cols[j]];
         resid = (b[i] - pred) / Ri[i];
         for (j = 0; j < r.cols.length; j++) { delta[r.cols[j]] += r.vals[j] * resid; cth[r.cols[j]] += r.vals[j]; }
       }
-      for (j = 0; j < Npix; j++) if (cth[j] > 1e-12) x[j] += tau * delta[j] / cth[j];
+      for (n = 0; n < Ns; n++) {
+        r = rows[k * Ns + n];
+        for (j = 0; j < r.cols.length; j++) { c = r.cols[j]; if (cth[c] > 1e-12) x[c] += tau * delta[c] / cth[c]; delta[c] = 0; cth[c] = 0; }
+      }
     }
   }
+  /* rmse가 0.5를 넘으면(그래프 밖) 그 바퀴에서 멈춘다 */
   function runSart(tau, maxIter) {
     var x = new Float64Array(sysA.Npix), curve = [], it;
-    for (it = 1; it <= maxIter; it++) { sartSweep(x, bNoisy, tau); curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: resNorm(sysA, x, bNoisy) }); }
+    for (it = 1; it <= maxIter; it++) { sartSweep(x, bNoisy, tau); curve.push({ it: it, rmse: rmseFn(x, xTrue) }); if (curve[it - 1].rmse > 0.5) break; }
     return { tau: tau, curve: curve };
   }
 
+  var LONG = 1000;
   return {
-    N: N, sysA: sysA, sart1: runSart(1.0, 150), sart05: runSart(0.5, 150),
+    N: N, sysA: sysA, LONG: LONG, sart1: runSart(1.0, LONG), sart05: runSart(0.5, LONG),
     xTrue: xTrue, expectedNoiseNorm: expectedNoiseNorm, image: image,
-    artRun: runFull('art', 150, [1, 5, 10, 20, 26, 41, 60, 100, 150]),
-    sirtRun: runFull('sirt', 300, [10, 50, 100, 150, 221, 300])
+    artRun: runFull('art', 1.0, LONG, [1, 5, 10, 20, 26, 41, 60, 100, 150]),
+    art025: runFull('art', 0.25, LONG, []),
+    sirtRun: runFull('sirt', 1.0, LONG, [10, 50, 100, 150, 221, 300])
   };
 })();
 </script>
 
   <figure class="fig">
-    <svg viewBox="0 0 660 270" role="img" aria-label="ART, SIRT, SART의 한 바퀴 수에 따른 참값 오차 곡선. 가로축은 로그 눈금의 한 바퀴 수 1~150, 세로축은 rmse">
+    <svg viewBox="0 0 660 270" role="img" aria-label="잡음이 있는 Shepp-Logan 예에서 ART, SIRT, SART의 한 바퀴 수에 따른 참값 오차 곡선. 가로축은 로그 눈금의 한 바퀴 수 1~1000, 세로축은 rmse. ART(τ=1)는 41바퀴에 최저 0.138에 닿은 뒤 커지고, SIRT는 1000바퀴까지 계속 내려가 0.120, ART(τ=0.25)는 258바퀴에 최저 0.120에 닿는다">
       <g fill="none" stroke-width="1" style="stroke:var(--muted)"><path d="M60 200 H600"/><path d="M60 30 V200"/></g>
       <g id="p2d2c-grid" fill="none" stroke-width="0.6" opacity=".35" style="stroke:var(--muted)"></g>
-      <path id="p2d2c-sirt" fill="none" stroke-width="2" style="stroke:var(--fg)"/>
-      <path id="p2d2c-art" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
-      <path id="p2d2c-s05" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
       <path id="p2d2c-s1" fill="none" stroke-width="1.6" stroke-dasharray="4 3" style="stroke:var(--muted)"/>
+      <path id="p2d2c-s05" fill="none" stroke-width="2" style="stroke:var(--warn)"/>
+      <path id="p2d2c-sirt" fill="none" stroke-width="2" style="stroke:var(--fg)"/>
+      <path id="p2d2c-a025" fill="none" stroke-width="2" style="stroke:var(--good)"/>
+      <path id="p2d2c-art" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
       <path id="p2d2c-cur" stroke-width="1" opacity=".7" style="stroke:var(--fg)"/>
       <g id="p2d2c-dots"></g>
       <g class="svg-muted" font-size="10" id="p2d2c-ticks"></g>
-      <g class="svg-muted" font-size="10"><text x="600" y="232" text-anchor="end">한 바퀴 수 (로그 눈금, 1~150)</text><text x="54" y="22" text-anchor="end">rmse</text></g>
+      <g class="svg-muted" font-size="10"><text x="600" y="232" text-anchor="end">한 바퀴 수 (로그 눈금, 1~1000)</text><text x="60" y="22" text-anchor="start">rmse (로그 눈금)</text></g>
       <g font-size="11" font-weight="700">
-        <text x="70" y="256" style="fill:var(--accent)">ART τ=1</text>
-        <text x="170" y="256" class="svg-fg">SIRT τ=1</text>
-        <text x="280" y="256" style="fill:var(--warn)">SART τ=0.5</text>
-        <text x="410" y="256" class="svg-muted">SART τ=1 (점선)</text>
+        <text x="60" y="256" style="fill:var(--accent)">ART τ=1</text>
+        <text x="150" y="256" style="fill:var(--good)">ART τ=0.25</text>
+        <text x="260" y="256" class="svg-fg">SIRT τ=1</text>
+        <text x="355" y="256" style="fill:var(--warn)">SART τ=0.5</text>
+        <text x="465" y="256" class="svg-muted">SART τ=1 (점선)</text>
       </g>
     </svg>
-    <figcaption>ART는 일찍 최저에 닿고 다시 올라갑니다. SIRT는 느리지만 이 구간에서는 계속 내려갑니다. SART는 \(\tau=0.5\)에서는 초반에 가장 먼저 내려가다 멈추고, \(\tau=1\)에서는 15바퀴 뒤부터 오히려 커집니다.</figcaption>
+    <figcaption>ART(\(\tau=1\))는 일찍 최저에 닿은 뒤 계속 커집니다. SIRT는 느리지만 1,000바퀴까지 내려갑니다. 걸음을 줄인 ART(\(\tau=0.25\))는 SIRT보다 일찍 SIRT와 비슷한 최저에 닿습니다. 두 SART 곡선은 최저를 지난 뒤 계속 커져 그래프 위로 벗어납니다.</figcaption>
   </figure>
 
   <div style="display:flex;gap:.6rem;align-items:center;justify-content:center;font-size:.86rem;flex-wrap:wrap" id="p2d2c-ui">
-    <label for="p2d2c-k">한 바퀴 수</label>
-    <input id="p2d2c-k" type="range" min="1" max="150" step="1" value="10" style="width:14rem">
-    <b id="p2d2c-k-val">10</b>
+    <label for="p2d2c-k">한 바퀴 수(로그 눈금)</label>
+    <input id="p2d2c-k" type="range" min="0" max="300" step="1" value="161" style="width:14rem">
+    <b id="p2d2c-k-val">41</b>
+  </div>
+  <div style="display:flex;gap:.4rem;align-items:center;justify-content:center;font-size:.84rem;flex-wrap:wrap;margin-top:.3rem" id="p2d2c-btns">
+    <span>바로 가기</span>
+    <button type="button" data-it="10">10</button>
+    <button type="button" data-it="41">41</button>
+    <button type="button" data-it="150">150</button>
+    <button type="button" data-it="160">160</button>
+    <button type="button" data-it="258">258</button>
+    <button type="button" data-it="491">491</button>
+    <button type="button" data-it="1000">1000</button>
   </div>
   <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="p2d2c-note"></p>
 
 <script>
 (function () {
-  var A2 = window.art2, N = 150, LMAX = Math.log(N) / Math.LN10, LO = 0.12, HI = 0.48;
-  var runs = { art: A2.artRun.curve, sirt: A2.sirtRun.curve, s05: A2.sart05.curve, s1: A2.sart1.curve };
+  var A2 = window.art2, N = A2.LONG, LMAX = Math.log(N) / Math.LN10, LO = 0.11, HI = 0.47;
+  var runs = { art: A2.artRun.curve, a025: A2.art025.curve, sirt: A2.sirtRun.curve, s05: A2.sart05.curve, s1: A2.sart1.curve };
   function X(k) { return 60 + Math.log(k) / Math.LN10 / LMAX * 540; }
-  function Y(v) { return 200 - (Math.min(HI, Math.max(LO, v)) - LO) / (HI - LO) * 170; }
-  function path(c) { var d = '', k; for (k = 1; k <= N; k++) d += (k > 1 ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(c[k - 1].rmse).toFixed(1); return d; }
-  var g = '', t = '', v, k;
-  [0.15, 0.2, 0.3, 0.4].forEach(function (v) { g += '<path d="M60 ' + Y(v).toFixed(1) + ' H600"/>'; t += '<text x="54" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v.toFixed(2) + '</text>'; });
-  [1, 10, 100].forEach(function (k) { g += '<path d="M' + X(k).toFixed(1) + ' 30 V200"/>'; t += '<text x="' + X(k).toFixed(1) + '" y="214" text-anchor="middle">' + k + '</text>'; });
+  function Y(v) { var l = Math.log(Math.min(HI, Math.max(LO, v))); return 200 - (l - Math.log(LO)) / (Math.log(HI) - Math.log(LO)) * 170; }
+  /* SART는 rmse가 0.5를 넘은 바퀴에서 계산을 멈췄으므로 곡선이 그 자리(그래프 위 끝)에서 끝난다 */
+  function path(c) { var d = '', k; for (k = 1; k <= c.length; k++) d += (k > 1 ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(c[k - 1].rmse).toFixed(1); return d; }
+  var g = '', t = '', key;
+  [0.12, 0.15, 0.2, 0.3, 0.4].forEach(function (v) { g += '<path d="M60 ' + Y(v).toFixed(1) + ' H600"/>'; t += '<text x="54" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v.toFixed(2) + '</text>'; });
+  [1, 10, 100, 1000].forEach(function (k) { g += '<path d="M' + X(k).toFixed(1) + ' 30 V200"/>'; t += '<text x="' + X(k).toFixed(1) + '" y="214" text-anchor="middle">' + k + '</text>'; });
   document.getElementById('p2d2c-grid').innerHTML = g; document.getElementById('p2d2c-ticks').innerHTML = t;
-  document.getElementById('p2d2c-art').setAttribute('d', path(runs.art));
-  document.getElementById('p2d2c-sirt').setAttribute('d', path(runs.sirt));
-  document.getElementById('p2d2c-s05').setAttribute('d', path(runs.s05));
-  document.getElementById('p2d2c-s1').setAttribute('d', path(runs.s1));
+  for (key in runs) document.getElementById('p2d2c-' + key).setAttribute('d', path(runs[key]));
   var kEl = document.getElementById('p2d2c-k'), kVal = document.getElementById('p2d2c-k-val'), note = document.getElementById('p2d2c-note'),
       cur = document.getElementById('p2d2c-cur'), dots = document.getElementById('p2d2c-dots');
-  var styles = { art: 'var(--accent)', sirt: 'var(--fg)', s05: 'var(--warn)', s1: 'var(--muted)' };
-  function update() {
-    var kk = +kEl.value, h = '', key;
+  var styles = { art: 'var(--accent)', a025: 'var(--good)', sirt: 'var(--fg)', s05: 'var(--warn)', s1: 'var(--muted)' };
+  /* 슬라이더는 로그 위치(0~300)를 바퀴 수로 바꾸고, 바로 가기 단추는 정확한 바퀴 수를 고른다 */
+  function update(exact) {
+    var kk = exact || Math.max(1, Math.min(N, Math.round(Math.pow(N, kEl.value / 300)))), h = '';
+    if (exact) kEl.value = Math.round(300 * Math.log(kk) / Math.log(N));
     cur.setAttribute('d', 'M' + X(kk).toFixed(1) + ' 30 V200');
-    for (key in runs) h += '<circle cx="' + X(kk).toFixed(1) + '" cy="' + Y(runs[key][kk - 1].rmse).toFixed(1) + '" r="3.8" style="fill:' + styles[key] + '"/>';
+    for (key in runs) if (kk <= runs[key].length) h += '<circle cx="' + X(kk).toFixed(1) + '" cy="' + Y(runs[key][kk - 1].rmse).toFixed(1) + '" r="3.8" style="fill:' + styles[key] + '"/>';
     dots.innerHTML = h; kVal.textContent = kk;
-    function f(key) { return runs[key][kk - 1].rmse.toFixed(4); }
-    note.textContent = kk + '바퀴 · ART ' + f('art') + ' · SIRT ' + f('sirt') + ' · SART(τ=0.5) ' + f('s05') + ' · SART(τ=1) ' + f('s1');
+    function f(key) { var c = runs[key]; return kk <= c.length ? c[kk - 1].rmse.toFixed(4) : '0.5 넘음'; }
+    note.textContent = kk + '바퀴 · ART(τ=1) ' + f('art') + ' · ART(τ=0.25) ' + f('a025') + ' · SIRT ' + f('sirt') + ' · SART(τ=0.5) ' + f('s05') + ' · SART(τ=1) ' + f('s1');
   }
-  kEl.addEventListener('input', update); update();
+  kEl.addEventListener('input', function () { update(); });
+  document.getElementById('p2d2c-btns').addEventListener('click', function (e) { var b = e.target.closest('button[data-it]'); if (b) update(+b.getAttribute('data-it')); });
+  update(41);
 })();
 </script>
 
-  <div class="table-wrap">
-    <table>
-      <tr><th>한 바퀴 수</th><th>ART \(\tau=1\)</th><th>SIRT \(\tau=1\)</th><th>SART \(\tau=0.5\)</th><th>SART \(\tau=1\)</th></tr>
-      <tr><td>1</td><td>0.356</td><td>0.460</td><td>0.270</td><td>0.363</td></tr>
-      <tr><td>10</td><td>0.155</td><td>0.249</td><td>0.162</td><td>0.178</td></tr>
-      <tr><td>41</td><td>0.138</td><td>0.172</td><td>0.158</td><td>0.197</td></tr>
-      <tr><td>150</td><td>0.157</td><td>0.142</td><td>0.200</td><td>0.460</td></tr>
-    </table>
-  </div>
+  <details class="fold">
+    <summary>표로 보기: 바퀴 수별 rmse</summary>
+    <div class="fold-body">
+      <div class="table-wrap">
+        <table>
+          <tr><th>한 바퀴 수</th><th>ART \(\tau=1\)</th><th>ART \(\tau=0.25\)</th><th>SIRT \(\tau=1\)</th><th>SART \(\tau=0.5\)</th><th>SART \(\tau=1\)</th></tr>
+          <tr><td>1</td><td>0.356</td><td>0.271</td><td>0.460</td><td>0.270</td><td>0.363</td></tr>
+          <tr><td>10</td><td>0.155</td><td>0.161</td><td>0.249</td><td>0.162</td><td>0.177</td></tr>
+          <tr><td>41</td><td>0.138</td><td>0.135</td><td>0.172</td><td>0.158</td><td>0.197</td></tr>
+          <tr><td>150</td><td>0.157</td><td>0.121</td><td>0.142</td><td>0.200</td><td>0.460</td></tr>
+          <tr><td>258</td><td>0.177</td><td>0.120</td><td>0.134</td><td>0.267</td><td>0.5 넘음</td></tr>
+          <tr><td>1000</td><td>0.267</td><td>0.130</td><td>0.120</td><td>0.5 넘음</td><td>0.5 넘음</td></tr>
+        </table>
+      </div>
+    </div>
+  </details>
 
   <ul>
-    <li>ART는 일찍 내려가 41바퀴에서 최저(0.138)에 닿고 다시 올라갑니다. SIRT는 느리지만 이 구간에서는 계속 내려갑니다(150바퀴에서 0.142, 아직 내려가는 중).</li>
-    <li>SART는 \(\tau=0.5\)에서 초반에 가장 먼저 내려가다 27바퀴쯤에서 최저에 닿고, \(\tau=1\)에서는 15바퀴 근처에서 최저를 찍은 뒤 가파르게 커집니다. 각도 단위의 한 걸음이 SIRT보다 크므로 \(\tau\)를 더 조심스럽게 골라야 합니다.</li>
-    <li>네 곡선 가운데 ART와 두 SART는 내려갔다가 다시 올라갑니다. SIRT는 이 구간에서는 아직 내려가는 중이지만, 잡음이 있으면 더 오래 돌렸을 때 같은 현상이 나타날 수 있습니다. 이 현상은 3일차 주제입니다.</li>
+    <li>ART(\(\tau=1\))는 일찍 내려가 41바퀴에서 최저(0.138)에 닿고, 그 뒤로는 계속 커져 150바퀴에서 0.157, 1,000바퀴에서 0.267이 됩니다.</li>
+    <li>SIRT는 느리지만 1,000바퀴까지 계속 내려갑니다. 195바퀴에 이르러서야 ART(\(\tau=1\))의 최저와 같아지고, 1,000바퀴에서 0.120입니다.</li>
+    <li>걸음을 줄인 ART(\(\tau=0.25\))는 258바퀴에서 최저 0.120에 닿습니다. SIRT가 1,000바퀴에서 닿은 값과 거의 같고, 그 뒤로는 천천히 커집니다(1,000바퀴에서 0.130).</li>
+    <li>SART는 \(\tau=0.5\)에서 초반에 가장 먼저 내려가다 27바퀴쯤에서 최저에 닿고, \(\tau=1\)에서는 15바퀴 근처에서 최저를 찍은 뒤 가파르게 커집니다. 두 곡선 모두 그 뒤로 계속 커져 rmse가 0.5를 넘습니다(\(\tau=1\)은 160바퀴, \(\tau=0.5\)는 491바퀴). 각도 단위의 한 걸음이 SIRT보다 크므로 \(\tau\)를 더 조심스럽게 골라야 합니다.</li>
+    <li>다섯 곡선 가운데 SIRT를 뺀 넷은 내려갔다가 다시 올라갑니다. SIRT도 잡음이 있으면 더 오래 돌렸을 때 같은 현상이 나타날 수 있습니다. 이 현상은 3일차 주제입니다.</li>
   </ul>
+
+  <div class="box note">
+    <p class="box-t">ART와 SIRT를 고르는 기준</p>
+    <p>페이지 3의 잡음 없는 비교에 잡음이 있는 위 결과까지 더하면, 두 방법의 차이는 다음과 같이 정리할 수 있습니다.</p>
+    <ul>
+      <li><b>빠른 수렴의 의미.</b> 잡음이 있으면 빨리 내려가는 것은 최저 오차에 닿을 때까지만 도움이 됩니다. ART(\(\tau=1\))는 가장 먼저 최저에 닿지만 그 값(0.138)이 SIRT가 1,000바퀴에 닿는 값(0.120)보다 높고, 그 뒤로 잡음까지 맞추며 나빠집니다. 오차가 최저보다 1% 이내로만 높은 구간도 28~59바퀴로 좁아서, 멈출 시점을 조금만 놓쳐도 오차가 커집니다. SIRT는 느린 대신 이 예에서는 1,000바퀴까지 나빠지지 않습니다.</li>
+      <li><b>걸음 크기의 영향.</b> \(\tau\)를 0.25로 줄인 ART도 SIRT와 거의 같은 최저 오차(0.120)에 닿고, 바퀴 수는 SIRT보다 적습니다(258바퀴). 같은 1% 이내 구간도 162~403바퀴로 넓어집니다. 그러니 이 예만으로 어느 방법이 더 정확하다고 말할 수는 없고, 같은 방법이라도 \(\tau\)와 멈추는 시점에 따라 결과가 크게 달라집니다.</li>
+      <li><b>계산 구조.</b> ART는 광선마다 앞 광선의 결과를 기다려야 하므로 광선을 차례로 처리해야 합니다. SIRT의 한 바퀴는 순투영 한 번과 역투영 한 번이어서, 광선별·화소별 계산을 나눠 동시에 하는 병렬 계산(GPU 등)에 맞추기 쉽습니다. 그래서 한 바퀴의 연산량이 비슷해도 실제로 걸리는 시간은 달라질 수 있습니다.</li>
+      <li><b>다른 방법과의 연결.</b> SIRT의 갱신은 3일차에서 볼 최소제곱(Least Squares)에 광선마다 가중치를 둔 가중 최소제곱 목적함수를 조금씩 줄여 가는 식으로 다시 쓸 수 있어서, 4일차에서 볼 정규화(Regularization) 항(TV 등)을 더해 넓히기 쉽습니다. 실무에서는 둘 사이에 있는 SART나, 광선을 몇 개의 부분집합으로 나눠 부분집합마다 영상을 고치는 방식(Ordered Subsets)이 흔히 쓰입니다.</li>
+    </ul>
+  </div>
 
   <div class="box warn">
     <p class="box-t">이 예제의 값입니다</p>

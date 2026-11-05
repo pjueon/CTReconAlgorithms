@@ -38,7 +38,7 @@
 
   <h2>직선 두 개로 사영을 반복해 보기</h2>
 
-  <p>가장 작은 경우로 미지수 두 개, 식 두 개인 연립방정식을 생각해 봅니다. 식 하나는 평면 위의 직선 하나이고, 두 식을 동시에 만족하는 점은 두 직선의 교점입니다. 두 식을 한꺼번에 풀지 않고, 먼저 한 식만 정확히 맞추는 점으로 옮기고, 그다음 다른 식만 정확히 맞추는 점으로 옮기기를 되풀이하면 어떻게 될까요?</p>
+  <p>가장 작은 경우로 미지수 두 개, 식 두 개인 연립방정식을 생각해 봅니다. 식 하나는 평면 위의 직선 하나이고, 두 식을 동시에 만족하는 점은 두 직선의 교점입니다. 이 평면은 X선이 지나는 실제 공간이 아니라 화소 값들의 공간입니다(1장 페이지 8의 "그림 속 직선과 실제 광선의 차이" 상자). 두 식을 한꺼번에 풀지 않고, 먼저 한 식만 정확히 맞추는 점으로 옮기고, 그다음 다른 식만 정확히 맞추는 점으로 옮기기를 되풀이하면 어떻게 될까요?</p>
 
   <p>직선 하나를 \(\mathbf a\cdot\mathbf x=b\)(\(\mathbf a\)는 그 직선의 법선 벡터, \(\mathbf x=(x_1,x_2)\))라고 적습니다. 첫 번째 직선은 \(\mathbf a_1\cdot\mathbf x=b_1\)(\(\mathbf a_1=(1,0)\), \(b_1=2\), 즉 수직선 \(x_1=2\))로 고정하고, 두 번째 직선은 교점 \((2,1)\)을 지나되 첫 번째 직선과 이루는 각 \(\varphi\)를 바꿀 수 있게 둡니다(\(\mathbf a_2=(\cos\varphi,\sin\varphi)\), \(b_2=2\cos\varphi+\sin\varphi\)). 이 \(\varphi\)는 두 직선 사이의 각이며, 1장의 화소 기저 \(\varphi_j\)와는 글자만 같습니다.</p>
 
@@ -946,24 +946,35 @@ window.K3C = function (P) {
   <p class="kicker">2장 · 페이지 8</p>
   <h2>잡음이 있을 때의 반 수렴</h2>
 
-  <p>잡음이 없는 데이터라면 반복을 많이 할수록 참값에 더 가까워집니다. 그런데 측정값에는 항상 잡음이 섞여 있고(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>의 \(\sigma_p\approx e^{p/2}/\sqrt{N_0}\)), ART·SIRT는 그 잡음까지 데이터처럼 취급해 맞추려고 합니다. 그래서 반복 횟수와 참값과의 오차 사이에는 아래와 같은 관계가 생깁니다. 48×48 화소·각도 40개·검출기 61개(광선 2,440개)의 작은 Shepp-Logan 예제에, 광선마다 \(\sigma_p\)만큼의 잡음을 더해 ART(\(\tau=1\))로 반복한 결과입니다.</p>
+  <p>잡음이 없는 데이터라면 반복을 많이 할수록 참값에 더 가까워집니다. 그런데 측정값에는 항상 잡음이 섞여 있고(<a href="../../part0/ch02.html#s8">0편 2장 페이지 8</a>의 \(\sigma_p\approx e^{p/2}/\sqrt{N_0}\)), ART·SIRT는 그 잡음까지 데이터처럼 취급해 맞추려고 합니다. 그래서 반복 횟수와 참값과의 오차 사이에는 아래와 같은 관계가 생깁니다. 48×48 화소·각도 40개·검출기 61개(광선 2,440개)의 작은 Shepp-Logan 예제에, 광선마다 \(\sigma_p\)만큼의 잡음을 더해 ART(\(\tau=1\))로 반복한 결과입니다. 같은 그래프에 SIRT(\(\tau=1\))와 걸음을 줄인 ART(\(\tau=0.25\))도 1,000번째 반복까지 함께 그렸습니다.</p>
 
   <figure class="fig">
-    <svg viewBox="0 0 660 230" role="img" aria-label="ART 반복 횟수에 따른 참값과의 오차(rmse) 곡선. 26번째 반복에 불일치 원칙이 멈추는 자리, 41번째 반복에 실제 최저 오차 자리가 점선으로 표시된다">
+    <svg viewBox="0 0 660 256" role="img" aria-label="잡음 있는 데이터에서 반복 횟수에 따른 참값과의 오차(rmse) 곡선. 가로축은 로그 눈금의 반복 수 1~1000. ART(τ=1)는 41번째 반복에 최저에 닿은 뒤 커지고, SIRT(τ=1)는 1000번째까지 계속 내려가며, ART(τ=0.25)는 258번째에 최저에 닿는다. 26번째 반복에 불일치 원칙이 멈추는 자리, 41번째 반복에 ART(τ=1)의 최저 오차 자리가 점선으로 표시된다">
       <g fill="none" stroke-width="1" style="stroke:var(--muted)">
-        <path d="M60 190 H610"/><path d="M60 30 V190"/>
+        <path d="M60 190 H600"/><path d="M60 30 V190"/>
       </g>
+      <g id="w8-grid" fill="none" stroke-width="0.6" opacity=".35" style="stroke:var(--muted)"></g>
+      <path id="w8-sirt" fill="none" stroke-width="2" style="stroke:var(--fg)"/>
+      <path id="w8-a025" fill="none" stroke-width="2" style="stroke:var(--good)"/>
       <path id="w8-line" fill="none" stroke-width="2" style="stroke:var(--accent)"/>
       <path id="w8-disc" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--warn)"/>
       <path id="w8-min" stroke-width="1.2" stroke-dasharray="4 3" style="stroke:var(--fg)"/>
+      <circle id="w8-mark3" r="4" style="fill:var(--fg)"/>
+      <circle id="w8-mark2" r="4" style="fill:var(--good)"/>
       <circle id="w8-mark" r="4.5" style="fill:var(--accent)"/>
+      <g font-size="10" class="svg-muted" id="w8-ticks"></g>
       <g font-size="10" class="svg-muted">
-        <text x="610" y="206" text-anchor="end">반복 수(1~150)</text>
-        <text x="55" y="26" text-anchor="end">오차</text>
+        <text x="600" y="220" text-anchor="end">반복 수(로그 눈금, 1~1000)</text>
+        <text x="60" y="22" text-anchor="start">오차 (로그 눈금)</text>
       </g>
       <g font-size="9.5" class="svg-muted" id="w8-labels"></g>
+      <g font-size="11" font-weight="700">
+        <text x="60" y="246" style="fill:var(--accent)">ART τ=1</text>
+        <text x="150" y="246" style="fill:var(--good)">ART τ=0.25</text>
+        <text x="260" y="246" class="svg-fg">SIRT τ=1</text>
+      </g>
     </svg>
-    <figcaption>세로축은 참값과의 오차(rmse, 아래로 갈수록 작음)입니다. 주황 점선은 불일치 원칙이 멈추는 26번째 반복, 검은 점선은 실제 최저 오차인 41번째 반복입니다.</figcaption>
+    <figcaption>세로축은 참값과의 오차(rmse, 아래로 갈수록 작음), 가로축은 반복 수이고 둘 다 로그 눈금입니다. 파란 선이 ART(\(\tau=1\))이고, 초록 선(ART \(\tau=0.25\))과 검은 선(SIRT \(\tau=1\); 어두운 화면에서는 흰색, 아래 검은 점선도 같음)은 아래 "잡음 데이터에서의 ART와 SIRT"에서 비교합니다. 주황 점선은 불일치 원칙이 멈추는 26번째 반복, 검은 점선은 ART(\(\tau=1\))의 실제 최저 오차인 41번째 반복입니다.</figcaption>
   </figure>
 
   <div style="display:flex;gap:.4rem;align-items:center;justify-content:center;font-size:.84rem;flex-wrap:wrap" id="w8-ui">
@@ -977,6 +988,8 @@ window.K3C = function (P) {
     <button type="button" data-it="60">60</button>
     <button type="button" data-it="100">100</button>
     <button type="button" data-it="150">150</button>
+    <button type="button" data-it="258">258</button>
+    <button type="button" data-it="1000">1000</button>
   </div>
   <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w8-note"></p>
 
@@ -989,6 +1002,26 @@ window.K3C = function (P) {
   <p style="text-align:center">\[\lVert\mathbf A\mathbf x^{(k)}-\mathbf b\rVert \ \le\ \sqrt{\textstyle\sum_i \sigma_i^{2}}\]</p>
 
   <p>이 작은 예제에서 잡음의 기대 크기 \(\sqrt{\sum_i\sigma_i^2}\approx0.258\)이고, ART의 잔차가 이 값 아래로 내려가는 지점은 26번째 반복(참값 오차 0.1402)입니다. 실제 최저 오차 지점인 41번째 반복(0.1384)보다 조금 이르지만, 반 수렴이 본격적으로 나빠지기 전에 안전하게 멈춥니다. 조기 종료 자체가 일종의 정규화(Regularization) 역할을 하는 셈이며, 정규화를 식에 직접 넣는 더 적극적인 방법은 4장에서 다룹니다.</p>
+
+  <h3>잡음 데이터에서의 ART와 SIRT</h3>
+
+  <p>페이지 5의 잡음 없는 \(2\times2\) 예에서는 SIRT가 ART보다 훨씬 많은 반복을 해야 참값에 다가갔습니다. 그렇다면 ART만 쓰면 될까요? 위 그래프의 세 곡선은 같은 비교를 잡음이 있는 데이터에서 다시 한 것입니다(반복 수 단추로 세 값을 함께 읽을 수 있습니다).</p>
+  <ul>
+    <li>ART(\(\tau=1\))는 41번째 반복에서 최저(0.1384)에 닿고, 그 뒤로는 계속 커져 150번째에 0.1570, 1,000번째에 0.2668이 됩니다.</li>
+    <li>SIRT(\(\tau=1\))는 1,000번째 반복까지 계속 내려갑니다. 195번째에 이르러서야 ART(\(\tau=1\))의 최저와 같아지고, 1,000번째에 0.1198입니다.</li>
+    <li>ART(\(\tau=0.25\))는 258번째 반복에서 최저 0.1197에 닿습니다. SIRT가 1,000번째에 닿은 값과 거의 같고, 그 뒤로는 천천히 커집니다(1,000번째에 0.1303).</li>
+  </ul>
+
+  <div class="box note">
+    <p class="box-t">ART와 SIRT를 고르는 기준</p>
+    <ul>
+      <li><b>빠른 수렴의 의미.</b> 잡음이 있으면 빨리 내려가는 것은 최저 오차에 닿을 때까지만 도움이 됩니다. ART(\(\tau=1\))는 가장 먼저 최저에 닿지만 그 값(0.1384)이 SIRT가 1,000번째 반복에 닿는 값(0.1198)보다 높고, 그 뒤로 잡음까지 맞추며 나빠집니다. 오차가 최저보다 1% 이내로만 높은 구간도 28~59번째 반복으로 좁아서, 멈출 시점을 조금만 놓쳐도 오차가 커집니다. SIRT는 느린 대신 이 예에서는 1,000번째 반복까지 나빠지지 않습니다.</li>
+      <li><b>걸음 크기의 영향.</b> \(\tau\)를 0.25로 줄인 ART도 SIRT와 거의 같은 최저 오차(0.1197)에 닿고, 반복 수는 SIRT보다 적습니다(258번). 같은 1% 이내 구간도 162~403번째 반복으로 넓어집니다. 그러니 이 예만으로 어느 방법이 더 정확하다고 말할 수는 없고, 같은 방법이라도 \(\tau\)와 멈추는 시점에 따라 결과가 크게 달라집니다.</li>
+      <li><b>계산 구조.</b> ART는 광선마다 앞 광선의 결과를 기다려야 하므로 광선을 차례로 처리해야 합니다. SIRT의 한 바퀴는 순투영 \(\mathbf A\mathbf x\) 한 번과 역투영 \(\mathbf A^{\mathsf T}\) 한 번이어서, 광선별·화소별 계산을 나눠 동시에 하는 병렬 계산(GPU 등)에 맞추기 쉽습니다. 그래서 한 바퀴의 연산량이 비슷해도 실제로 걸리는 시간은 달라질 수 있습니다.</li>
+      <li><b>다른 방법과의 연결.</b> SIRT는 가중 최소제곱의 경사하강법으로 읽을 수 있어서(페이지 7, 심화), 4장의 정규화 항(TV 등)을 더해 넓히기 쉽습니다. 실무에서는 둘 사이에 있는 SART(페이지 6)나, 광선을 몇 개의 부분집합으로 나눠 부분집합마다 영상을 고치는 방식(Ordered Subsets, OS)이 흔히 쓰입니다. 같은 생각을 통계적 반복법에 쓴 OS-EM은 9장 페이지 7에서 봅니다.</li>
+    </ul>
+    <p>FBP와 SART까지 넣은 비교는 페이지 10에 있습니다.</p>
+  </div>
 
 <script>
 window.art2 = (function () {
@@ -1136,64 +1169,75 @@ window.art2 = (function () {
   var expectedNoiseNorm = Math.sqrt(sigma.reduce(function (s, v) { return s + v * v; }, 0));
   var order = []; for (i = 0; i < sysA.M; i++) order.push(i);
 
-  function runFull(method, maxIter, checkpoints) {
-    var x = new Float64Array(sysA.Npix), curve = [], snaps = {}, it, cpSet = {};
+  /* 데이터 잔차는 영상을 저장하는 마지막 바퀴(checkpoints의 끝)까지만 구한다. 그 뒤는 rmse만 */
+  function runFull(method, tau, maxIter, checkpoints) {
+    var x = new Float64Array(sysA.Npix), curve = [], snaps = {}, it, cpSet = {}, last = checkpoints.length ? checkpoints[checkpoints.length - 1] : 0;
     checkpoints.forEach(function (c) { cpSet[c] = true; });
     for (it = 1; it <= maxIter; it++) {
-      if (method === 'art') artSweep(sysA, x, bNoisy, order, 1.0);
-      else sirtSweep(sysA, x, bNoisy, 1.0);
-      curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: resNorm(sysA, x, bNoisy) });
+      if (method === 'art') artSweep(sysA, x, bNoisy, order, tau);
+      else sirtSweep(sysA, x, bNoisy, tau);
+      curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: it <= last ? resNorm(sysA, x, bNoisy) : null });
       if (cpSet[it]) snaps[it] = x.slice();
     }
     return { checkpoints: checkpoints, curve: curve, snaps: snaps };
   }
 
+  /* 각도 하나의 보정을 delta·cth에 모은 뒤, 그 각도의 광선이 지난 화소만 한 번씩 갱신하고 0으로 되돌린다 */
+  var delta = new Float64Array(sysA.Npix), cth = new Float64Array(sysA.Npix);
   function sartSweep(x, b, tau) {
-    var rows = sysA.rows, Ri = sysA.Ri, Npix = sysA.Npix, K = sysA.M / Ns, k, n, i, j, r, pred, resid, delta, cth;
+    var rows = sysA.rows, Ri = sysA.Ri, K = sysA.M / Ns, k, n, i, j, c, r, pred, resid;
     for (k = 0; k < K; k++) {
-      delta = new Float64Array(Npix); cth = new Float64Array(Npix);
       for (n = 0; n < Ns; n++) {
         i = k * Ns + n; if (Ri[i] <= 1e-12) continue;
         r = rows[i]; pred = 0; for (j = 0; j < r.cols.length; j++) pred += r.vals[j] * x[r.cols[j]];
         resid = (b[i] - pred) / Ri[i];
         for (j = 0; j < r.cols.length; j++) { delta[r.cols[j]] += r.vals[j] * resid; cth[r.cols[j]] += r.vals[j]; }
       }
-      for (j = 0; j < Npix; j++) if (cth[j] > 1e-12) x[j] += tau * delta[j] / cth[j];
+      for (n = 0; n < Ns; n++) {
+        r = rows[k * Ns + n];
+        for (j = 0; j < r.cols.length; j++) { c = r.cols[j]; if (cth[c] > 1e-12) x[c] += tau * delta[c] / cth[c]; delta[c] = 0; cth[c] = 0; }
+      }
     }
   }
+  /* rmse가 0.5를 넘으면(그래프 밖) 그 바퀴에서 멈춘다 */
   function runSart(tau, maxIter) {
     var x = new Float64Array(sysA.Npix), curve = [], it;
-    for (it = 1; it <= maxIter; it++) { sartSweep(x, bNoisy, tau); curve.push({ it: it, rmse: rmseFn(x, xTrue), resid: resNorm(sysA, x, bNoisy) }); }
+    for (it = 1; it <= maxIter; it++) { sartSweep(x, bNoisy, tau); curve.push({ it: it, rmse: rmseFn(x, xTrue) }); if (curve[it - 1].rmse > 0.5) break; }
     return { tau: tau, curve: curve };
   }
 
+  var LONG = 1000;
   return {
-    N: N, sysA: sysA, sart1: runSart(1.0, 150), sart05: runSart(0.5, 150),
+    N: N, sysA: sysA, LONG: LONG, sart1: runSart(1.0, LONG), sart05: runSart(0.5, LONG),
     xTrue: xTrue, expectedNoiseNorm: expectedNoiseNorm, image: image,
-    artRun: runFull('art', 150, [1, 5, 10, 20, 26, 41, 60, 100, 150]),
-    sirtRun: runFull('sirt', 300, [10, 50, 100, 150, 221, 300])
+    artRun: runFull('art', 1.0, LONG, [1, 5, 10, 20, 26, 41, 60, 100, 150]),
+    art025: runFull('art', 0.25, LONG, []),
+    sirtRun: runFull('sirt', 1.0, LONG, [10, 50, 100, 150, 221, 300])
   };
 })();
 
 (function () {
-  var A2 = window.art2, curve = A2.artRun.curve, line = document.getElementById('w8-line'),
-      discL = document.getElementById('w8-disc'), minL = document.getElementById('w8-min'),
-      mark = document.getElementById('w8-mark'), note = document.getElementById('w8-note'),
-      ui = document.getElementById('w8-ui'), labels = document.getElementById('w8-labels');
-  var n = curve.length, i, minV = Infinity, maxV = -Infinity;
-  for (i = 0; i < n; i++) { if (curve[i].rmse < minV) minV = curve[i].rmse; if (curve[i].rmse > maxV) maxV = curve[i].rmse; }
-  var pad = (maxV - minV) * 0.08;
-  function X(it) { return 60 + (it - 1) / (n - 1) * 550; }
-  function Y(v) { return 190 - (v - (minV - pad)) / (maxV - minV + 2 * pad) * 160; }
-  var d = ''; for (i = 0; i < n; i++) d += (i ? 'L' : 'M') + X(curve[i].it).toFixed(1) + ' ' + Y(curve[i].rmse).toFixed(1);
-  line.setAttribute('d', d);
-  discL.setAttribute('d', 'M' + X(26).toFixed(1) + ' 30 V190');
-  minL.setAttribute('d', 'M' + X(41).toFixed(1) + ' 30 V190');
-  labels.innerHTML = '<text x="' + X(26).toFixed(1) + '" y="24" text-anchor="middle">26</text><text x="' + X(41).toFixed(1) + '" y="206" text-anchor="middle">41</text>';
+  var A2 = window.art2, N = A2.LONG, curve = A2.artRun.curve, c025 = A2.art025.curve, cs = A2.sirtRun.curve;
+  function $(id) { return document.getElementById('w8-' + id); }
+  var note = $('note'), ui = $('ui'), LMAX = Math.log(N) / Math.LN10, LO = 0.11, HI = 0.47;
+  function X(it) { return 60 + Math.log(it) / Math.LN10 / LMAX * 540; }
+  function Y(v) { var l = Math.log(Math.min(HI, Math.max(LO, v))); return 190 - (l - Math.log(LO)) / (Math.log(HI) - Math.log(LO)) * 160; }
+  function path(c) { var d = '', i; for (i = 0; i < c.length; i++) d += (i ? 'L' : 'M') + X(c[i].it).toFixed(1) + ' ' + Y(c[i].rmse).toFixed(1); return d; }
+  $('line').setAttribute('d', path(curve)); $('a025').setAttribute('d', path(c025)); $('sirt').setAttribute('d', path(cs));
+  var g = '', t = '';
+  [0.12, 0.15, 0.2, 0.3, 0.4].forEach(function (v) { g += '<path d="M60 ' + Y(v).toFixed(1) + ' H600"/>'; t += '<text x="54" y="' + (Y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + v.toFixed(2) + '</text>'; });
+  [1, 10, 100, 1000].forEach(function (k) { g += '<path d="M' + X(k).toFixed(1) + ' 30 V190"/>'; t += '<text x="' + X(k).toFixed(1) + '" y="204" text-anchor="middle">' + k + '</text>'; });
+  $('grid').innerHTML = g; $('ticks').innerHTML = t;
+  $('disc').setAttribute('d', 'M' + X(26).toFixed(1) + ' 30 V190');
+  $('min').setAttribute('d', 'M' + X(41).toFixed(1) + ' 30 V190');
+  $('labels').innerHTML = '<text x="' + (X(26) - 3).toFixed(1) + '" y="26" text-anchor="end">26</text><text x="' + (X(41) + 3).toFixed(1) + '" y="26" text-anchor="start">41</text>';
   function setIter(it) {
-    var c = curve[it - 1];
-    mark.setAttribute('cx', X(it).toFixed(1)); mark.setAttribute('cy', Y(c.rmse).toFixed(1));
-    note.textContent = '반복 ' + it + '회 · 참값 오차(rmse) ' + c.rmse.toFixed(4) + ' · 데이터 잔차 ' + c.resid.toFixed(4) + '(기대 잡음 크기 ' + A2.expectedNoiseNorm.toFixed(3) + ')';
+    var c = curve[it - 1], c2 = c025[it - 1], c3 = cs[it - 1];
+    $('mark').setAttribute('cx', X(it).toFixed(1)); $('mark').setAttribute('cy', Y(c.rmse).toFixed(1));
+    $('mark2').setAttribute('cx', X(it).toFixed(1)); $('mark2').setAttribute('cy', Y(c2.rmse).toFixed(1));
+    $('mark3').setAttribute('cx', X(it).toFixed(1)); $('mark3').setAttribute('cy', Y(c3.rmse).toFixed(1));
+    note.textContent = '반복 ' + it + '회 · 참값 오차(rmse) ART(τ=1) ' + c.rmse.toFixed(4) + ' · ART(τ=0.25) ' + c2.rmse.toFixed(4) + ' · SIRT ' + c3.rmse.toFixed(4) +
+      (c.resid !== null ? ' · ART(τ=1) 데이터 잔차 ' + c.resid.toFixed(4) + '(기대 잡음 크기 ' + A2.expectedNoiseNorm.toFixed(3) + ')' : '');
   }
   ui.addEventListener('click', function (e) { var t = e.target.closest('button[data-it]'); if (t) setIter(+t.getAttribute('data-it')); });
   setIter(41);
@@ -1222,7 +1266,7 @@ window.art2 = (function () {
   </figure>
   <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w9-note"></p>
 
-  <p>1회만 지나면 광선을 훑은 처음 각도(세로 방향)의 흔적이 줄무늬로 고스란히 남습니다. 몇 번 더 지나면 그 줄무늬는 사라지지만, 이 예제는 각도 수(40개)가 화소 수(48×48)에 비해 넉넉하지 않아 그 뒤로는 배경 전체에 성긴 잡음(소금-후추 무늬)이 남고, 26회·41회·150회의 영상은 눈으로 보기에 거의 구분되지 않습니다. 실제로 반 수렴에 따른 오차 증가는 크지 않아서(41회 0.1384 → 150회 0.1570), 위 곡선이 영상보다 더 믿을 만한 증거입니다. SIRT는 300회를 돌려도 아직 반 수렴이 시작되지 않았고, 그 시점의 오차(0.1325)는 ART 41회(0.1384)보다 살짝 낮습니다. 다만 그 수준에 도달하는 데 ART보다 훨씬 많은 반복이 필요했다는 점이 중요합니다(반복 1회당 계산량은 둘이 비슷합니다).</p>
+  <p>1회만 지나면 광선을 훑은 처음 각도(세로 방향)의 흔적이 줄무늬로 고스란히 남습니다. 몇 번 더 지나면 그 줄무늬는 사라지지만, 이 예제는 각도 수(40개)가 화소 수(48×48)에 비해 넉넉하지 않아 그 뒤로는 배경 전체에 성긴 잡음(소금-후추 무늬)이 남고, 26회·41회·150회의 영상은 눈으로 보기에 거의 구분되지 않습니다. 실제로 반 수렴에 따른 오차 증가는 크지 않아서(41회 0.1384 → 150회 0.1570), 위 곡선이 영상보다 더 믿을 만한 증거입니다. 위의 '방법'에서 SIRT를 고르면 SIRT의 영상을 300회까지 볼 수 있습니다(300회 오차 0.1325). 두 방법의 비교는 위 "잡음 데이터에서의 ART와 SIRT"에 정리했습니다.</p>
 
 <script>
 (function () {
@@ -1296,7 +1340,7 @@ window.art2 = (function () {
     <table>
       <tr><th></th><th>FBP</th><th>ART</th><th>SIRT</th><th>SART</th></tr>
       <tr><td>갱신 단위</td><td>공식 한 번</td><td>광선 하나</td><td>광선 전체</td><td>각도 하나(광선 묶음)</td></tr>
-      <tr><td>이 책의 작은 예제에서 최저 오차 지점</td><td>해당 없음</td><td>41회 통과</td><td>300회 통과해도 아직 줄어드는 중</td><td>27회 통과(\(\tau=0.5\))</td></tr>
+      <tr><td>이 책의 작은 예제에서 최저 오차 지점</td><td>해당 없음</td><td>41회 통과</td><td>1,000회 통과해도 아직 줄어드는 중(페이지 8)</td><td>27회 통과(\(\tau=0.5\))</td></tr>
       <tr><td>안정적인 완화 인자</td><td>해당 없음</td><td>\(0&lt;\tau&lt;2\)</td><td>보통 \(\tau\le1\)</td><td>이 예제는 \(\tau=1\)에서 최저점 뒤 오차가 빠르게 커지고, \(\tau=0.5\)에서는 완만</td></tr>
       <tr><td>기하 변경</td><td>공식을 다시 유도</td><td colspan="3">시스템 행렬만 바꾸면 됨</td></tr>
       <tr><td>광선마다 다른 신뢰도</td><td>반영하기 어려움</td><td>그대로는 반영 안 됨(페이지 9)</td><td colspan="2">가중치로 반영 가능(페이지 9)</td></tr>
@@ -1382,7 +1426,7 @@ window.art2 = (function () {
   <p style="text-align:center;font-size:.9rem;color:var(--muted)" id="w11-note"></p>
 
   <p>10바퀴에서는 ART 0.155, SIRT 0.249, SART(\(\tau=0.5\)) 0.162로 SIRT가 가장 뒤처집니다. 41바퀴에서 ART가 최저(0.1384)에 이르고, 150바퀴에서는 ART 0.157로 다시 올라간 반면 SIRT는 0.142까지 내려와 ART의 최저에 가까워집니다.
-  SART는 \(\tau=1\)일 때 150바퀴에서 0.460까지 빠르게 커집니다. 잡음이 섞인 데이터에서 반 수렴이 매우 가파르게 나타난 것으로, 이 예제에서는 \(\tau\)를 줄여야 완만해집니다. 한 바퀴의 계산량은 세 방법이 비슷하므로(광선을 한 번씩 모두 쓰므로), 이 차이는 한 바퀴로 얻는 오차 감소의 크기 차이입니다.</p>
+  SART는 \(\tau=1\)일 때 150바퀴에서 0.460까지 빠르게 커집니다. 잡음이 섞인 데이터에서 반 수렴이 매우 가파르게 나타난 것으로, 이 예제에서는 \(\tau\)를 줄여야 완만해집니다. 한 바퀴의 계산량은 세 방법이 비슷하므로(광선을 한 번씩 모두 쓰므로), 이 차이는 한 바퀴로 얻는 오차 감소의 크기 차이입니다. 같은 데이터에서 ART·SIRT를 1,000바퀴까지 돌리고 걸음을 줄인 ART(\(\tau=0.25\))와 비교한 결과, 그리고 둘을 고르는 기준은 페이지 8에 정리했습니다.</p>
 
 <script>
 (function () {

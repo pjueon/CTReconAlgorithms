@@ -566,7 +566,7 @@ return x                                           # 13
   <ol class="notes">
     <li><span class="ln">3행</span> 걸은 뒤 \(C\)로 되돌리는 부분이 GP입니다. \(\mathbf{x}\in C\)에서 시작하면 \(\mathbf{x}+\eta\mathbf{d}\)(\(0<\eta\le1\))도 \(\mathbf{x}\)와 \(P_C(\cdot)\)의 사이에 놓이므로 항상 \(C\) 안에 있습니다(\(C\)가 볼록하기 때문입니다).</li>
     <li><span class="ln">4행</span> \(\mathbf{d}=\mathbf{0}\)이면 \(\mathbf{x}\)는 사영 기울기 방법의 정지점입니다. \(f\)가 볼록이면 제약 아래의 최솟점입니다.</li>
-    <li><span class="ln">5~8행</span> 매 반복 \(f\)가 줄 것을 요구하지 않고, 최근 \(M\)번의 최댓값보다 충분히 작기만 하면 받아들입니다. \(\langle\mathbf{g},\mathbf{d}\rangle<0\)이므로 오른쪽은 최댓값보다 조금 작습니다. BB의 들쑥날쑥한 걸음을 살리기 위한 안전장치입니다. 첫 반복(\(k=0\))은 \(M\)번이 아직 없으므로 \(f(\mathbf{x}_0)\)만 씁니다.</li>
+    <li><span class="ln">5~8행</span> 매 반복 \(f\)가 줄 것을 요구하지 않고, 최근 \(M\)번의 최댓값보다 충분히 작기만 하면 받아들입니다. \(\langle\mathbf{g},\mathbf{d}\rangle<0\)이므로 오른쪽은 최댓값보다 조금 작습니다. BB의 들쑥날쑥한 걸음을 살리기 위한 안전장치입니다. 첫 반복(\(k=0\))은 \(M\)번이 아직 없으므로 \(f(\mathbf{x}_0)\)만 씁니다. 기준값 \(f_{\max}\) 자리에 지금 값 \(f(\mathbf{x})\)를 두면(\(M=1\)) 흔히 쓰는 <span class="term" data-term="armijo">Armijo 조건</span>이 되며, 두 조건의 비교는 <a href="ch07.html#s4">7장 페이지 4</a>에 있습니다.</li>
     <li><span class="ln">10~11행</span> 다음 반복의 걸음 크기는 직전 두 점의 차이 \(\mathbf{s}\)와 기울기 차이 \(\mathbf{y}\)로 정합니다. 6장 페이지 3·4의 BB 스텝입니다. 극단적인 값이 나오면 \([\alpha_{\min},\alpha_{\max}]\)로 자릅니다.</li>
     <li>이 의사코드는 비단조 선 탐색을 넣은 사영 기울기 방법으로, Birgin·Martínez·Raydan의 스펙트럴 사영 기울기(SPG)법과 같은 구조입니다. 비단조 선 탐색은 Grippo·Lampariello·Lucidi의 아이디어입니다.</li>
   </ol>
